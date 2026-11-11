@@ -63,9 +63,22 @@ Para padronizar um time inteiro em um repositório, use o escopo **Project** e v
 
 Digite `/squads` em uma sessão e confira as skills no autocomplete, ou rode `/plugin list`. Se nada aparecer, veja [Problemas comuns](#problemas-comuns).
 
+### Gemini CLI, Codex, GitHub Copilot e qualquer LLM
+
+Os passos acima instalam o **plugin completo** no Claude Code. Para as outras ferramentas, o repositório traz o mesmo time e as mesmas skills no formato que cada uma lê (detalhes em [`portable/README.md`](https://github.com/edimilsonldutra/agents-skills-java-spring/blob/main/portable/README.md)):
+
+| Ferramenta | Como instalar | O que chega |
+|---|---|---|
+| Gemini CLI | `gemini extensions install https://github.com/edimilsonldutra/agents-skills-java-spring` | 90 skills descobertas automaticamente e os 7 agents como `/squads:<agent>` |
+| Codex | `python scripts/portable.py install --tool codex --project <projeto>` (repositório clonado) | `.agents/skills/`, `.codex/agents/*.toml` e a seção do squads no `AGENTS.md` |
+| GitHub Copilot | `python scripts/portable.py install --tool copilot --project <projeto>` | `.agents/skills/`, `.github/agents/*.agent.md` e a seção no `.github/copilot-instructions.md` |
+| Qualquer LLM | `python scripts/portable.py install --tool generic --project <projeto>` | `.agents/skills/`, `agents/*.md` como system prompts e `AGENTS.md` |
+
+Nessas ferramentas o arquivo de contexto (`GEMINI.md`, `AGENTS.md`, `copilot-instructions.md`) faz o papel do `CLAUDE.md`: a seção `## Project preferences` fica nele. **Não há hooks** fora do Claude Code — a confirmação antes de ações destrutivas depende das instruções dos agents e das permissões da ferramenta.
+
 ### Só as skills, em outras ferramentas (npx skills)
 
-Os passos acima instalam o **plugin completo** no Claude Code: agents, skills e atualização automática. Se você usa **outra ferramenta de IA** (Cursor, Codex, Gemini CLI, GitHub Copilot…) ou quer **só as skills**, o CLI [`skills`](https://github.com/vercel-labs/skills) instala direto do repositório. Ele precisa de **Node.js** (o `npx` vem junto).
+Se você quer **só as skills** (Cursor, Windsurf e outras), o CLI [`skills`](https://github.com/vercel-labs/skills) instala direto do repositório. Ele precisa de **Node.js** (o `npx` vem junto).
 
 Na pasta do projeto onde as skills vão ficar, rode:
 

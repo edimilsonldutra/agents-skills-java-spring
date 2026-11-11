@@ -8,6 +8,7 @@ Somente leitura e sem dependências (stdlib). Uso, na raiz do repositório:
 Sai com código 1 se houver erro; avisos não falham o build.
 """
 
+import importlib.util
 import json
 import re
 import sys
@@ -37,6 +38,10 @@ NOT_SKILLS = {
     "squads-kt",
     "test-hooks",
     "validate-plugin",
+    "gemini-extension",
+    "copilot-instructions",
+    "workspace-write",
+    "read-only",
 }
 
 # Ferramentas que um agent pode declarar e o que cada papel pode ou não ter.
@@ -354,8 +359,8 @@ def check_counts_and_version(skills, agents):
 
     # Qualquer "N skills"/"N agents" solto no texto (diagramas, árvore, frases): os grupos
     # têm menos de 40 skills, então um número maior que isso só pode ser o total.
-    documents = [ROOT / "README.md", ROOT / "docs/guide.md", ROOT / "skills/guide/SKILL.md"]
-    documents += list(ROOT.glob("agents/*/*.md")) + list(ROOT.glob("prompts/*.md"))
+    documents = [ROOT / "README.md", ROOT / "docs/guide.md", ROOT / "skills/guide/SKILL.md", ROOT / "GEMINI.md", ROOT / "portable/README.md"]
+    documents += list(ROOT.glob("agents/*/*.md")) + list(ROOT.glob("prompts/*.md")) + list(ROOT.glob("portable/**/*.md"))
     for doc in documents:
         text = read(doc)
         for value in re.findall(r"\b(\d+) skills\b", text):
@@ -384,6 +389,12 @@ def check_counts_and_version(skills, agents):
     elif not badge or badge.group(1) != version:
         error("README.md", f"badge de versão diferente do plugin.json ({version})")
 
+    gemini = ROOT / "gemini-extension.json"
+    if not gemini.exists():
+        error("gemini-extension.json", "ausente (a instalação como extensão do Gemini CLI depende dele)")
+    elif json.loads(read(gemini)).get("version") != version:
+        error("gemini-extension.json", f"version diferente do plugin.json ({version})")
+
     changelog = ROOT / "CHANGELOG.md"
     if not changelog.exists():
         error("CHANGELOG.md", "ausente (toda versão nova precisa de uma entrada)")
@@ -395,6 +406,29 @@ def check_counts_and_version(skills, agents):
             error("CHANGELOG.md", f"a entrada mais recente é {first.group(1)}, mas o plugin.json diz {version}")
 
 
+def check_portable():
+    """O material para Gemini, Codex, Copilot e LLMs genéricos é gerado: precisa estar em dia."""
+    script = ROOT / "scripts/portable.py"
+    if not script.exists():
+        error("scripts/portable.py", "ausente")
+        return
+    spec = importlib.util.spec_from_file_location("portable", script)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    try:
+        agents = module.load_agents()
+        files = module.generated_files(agents)
+    except SystemExit as exc:
+        error("scripts/portable.py", f"geração falhou: {exc}")
+        return
+    for relative, content in files.items():
+        path = ROOT / relative
+        if not path.exists():
+            error(relative, "arquivo gerado ausente (rode `python scripts/portable.py build`)")
+        elif read(path) != content:
+            error(relative, "defasado em relação aos agents (rode `python scripts/portable.py build`)")
+
+
 def main():
     sys.stdout.reconfigure(encoding="utf-8")
     skills = check_skills()
@@ -404,6 +438,7 @@ def main():
     check_prompts()
     check_hooks()
     check_evals(skills)
+    check_portable()
     check_counts_and_version(skills, agents)
 
     for message in warnings:
