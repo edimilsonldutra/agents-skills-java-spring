@@ -2,6 +2,15 @@
 
 Mudanças notáveis do plugin `squads`. A versão é a de `.claude-plugin/plugin.json`; quem já instalou só recebe uma mudança quando ela sobe.
 
+## 2.7.0 — 2026-11-11
+
+### Outras ferramentas: Gemini CLI, Codex, GitHub Copilot e qualquer LLM
+- `gemini-extension.json` + `GEMINI.md` + `commands/squads/*.toml`: o repositório passa a ser instalável como extensão do Gemini CLI (`gemini extensions install <url>`), com as 90 skills descobertas automaticamente e os 7 agents como comandos `/squads:<agent>`.
+- `scripts/portable.py build` gera, a partir de `agents/*/*.md`, os agents para Codex (`.codex/agents/*.toml`, com `sandbox_mode` somente leitura para `tech-lead`, `code-reviewer` e `orchestrator`), para GitHub Copilot (`.github/agents/*.agent.md`) e para qualquer LLM (`agents/*.md` como system prompt), trocando o que é específico do Claude Code (`Skill`, `AskUserQuestion`, `Agent`, `CLAUDE.md`, hooks) pelo equivalente de cada ferramenta.
+- `scripts/portable.py install --tool codex|copilot|gemini|generic --project <dir>` copia as skills para `.agents/skills/`, grava os agents e mescla a seção do squads (com `## Project preferences`) no arquivo de contexto, sem apagar o que já existe; idempotente.
+- `portable/README.md` explica cada caminho, o que muda fora do Claude Code (sem hooks, delegação, modelos) e o que foi ou não verificado.
+- Validador e CI: o material gerado precisa estar em dia (`build --check`), a versão de `gemini-extension.json` precisa bater com a do `plugin.json`, e a instalação é testada em pasta temporária para as quatro ferramentas.
+
 ## 2.6.0 — 2026-11-10
 
 ### Guardrails

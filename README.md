@@ -1,15 +1,15 @@
 # Squads — Agents & Skills para Claude Code
 
-![version](https://img.shields.io/badge/version-2.6.0-blue)
+![version](https://img.shields.io/badge/version-2.7.0-blue)
 ![Java](https://img.shields.io/badge/Java-25-orange)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4-6DB33F)
 ![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin-D97757)
 ![skills](https://img.shields.io/badge/skills-90-informational)
 ![agents](https://img.shields.io/badge/agents-7-informational)
 
-Plugin para o [Claude Code](https://claude.com/claude-code) que leva um **time de agents especialistas** e **90 skills** para o desenvolvimento de APIs REST com **Java 25 e Spring Boot 4**. Os agents planejam, implementam, testam e revisam; as skills definem o padrão que todos seguem — do layout de packages ao deploy — para que o código gerado por IA saia consistente, testado e seguro em qualquer projeto do time.
+Plugin para o [Claude Code](https://claude.com/claude-code) — e, pelo formato aberto Agent Skills, também para **Gemini CLI, Codex, GitHub Copilot e qualquer LLM** ([como](#outras-ferramentas-gemini-cli-codex-github-copilot-e-qualquer-llm)) — que leva um **time de agents especialistas** e **90 skills** para o desenvolvimento de APIs REST com **Java 25 e Spring Boot 4**. Os agents planejam, implementam, testam e revisam; as skills definem o padrão que todos seguem — do layout de packages ao deploy — para que o código gerado por IA saia consistente, testado e seguro em qualquer projeto do time.
 
-**Sumário:** [Visão geral](#visão-geral) · [Início rápido](#início-rápido) · [Como funciona](#como-funciona) · [Agents](#agents) · [Fluxo completo](#fluxo-completo-de-uma-feature) · [Fluxos individuais](#fluxo-individual-de-cada-agent) · [Skills](#skills) · [Instalação alternativa](#instalação-alternativa-só-as-skills) · [Atualização](#atualização) · [Estrutura](#estrutura-do-repositório) · [Contribuindo](#contribuindo)
+**Sumário:** [Visão geral](#visão-geral) · [Início rápido](#início-rápido) · [Como funciona](#como-funciona) · [Agents](#agents) · [Fluxo completo](#fluxo-completo-de-uma-feature) · [Fluxos individuais](#fluxo-individual-de-cada-agent) · [Skills](#skills) · [Outras ferramentas](#outras-ferramentas-gemini-cli-codex-github-copilot-e-qualquer-llm) · [Atualização](#atualização) · [Estrutura](#estrutura-do-repositório) · [Contribuindo](#contribuindo)
 
 ---
 
@@ -291,15 +291,19 @@ Qualquer skill pode ser chamada diretamente: `/squads:<nome>` (ex.: `/squads:des
 
 ---
 
-## Instalação alternativa: só as skills
+## Outras ferramentas: Gemini CLI, Codex, GitHub Copilot e qualquer LLM
 
-Para usar as skills em **outras ferramentas de IA** (Cursor, Codex, Gemini CLI, GitHub Copilot…), use o CLI [`skills`](https://github.com/vercel-labs/skills) (requer Node.js), na pasta do projeto:
+As skills seguem o formato aberto [Agent Skills](https://agentskills.io/specification), que Gemini CLI, Codex e GitHub Copilot leem de `.agents/skills/`. Os 7 agents são gerados no formato de cada ferramenta (`scripts/portable.py`), e o arquivo de contexto (`GEMINI.md`, `AGENTS.md`, `.github/copilot-instructions.md`) faz o papel do `CLAUDE.md`.
 
-```bash
-npx skills add edimilsonldutra/agents-skills-java-spring --skill '*'
-```
+| Ferramenta | Como instalar | Agents |
+|---|---|---|
+| **Gemini CLI** | `gemini extensions install https://github.com/edimilsonldutra/agents-skills-java-spring` | comandos `/squads:<agent> <pedido>` |
+| **Codex** | `python scripts/portable.py install --tool codex --project <projeto>` | custom agents em `.codex/agents/` (`sandbox_mode` por papel) |
+| **GitHub Copilot** | `python scripts/portable.py install --tool copilot --project <projeto>` | `.github/agents/*.agent.md` (`/agent <agent>`) |
+| **Qualquer LLM** | `python scripts/portable.py install --tool generic --project <projeto>` | `agents/*.md` como system prompt |
+| **Só as skills** (Cursor, Windsurf…) | `npx skills add edimilsonldutra/agents-skills-java-spring --skill '*'` | — |
 
-Instala as 90 skills de uma vez (recomendado — as skills se referenciam entre si). Use `-g` para o nível do usuário ou `-a <ferramenta> -y` para escolher a ferramenta sem perguntas. **Os agents não são instalados** neste modo, e no Claude Code não combine com o plugin (as skills ficariam duplicadas). Detalhes no [guia](docs/guide.md#só-as-skills-em-outras-ferramentas-npx-skills).
+O instalador copia as skills, grava os agents e mescla a seção do squads no arquivo de contexto sem apagar o que já existe. Fora do Claude Code **não há hooks**: a confirmação antes de ações destrutivas depende das instruções dos agents e das permissões da ferramenta. Detalhes, limites e o que foi ou não verificado: [`portable/README.md`](portable/README.md). No Claude Code, use o plugin e não combine com `npx skills` (as skills ficariam duplicadas).
 
 ---
 
@@ -322,6 +326,10 @@ agents-skills-java-spring/
 │   ├── hooks.json
 │   ├── guard-commands.sh       # push, deploy, cluster, nuvem, banco, apagar, segredos
 │   └── guard-edits.sh          # migration versionada, workflow, segredo, @Disabled, piso do JaCoCo
+├── gemini-extension.json       # extensão do Gemini CLI (skills/ + commands/ + GEMINI.md)
+├── GEMINI.md                   # contexto da extensão (gerado)
+├── commands/squads/            # os 7 agents como comandos do Gemini CLI (gerados)
+├── portable/                   # agents e contexto para Codex, Copilot e LLMs genéricos (gerados) + README
 ├── agents/                     # 7 agents, um por pasta (<nome>/<nome>.md)
 │   ├── orchestrator/orchestrator.md
 │   ├── product-manager/product-manager.md
@@ -336,7 +344,8 @@ agents-skills-java-spring/
 │   └── guide.md                # guia de referência
 ├── scripts/
 │   ├── validate-plugin.py      # validação estrutural (rodada no CI)
-│   └── test-hooks.sh           # casos de teste dos hooks (rodados no CI)
+│   ├── test-hooks.sh           # casos de teste dos hooks (rodados no CI)
+│   └── portable.py             # gera/instala o material para outras ferramentas
 ├── CHANGELOG.md                # o que mudou em cada versão
 ├── evals/                      # evals de gatilho: a skill certa dispara? (claude plugin eval)
 ├── .github/workflows/
@@ -350,8 +359,9 @@ agents-skills-java-spring/
 
 1. **Nova skill:** crie `skills/<nome>/SKILL.md` com frontmatter `name` e `description` (o que cobre + "Use quando…"), siga o formato das existentes (pré-requisitos com links relativos, seções, "Regras principais") e mantenha o padrão do pacote (sem Lombok, layout de `code-organization`).
 2. **Ligue a skill ao time:** cite-a nos agents que devem usá-la (`agents/<nome>/<nome>.md`), na skill `guide` e no catálogo do [guia de referência](docs/guide.md).
-3. **Novo agent:** crie `agents/<nome>/<nome>.md` (frontmatter `name`, `description`, `tools`, `model`) e **acrescente o caminho em `agents` no `.claude-plugin/plugin.json`** — essa lista substitui a varredura padrão da pasta, então um agent fora dela não é carregado (e, sem ela, a subpasta entraria no nome: `squads:<nome>:<nome>`).
-4. **Versão e changelog:** aumente `version` em `.claude-plugin/plugin.json` (sem isso, quem já instalou não recebe a mudança), atualize o badge do README e abra uma entrada com a mesma versão no topo do `CHANGELOG.md`.
+3. **Novo agent:** crie `agents/<nome>/<nome>.md` (frontmatter `name`, `description`, `tools`, `model`) e **acrescente o caminho em `agents` no `.claude-plugin/plugin.json`** — essa lista substitui a varredura padrão da pasta, então um agent fora dela não é carregado (e, sem ela, a subpasta entraria no nome: `squads:<nome>:<nome>`). Inclua-o em `AGENT_ORDER` de `scripts/portable.py`.
+   **Mudou um agent?** Rode `python scripts/portable.py build` para regenerar `GEMINI.md`, `commands/` e `portable/` (o CI falha se estiverem defasados).
+4. **Versão e changelog:** aumente `version` em `.claude-plugin/plugin.json` e em `gemini-extension.json` (sem isso, quem já instalou não recebe a mudança), atualize o badge do README, rode `python scripts/portable.py build` (a versão aparece nos arquivos gerados) e abra uma entrada com a mesma versão no topo do `CHANGELOG.md`.
 5. **Mudou um hook?** Acrescente o caso em `scripts/test-hooks.sh` (um comando ou edição que deve pedir confirmação e um que não deve) e rode `bash scripts/test-hooks.sh`.
 6. **Valide** antes do PR:
    ```bash

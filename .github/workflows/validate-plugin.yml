@@ -26,3 +26,16 @@ jobs:
         run: bash scripts/test-hooks.sh
       - name: Compile skill scripts
         run: python3 -m py_compile skills/*/scripts/*.py
+      - name: Portable material is up to date
+        run: python3 scripts/portable.py build --check
+      - name: Portable install smoke test
+        run: |
+          for tool in codex copilot gemini generic; do
+            mkdir -p "/tmp/squads-$tool"
+            python3 scripts/portable.py install --tool "$tool" --project "/tmp/squads-$tool" > /dev/null
+            python3 scripts/portable.py install --tool "$tool" --project "/tmp/squads-$tool" > /dev/null
+          done
+          test "$(ls /tmp/squads-codex/.agents/skills | wc -l)" -eq "$(ls skills | wc -l)"
+          test "$(grep -c 'squads:start' /tmp/squads-codex/AGENTS.md)" -eq 1
+          test -f /tmp/squads-copilot/.github/agents/developer.agent.md
+          test -f /tmp/squads-gemini/.gemini/commands/squads/orchestrator.toml
