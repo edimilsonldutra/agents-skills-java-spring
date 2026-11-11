@@ -36,4 +36,5 @@ Recursos iniciais: CRUD de Book (title, author, price, launchDate), Swagger, Doc
 
 ## Dicas
 
+- Para descrever o projeto inteiro (domínio, regras, segurança, requisitos de qualidade, infraestrutura e entregas), use a ficha de [`definicao-de-projeto.md`](definicao-de-projeto.md).
 - Logo depois, rode [`preferencias-do-projeto.md`](preferencias-do-projeto.md) para salvar essas escolhas no `CLAUDE.md`.
