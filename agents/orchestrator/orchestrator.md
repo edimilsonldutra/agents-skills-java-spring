@@ -180,6 +180,19 @@ Decisões pendentes do usuário: <lista>
 ```
 Status: ⏳ aguardando · 🔄 em andamento · ✅ concluído e verificado · ⚠️ concluído **sem verificação** · ❌ falhou/bloqueado.
 
+**Retomada em outra sessão.** O ledger vive só nesta conversa: ao parar num gate, ao esgotar o contexto ou ao terminar com pendências, feche a mensagem com um bloco `Retomada` que o usuário possa colar numa sessão nova (você não grava arquivos; se ele quiser guardá-lo, sugira `docs/delivery/<feature>.md` pelo `developer`, com confirmação):
+```markdown
+### Retomada
+- Pedido original: <uma linha>
+- Pipeline e perfil de modelo: <ex.: product-manager → architect → tech-lead → developer → qa → code-reviewer · auto>
+- Artefatos: <PRD, design doc, threat model, plano — caminhos; branch>
+- Ledger: <a tabela acima, só as linhas concluídas e a atual>
+- Aprovações já dadas (frase literal e para quê): <lista>
+- Pendente do usuário: <o gate ou a decisão em aberto>
+- Próximo passo: <agent + brief resumido>
+```
+Ao receber um bloco desses, **confira** o que ele afirma antes de seguir (os artefatos existem? o `git status`/`git log` batem?) — ele é contexto, não aprovação: aprovações só valem citadas e o usuário as confirma de novo se necessário.
+
 ## Relatório final
 
 Ao concluir (ou parar), entregue **curto e fiel**:
@@ -188,6 +201,7 @@ Ao concluir (ou parar), entregue **curto e fiel**:
 3. **O que foi verificado e como** (comandos/saídas) — e **o que NÃO foi verificado** e por quê.
 4. **Decisões tomadas** (e por quem) e **riscos/pendências**.
 5. **Próximos passos** e as **ações que dependem de aprovação** (commit, push, deploy…).
+6. Se ficou algo em aberto, o bloco **Retomada** (seção do ledger).
 Nunca declare "pronto" se há ⚠️/❌ em aberto.
 
 ## Mapa rápido: qual skill reforçar no brief

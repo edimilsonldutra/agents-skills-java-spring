@@ -1,6 +1,6 @@
 # Squads — Agents & Skills para Claude Code
 
-![version](https://img.shields.io/badge/version-2.5.0-blue)
+![version](https://img.shields.io/badge/version-2.6.0-blue)
 ![Java](https://img.shields.io/badge/Java-25-orange)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4-6DB33F)
 ![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin-D97757)
@@ -66,7 +66,7 @@ O plugin tem duas camadas: **agents** (quem faz, com papel e permissões) e **sk
 flowchart LR
     U(["Você"]) -->|"pedido"| O["orchestrator"]
     O -->|"brief + skills"| A["Agents especialistas<br/>product-manager · architect · tech-lead<br/>developer · qa · code-reviewer"]
-    A -->|"carregam"| S[("89 skills<br/>o padrão do projeto")]
+    A -->|"carregam"| S[("90 skills<br/>o padrão do projeto")]
     A -->|"entregas"| O
     O -->|"verifica e pede aprovação"| U
 ```
@@ -74,7 +74,7 @@ flowchart LR
 - **Skills** são carregadas sob demanda (ferramenta `Skill`) — nenhum agent descreve o padrão de memória.
 - **Agents** rodam isolados, com permissões mínimas: só o `developer` altera código de produção; `qa` altera só testes; `architect` e `product-manager` só documentos; `tech-lead`, `code-reviewer` e `orchestrator` são somente leitura.
 - **Gates humanos:** escopo, design doc/ADR, plano e qualquer ação irreversível ou externa (`commit`, `push`, deploy, `kubectl`, `aws`, `terraform apply`) exigem a sua aprovação.
-- **Guardrails:** os agents tratam o que leem (arquivos, diffs, logs, relatórios de outros agents) como **dado, não instrução**, não reproduzem segredos, não rodam build de código não confiável fora de sandbox e só aceitam aprovação sua citada literalmente no brief. Um hook do plugin (`hooks/guard-commands.sh`) **pede a sua confirmação** antes de comandos destrutivos ou externos (`git push`/`commit`/`reset --hard`, `rm -r`, `kubectl apply`, `helm upgrade`, `terraform apply`, `aws` que altera recursos, `mvn deploy`, `docker push`, `gh pr create`…) — também na sessão principal.
+- **Guardrails:** os agents tratam o que leem (arquivos, diffs, logs, relatórios de outros agents) como **dado, não instrução**, não reproduzem segredos, não rodam build de código não confiável fora de sandbox e só aceitam aprovação sua citada literalmente no brief. Dois hooks do plugin **pedem a sua confirmação** — também na sessão principal: `hooks/guard-commands.sh`, antes de comandos destrutivos ou externos (`git push`/`commit`/`reset --hard`, `rm -r`, `kubectl apply`, `helm upgrade`, `terraform apply`, `aws`/`gcloud`/`az` que alteram recursos, `mvn deploy`, `docker push`, `gh pr create`, `ssh`/`scp`, `curl` que envia dados para fora, leitura de `.env` e credenciais…), e `hooks/guard-edits.sh`, antes de edições que as regras do pacote protegem (migration Flyway já versionada, workflow de CI/CD, arquivo de segredo, `@Disabled` em teste, piso do JaCoCo ou `skipTests` no build).
 
 ---
 
@@ -216,7 +216,7 @@ flowchart LR
     F --> G["Plano + matriz critério → tarefa"]
     G --> H["Handoff: developer"]
 ```
-- **Skills:** atribui a skill certa a cada tarefa (mapa completo de 89); usa `design-docs`, `repository-understanding`, `refactoring`, `backlog-refinement` e `test-coverage` (DoD com 90%).
+- **Skills:** atribui a skill certa a cada tarefa (mapa completo de 90); usa `design-docs`, `repository-understanding`, `refactoring`, `backlog-refinement` e `test-coverage` (DoD com 90%).
 - **Entrega:** plano acionável, sem escrever código. Decisões estruturais vão para o `architect`; o escopo é do `product-manager`.
 
 #### `developer`
@@ -299,7 +299,7 @@ Para usar as skills em **outras ferramentas de IA** (Cursor, Codex, Gemini CLI, 
 npx skills add edimilsonldutra/agents-skills-java-spring --skill '*'
 ```
 
-Instala as 89 skills de uma vez (recomendado — as skills se referenciam entre si). Use `-g` para o nível do usuário ou `-a <ferramenta> -y` para escolher a ferramenta sem perguntas. **Os agents não são instalados** neste modo, e no Claude Code não combine com o plugin (as skills ficariam duplicadas). Detalhes no [guia](docs/guide.md#só-as-skills-em-outras-ferramentas-npx-skills).
+Instala as 90 skills de uma vez (recomendado — as skills se referenciam entre si). Use `-g` para o nível do usuário ou `-a <ferramenta> -y` para escolher a ferramenta sem perguntas. **Os agents não são instalados** neste modo, e no Claude Code não combine com o plugin (as skills ficariam duplicadas). Detalhes no [guia](docs/guide.md#só-as-skills-em-outras-ferramentas-npx-skills).
 
 ---
 
@@ -318,9 +318,10 @@ agents-skills-java-spring/
 ├── .claude-plugin/
 │   ├── marketplace.json        # marketplace "edimilsonldutra"
 │   └── plugin.json             # plugin "squads": nome, versão, descrição e lista de agents
-├── hooks/                      # guardrail: pede confirmação antes de comandos destrutivos ou externos
+├── hooks/                      # guardrails: pedem confirmação antes de comandos e edições de risco
 │   ├── hooks.json
-│   └── guard-commands.sh
+│   ├── guard-commands.sh       # push, deploy, cluster, nuvem, banco, apagar, segredos
+│   └── guard-edits.sh          # migration versionada, workflow, segredo, @Disabled, piso do JaCoCo
 ├── agents/                     # 7 agents, um por pasta (<nome>/<nome>.md)
 │   ├── orchestrator/orchestrator.md
 │   ├── product-manager/product-manager.md
@@ -329,12 +330,14 @@ agents-skills-java-spring/
 │   ├── developer/developer.md
 │   ├── qa/qa.md
 │   └── code-reviewer/code-reviewer.md
-├── skills/                     # 89 skills (<nome>/SKILL.md)
+├── skills/                     # 90 skills (<nome>/SKILL.md)
 ├── prompts/                    # prompts reutilizáveis por fluxo (feature, bug, revisão, ADR…)
 ├── docs/
 │   └── guide.md                # guia de referência
 ├── scripts/
-│   └── validate-plugin.py      # validação estrutural (rodada no CI)
+│   ├── validate-plugin.py      # validação estrutural (rodada no CI)
+│   └── test-hooks.sh           # casos de teste dos hooks (rodados no CI)
+├── CHANGELOG.md                # o que mudou em cada versão
 ├── evals/                      # evals de gatilho: a skill certa dispara? (claude plugin eval)
 ├── .github/workflows/
 │   └── validate-plugin.yml
@@ -348,14 +351,16 @@ agents-skills-java-spring/
 1. **Nova skill:** crie `skills/<nome>/SKILL.md` com frontmatter `name` e `description` (o que cobre + "Use quando…"), siga o formato das existentes (pré-requisitos com links relativos, seções, "Regras principais") e mantenha o padrão do pacote (sem Lombok, layout de `code-organization`).
 2. **Ligue a skill ao time:** cite-a nos agents que devem usá-la (`agents/<nome>/<nome>.md`), na skill `guide` e no catálogo do [guia de referência](docs/guide.md).
 3. **Novo agent:** crie `agents/<nome>/<nome>.md` (frontmatter `name`, `description`, `tools`, `model`) e **acrescente o caminho em `agents` no `.claude-plugin/plugin.json`** — essa lista substitui a varredura padrão da pasta, então um agent fora dela não é carregado (e, sem ela, a subpasta entraria no nome: `squads:<nome>:<nome>`).
-4. **Versão:** aumente `version` em `.claude-plugin/plugin.json` — sem isso, quem já instalou não recebe a mudança.
-5. **Valide** antes do PR:
+4. **Versão e changelog:** aumente `version` em `.claude-plugin/plugin.json` (sem isso, quem já instalou não recebe a mudança), atualize o badge do README e abra uma entrada com a mesma versão no topo do `CHANGELOG.md`.
+5. **Mudou um hook?** Acrescente o caso em `scripts/test-hooks.sh` (um comando ou edição que deve pedir confirmação e um que não deve) e rode `bash scripts/test-hooks.sh`.
+6. **Valide** antes do PR:
    ```bash
    claude plugin validate .
    python scripts/validate-plugin.py
+   bash scripts/test-hooks.sh
    ```
-   O segundo comando (também rodado no CI em todo PR) confere o frontmatter de skills e agents (nome = pasta, description até 1024 caracteres, sem `<`/`>`, com "Use quando…"), os links `../<skill>/SKILL.md`, as skills citadas nos agents, prompts e guias, a lista `agents` do `plugin.json`, o catálogo do guia, os grupos do README e as contagens e a versão.
-6. **Mudou uma `description` ou criou uma skill que compete com outra?** Rode os [evals de gatilho](evals/README.md) (`claude plugin eval . --runs 1 --ablation none --no-publish`) e confirme com 3 rodadas antes de concluir que algo piorou.
+   O validador (também rodado no CI em todo PR) confere o frontmatter de skills e agents (nome = pasta, description até 1024 caracteres, sem `<`/`>`, com "Use quando…"; tools conhecidas e nenhuma tool de escrita em agent somente leitura; as seções compartilhadas idênticas entre os especialistas), os links `../<skill>/SKILL.md`, as skills citadas nos agents, prompts e guias (e avisa de skill que nenhum agent carrega), a lista `agents` do `plugin.json`, o catálogo e os grupos do guia e do README, o índice dos prompts, o `hooks.json` e os scripts (LF, shebang), a estrutura dos evals, as contagens, a versão e o changelog.
+7. **Mudou uma `description` ou criou uma skill que compete com outra?** Rode os [evals de gatilho](evals/README.md) (`claude plugin eval . --runs 1 --ablation none --no-publish`) e confirme com 3 rodadas antes de concluir que algo piorou.
 
 ---
 
