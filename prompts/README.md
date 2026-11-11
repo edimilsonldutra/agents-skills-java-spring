@@ -16,6 +16,7 @@ Copie o bloco **Prompt**, preencha os campos e apague as linhas que não se apli
 | [`refatoracao.md`](refatoracao.md) | Refatorar com rede de segurança, em passos pequenos | `squads:orchestrator` |
 | [`entender-repositorio.md`](entender-repositorio.md) | Mapear um repositório desconhecido | `squads:architect` ou `squads:tech-lead` |
 | [`go-no-go.md`](go-no-go.md) | Prontidão para lançamento | `squads:orchestrator` |
+| [`definicao-de-projeto.md`](definicao-de-projeto.md) | Ficha completa de um projeto novo (domínio, regras, segurança, qualidade, infraestrutura, entregas) para gravar em `docs/projeto.md` | Sessão normal + `squads:orchestrator` |
 | [`novo-projeto.md`](novo-projeto.md) | Criar um projeto Spring Boot no padrão do pacote | Sessão normal (skill `scaffold`) |
 | [`preferencias-do-projeto.md`](preferencias-do-projeto.md) | Gerar o `CLAUDE.md` com as preferências e o perfil de modelo | Sessão normal (skill `project-claude-md`) |
 

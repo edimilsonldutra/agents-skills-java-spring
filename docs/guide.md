@@ -10,7 +10,7 @@ Guia de referência do plugin `squads` para o Claude Code: instalação, configu
 
 O plugin leva para o Claude Code um padrão único de construção de APIs REST com **Java 25 e Spring Boot 4** — package layout, code style, segurança, testes, documentação e entrega — em duas camadas:
 
-- **Skills (89)** — o *como*. Cada skill documenta uma maneira específica de fazer algo: uma entity, uma migration, um teste de integração, um design doc, um pipeline. São a **fonte de verdade do padrão**: agents e o próprio Claude Code as carregam sob demanda, em vez de responder de memória.
+- **Skills (90)** — o *como*. Cada skill documenta uma maneira específica de fazer algo: uma entity, uma migration, um teste de integração, um design doc, um pipeline. São a **fonte de verdade do padrão**: agents e o próprio Claude Code as carregam sob demanda, em vez de responder de memória.
 - **Agents (7)** — o *quem*. Especialistas com papel, permissões e formato de entrega próprios: `product-manager`, `architect`, `tech-lead`, `developer`, `qa` e `code-reviewer`, coordenados pelo `orchestrator`. Cada agent carrega as skills da sua tarefa antes de agir.
 
 ```
@@ -73,7 +73,7 @@ Na pasta do projeto onde as skills vão ficar, rode:
 npx skills add edimilsonldutra/agents-skills-java-spring --skill '*'
 ```
 
-O `'*'` instala **as 89 skills de uma vez** — e é o recomendado, porque as skills se referenciam umas às outras (a `design-docs` aponta para `prd-writing` e `threat-modeling`, por exemplo) e esses links só funcionam quando todas estão instaladas lado a lado. O CLI pergunta para quais ferramentas instalar.
+O `'*'` instala **as 90 skills de uma vez** — e é o recomendado, porque as skills se referenciam umas às outras (a `design-docs` aponta para `prd-writing` e `threat-modeling`, por exemplo) e esses links só funcionam quando todas estão instaladas lado a lado. O CLI pergunta para quais ferramentas instalar.
 
 | Quero… | Comando |
 |---|---|
@@ -146,7 +146,7 @@ Cada agent tem papel, permissões e formato de entrega próprios. Todos leem `co
 | `tech-lead` | Plano, tarefas, riscos, estimativa, DoD | Nada (somente leitura) | Planeja a partir dos critérios do design doc; **atribui uma skill a cada tarefa** do plano, para o `developer` e o `qa` executarem no padrão; DoD com `test-coverage` (90%); `repository-understanding`, `refactoring`, `backlog-refinement` |
 | `developer` | Implementar e corrigir, com testes e build real | Código e testes | **Sempre** `code-organization` + `code-style`, e `application-security` em todo endpoint; depois a skill da área (`spring-data-jpa`, `flyway-migrations`, `bean-validation`, `exception-handling`, `swagger`, `authentication`, `maven-config`…); `aws-sdk-java` antes de qualquer AWS; `testing`, `test-patterns`, `integration-testing`. Padrões estruturais (saga, CQRS, hexagonal) **só com ADR** |
 | `qa` | Provar que funciona e achar o que quebra | Somente testes | `testing`, `test-patterns`, `integration-testing`, `test-coverage`, `application-security` (IDOR, permissão, limites); cada ameaça do threat model vira teste; a skill da área diz **o que provar** (`idempotency`, `resilience`, `contract-testing`, `localstack`, `saga-pattern`…); **cada critério Given/When/Then** de `prd-writing`/`user-stories` vira caso de teste |
-| `code-reviewer` | Revisar o diff e dar o veredito | Nada (somente leitura) | `code-organization` + `code-style`; revisa contra o design doc quando existe; para cada área do diff, usa a seção **"Regras principais"** da skill correspondente como **checklist** (violação = achado); não repete o que o CI já barra, varre atalhos (`@Disabled`, `@SuppressWarnings`, TLS desligado), limita minors/nits a 5, separa bugs pré-existentes e, na nova rodada, confere só a resolução e blockers novos (máximo de 3) |
+| `code-reviewer` | Revisar o diff e dar o veredito | Nada (somente leitura) | `code-organization` + `code-style`; revisa contra o design doc quando existe; para cada área do diff, usa a seção **"Regras principais"** da skill correspondente como **checklist** (violação = achado); não repete o que o CI já barra, varre atalhos (`@Disabled`, `@SuppressWarnings`, TLS desligado), limita minors/nits a 5, separa bugs pré-existentes, faz a **verificação da spec** em feature com design doc (re-executa as provas, lê as asserções, recalcula a cobertura dos conjuntos) e, na nova rodada, confere só a resolução e blockers novos (máximo de 3) |
 
 ### Modelo de cada agent
 
@@ -168,13 +168,13 @@ flowchart TD
     TL --> G3{"Aprovar plano"}
     G3 --> DEV["developer<br/>code-organization · code-style · application-security<br/>+ skill de cada tarefa · build real"]
     DEV --> QA["qa<br/>um teste por critério · integration-testing<br/>test-patterns · test-coverage"]
-    QA --> CR["code-reviewer<br/>diff contra o design doc<br/>Regras principais de cada skill"]
+    QA --> CR["code-reviewer<br/>diff contra o design doc · verificação da spec<br/>re-executa as provas · cobertura dos conjuntos"]
     CR -->|"blocker (máx. 3 ciclos)"| DEV
     CR -->|"aprovado"| G4{"Aprovar commit / push / deploy"}
     G4 --> FIM(["Entrega + relatório do orchestrator"])
 ```
 
-**Spec-driven:** em features médias e grandes, o design doc aprovado (`design-docs`) é a especificação. O plano cobre cada critério de aceite (`CA-1`, `CA-2`…), a implementação segue o documento, o `qa` escreve um teste por critério e o `code-reviewer` confere o código contra ele. Mudança de contrato, dados, critério, segurança ou rollout durante a implementação volta ao documento e à aprovação antes de seguir.
+**Spec-driven:** em features médias e grandes, o design doc aprovado (`design-docs`) é a especificação. O plano cobre cada critério de aceite (`CA-1`, `CA-2`…), a implementação segue o documento, o `qa` escreve um teste por critério e registra a prova (comando + asserção) e o `code-reviewer` confere o código contra ele e, antes do commit, faz a **verificação da spec**: re-executa cada prova no código final, lê a asserção e recalcula a **cobertura dos conjuntos** (cada status, papel ou estado enumerado no doc ligado a um critério). Critério sem prova fica ⚠️ não provado e a feature não está pronta. Mudança de contrato, dados, critério, segurança ou rollout durante a implementação volta ao documento e à aprovação antes de seguir.
 
 ### Pipelines
 
@@ -258,7 +258,7 @@ Skills que os agents carregam e que também podem ser usadas diretamente (pedido
 
 | Skill | Comando | Descrição | Exemplo de prompt |
 |---|---|---|---|
-| `design-docs` | `/squads:design-docs` | O **design doc** (tech spec / SDD) que serve de **spec** no desenvolvimento orientado a especificação: template em `docs/design/`, critérios de aceite numerados (`CA-1`…) e testáveis, aprovação antes do plano, desvios registrados , a matriz critério → tarefa → teste e as regras de diagrama Mermaid. | "Escreva o design doc da renovação online de empréstimo a partir do PRD." |
+| `design-docs` | `/squads:design-docs` | O **design doc** (tech spec / SDD) que serve de **spec** no desenvolvimento orientado a especificação: template em `docs/design/`, critérios de aceite numerados (`CA-1`…) e testáveis, aprovação antes do plano, decisões irreversíveis com a alternativa rejeitada, cobertura dos conjuntos enumerados, desvios registrados, a matriz critério → tarefa → prova, a verificação independente e as regras de diagrama Mermaid. | "Escreva o design doc da renovação online de empréstimo a partir do PRD." |
 | `application-security` | `/squads:application-security` | Segurança da API pelo **OWASP API Security Top 10**: autorização por objeto (IDOR), mass assignment, limites e rate limit, injeção, SSRF, desserialização, security headers, segredos, logs de segurança, dependências e SBOM, e testes (incluindo SAST, secret scanning e ZAP); a **revisão de segurança** vira relatório com IDs, gravidade e evidência, e a correção sai um achado por vez. | "Faça uma revisão de segurança dos endpoints de empréstimo." |
 | `threat-modeling` | `/squads:threat-modeling` | Pensa em como a feature pode ser abusada **antes** de construir: diagrama com fronteiras de confiança, STRIDE, casos de abuso, prioridade e uma decisão por ameaça — cada mitigação vira tarefa e teste. Também modela um **sistema que já roda**, a partir do código e com evidência. Grava em `docs/security/`. | "Faça o threat model da renovação online de empréstimo." |
 | `solid` | `/squads:solid` | Os cinco princípios SOLID no código Spring Boot do pacote, com antes/depois, mais DRY, KISS, YAGNI e Lei de Demeter — e quando **não** aplicar (CRUD simples continua simples). | "Este BookService está difícil de testar. O que viola SOLID e como corrigir?" |
@@ -301,7 +301,7 @@ Skills que os agents carregam e que também podem ser usadas diretamente (pedido
 
 **Ordem sugerida:** `messaging` → a skill do broker escolhido → `transactional-outbox` (sempre que o evento nascer de uma mudança no banco) → `observability` (lag, DLQ) → `kubernetes`/`aws-eks`.
 
-**AWS: serviços e integração com Spring Boot (12 skills)**
+**AWS: serviços e integração com Spring Boot (13 skills)**
 
 Complementam as skills `aws-eks`, `aws-rds-secrets-manager`, `aws-s3-sqs`, `aws-sns-sqs` e `github-actions-aws` listadas acima.
 
@@ -321,8 +321,9 @@ Complementam as skills `aws-eks`, `aws-rds-secrets-manager`, `aws-s3-sqs`, `aws-
 | `aws-eventbridge` | `/squads:aws-eventbridge` | Barramento de eventos: regras, targets com DLQ, `PutEvents` seguro, Scheduler no lugar de `@Scheduled`, replay. | "Publique BookCreated no EventBridge e roteie para uma fila." |
 | `aws-observability` | `/squads:aws-observability` | Logs (retenção!), métricas (e o custo delas), traces com X-Ray/OpenTelemetry e alarmes acionáveis. | "Monte os alarmes essenciais da API na AWS." |
 | `aws-terraform` | `/squads:aws-terraform` | Infra como código: estado remoto, módulos por ambiente, IAM mínimo, plan/apply no CI com OIDC, scanners. | "Declare em Terraform o ECR, a fila e a tabela deste serviço." |
+| `aws-architecture-diagram` | `/squads:aws-architecture-diagram` | Diagrama de infraestrutura AWS no **draw.io** com os ícones e grupos oficiais (conta, região, VPC, AZ, subnets), gerado por script, exportado em PNG e **conferido visualmente** antes da entrega. Mermaid continua para fluxo e componentes. | "Desenhe a arquitetura AWS deste serviço no padrão draw.io." |
 
-**Ordem sugerida:** `aws-sdk-java` → `aws-terraform` → a plataforma (`aws-ecs-fargate` *ou* `aws-eks` *ou* `aws-lambda`) → dados (`aws-rds-secrets-manager`, `aws-dynamodb`/`aws-keyspaces`) → integração (`aws-s3-sqs`, `aws-sns-sqs`, `aws-eventbridge`, `aws-ses`, `aws-cognito`, `aws-parameter-store`) → `aws-observability` → `github-actions-aws`.
+**Ordem sugerida:** `aws-sdk-java` → `aws-terraform` → a plataforma (`aws-ecs-fargate` *ou* `aws-eks` *ou* `aws-lambda`) → dados (`aws-rds-secrets-manager`, `aws-dynamodb`/`aws-keyspaces`) → integração (`aws-s3-sqs`, `aws-sns-sqs`, `aws-eventbridge`, `aws-ses`, `aws-cognito`, `aws-parameter-store`) → `aws-observability` → `github-actions-aws`; para documentar, `aws-architecture-diagram`.
 
 **CI/CD e GitOps (3 skills)**
 
@@ -400,7 +401,7 @@ Complementam a skill `testing` (unit e slice). *Usadas por:* `qa` (o dono do tem
 | `refactoring` | `/squads:refactoring` | Refatoração segura: rede de segurança (characterization tests), passos pequenos e verdes, catálogo de smells → refatoração, Parallel Change/Strangler/expand → contract e como revisar o PR. | "Refatore o `LoanService` sem mudar o comportamento." |
 | `backlog-refinement` | `/squads:backlog-refinement` | Sessão de refinamento de backlog: preparação, roteiro de 60 min, DoR estendida (privacidade, NFRs, contrato, migration, rollout, métricas), Example Mapping, fatiamento, estimativa e card refinado. Também usada pelo agent `product-manager`. | "Refine estes 5 itens do topo do backlog." |
 
-**Total: 89 skills, todas neste plugin.** Na dúvida sobre qual usar, pergunte à skill `guide` — ela lê o que está realmente instalado e indica a skill certa para cada necessidade.
+**Total: 90 skills, todas neste plugin.** Na dúvida sobre qual usar, pergunte à skill `guide` — ela lê o que está realmente instalado e indica a skill certa para cada necessidade.
 
 ---
 
