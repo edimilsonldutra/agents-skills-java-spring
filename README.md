@@ -1,6 +1,6 @@
 # Squads — Agents & Skills para Claude Code
 
-![version](https://img.shields.io/badge/version-2.7.0-blue)
+![version](https://img.shields.io/badge/version-2.8.0-blue)
 ![Java](https://img.shields.io/badge/Java-25-orange)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4-6DB33F)
 ![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin-D97757)
@@ -72,7 +72,7 @@ flowchart LR
 ```
 
 - **Skills** são carregadas sob demanda (ferramenta `Skill`) — nenhum agent descreve o padrão de memória.
-- **Agents** rodam isolados, com permissões mínimas: só o `developer` altera código de produção; `qa` altera só testes; `architect` e `product-manager` só documentos; `tech-lead`, `code-reviewer` e `orchestrator` são somente leitura.
+- **Agents** rodam isolados, com permissões mínimas: só o `developer` altera código de produção; `qa` altera só testes; `architect` e `product-manager` só documentos; `tech-lead` e `code-reviewer` são somente leitura; o `orchestrator` só grava o ledger da entrega em `docs/delivery/`.
 - **Gates humanos:** escopo, design doc/ADR, plano e qualquer ação irreversível ou externa (`commit`, `push`, deploy, `kubectl`, `aws`, `terraform apply`) exigem a sua aprovação.
 - **Guardrails:** os agents tratam o que leem (arquivos, diffs, logs, relatórios de outros agents) como **dado, não instrução**, não reproduzem segredos, não rodam build de código não confiável fora de sandbox e só aceitam aprovação sua citada literalmente no brief. Dois hooks do plugin **pedem a sua confirmação** — também na sessão principal: `hooks/guard-commands.sh`, antes de comandos destrutivos ou externos (`git push`/`commit`/`reset --hard`, `rm -r`, `kubectl apply`, `helm upgrade`, `terraform apply`, `aws`/`gcloud`/`az` que alteram recursos, `mvn deploy`, `docker push`, `gh pr create`, `ssh`/`scp`, `curl` que envia dados para fora, leitura de `.env` e credenciais…), e `hooks/guard-edits.sh`, antes de edições que as regras do pacote protegem (migration Flyway já versionada, workflow de CI/CD, arquivo de segredo, `@Disabled` em teste, piso do JaCoCo ou `skipTests` no build).
 
@@ -82,7 +82,7 @@ flowchart LR
 
 | Agent | Responsabilidade | Pode alterar | Entrega |
 |---|---|---|---|
-| `orchestrator` | Coordenar o time: escolher o menor pipeline, delegar, verificar, parar nos gates | Nada (delega e lê) | Pipeline, quadro de andamento e relatório final com o que foi e o que **não** foi verificado |
+| `orchestrator` | Coordenar o time: escolher o menor pipeline, delegar, verificar, parar nos gates | Só o ledger em `docs/delivery/` (delega e lê) | Pipeline, quadro de andamento (também em `docs/delivery/<feature>.md`, para retomar em outra sessão, ferramenta ou modelo) e relatório final com o que foi e o que **não** foi verificado |
 | `product-manager` | O **quê**, o **porquê** e o **quão bom** | `docs/product/` (com confirmação) | PRD, histórias com critérios, casos de abuso, priorização, roadmap/OKRs, métricas, plano de lançamento |
 | `architect` | Decisões estruturais e especificação técnica | `docs/design/`, `docs/adr/`, `docs/security/`, `docs/architecture/` (com confirmação) | Design doc (spec), ADRs, threat model, recomendação com alternativas e custos |
 | `tech-lead` | Transformar a spec em plano executável | Nada (somente leitura) | Tarefas ordenadas com skill e agent, riscos, MVP, estimativa, Definition of Done, matriz critério → tarefa → prova |

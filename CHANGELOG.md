@@ -2,6 +2,15 @@
 
 Mudanças notáveis do plugin `squads`. A versão é a de `.claude-plugin/plugin.json`; quem já instalou só recebe uma mudança quando ela sobe.
 
+## 2.8.0 — 2026-11-11
+
+### Orquestrador: ledger em arquivo
+- `orchestrator` ganha `Write` e grava o ledger da entrega em `docs/delivery/<feature>.md` (pipeline com 2+ delegações) ao mostrar o pipeline, a cada passo concluído, em cada gate e no relatório final. A entrega passa a sobreviver ao fim da sessão, ao contexto esgotado e à troca de modelo ou de ferramenta: basta pedir para retomar pelo arquivo. Aprovações ficam como citação literal e não valem numa sessão nova. Se a gravação falhar, ele mostra o bloco `Retomada` como antes.
+- Ao começar, o `orchestrator` procura em `docs/delivery/` uma entrega `em andamento` para o mesmo pedido e retoma por ela, conferindo artefatos e `git` antes.
+- `hooks/guard-edits.sh`: quando o Claude Code informa `agent_type` do orchestrator, pede confirmação para qualquer gravação fora de `docs/delivery/*.md`. `scripts/test-hooks.sh` ganha 7 casos.
+- `scripts/validate-plugin.py`: o orchestrator pode declarar só `Write` (nunca `Edit`/`MultiEdit`) e precisa restringir a gravação a `docs/delivery/`.
+- `scripts/portable.py`: o system prompt genérico do orchestrator diz que ele grava só o ledger; no Codex ele continua com `sandbox_mode` somente leitura.
+
 ## 2.7.0 — 2026-11-11
 
 ### Outras ferramentas: Gemini CLI, Codex, GitHub Copilot e qualquer LLM

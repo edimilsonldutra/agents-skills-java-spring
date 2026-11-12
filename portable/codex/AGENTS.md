@@ -1,5 +1,5 @@
 <!-- squads:start -->
-## squads — padrão Java 25 / Spring Boot 4 (v2.7.0)
+## squads — padrão Java 25 / Spring Boot 4 (v2.8.0)
 
 Este projeto segue o padrão do plugin [squads](https://github.com/edimilsonldutra/agents-skills-java-spring): layout flat-by-layer sob `br.com.edimilsonldutra`, sem Lombok, entities nunca expostas (DTO + mapper), Flyway dono do schema, contrato de erro único (`ExceptionResponse`/`ProblemDetail`), OpenAPI com springdoc, autorização por objeto, testes com JUnit 5, Mockito, Testcontainers (nunca H2) e cobertura mínima de 90%.
 
