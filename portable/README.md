@@ -44,6 +44,7 @@ Instala as skills em várias ferramentas de uma vez (Cursor, Windsurf, Codex, Ge
 
 - **Não há hooks.** Os guardrails `guard-commands` e `guard-edits` são do Claude Code. Fora dele, a confirmação antes de `git push`, deploy, comandos de nuvem e edição de migration depende das instruções dos agents e da política de aprovação da própria ferramenta (`sandbox_mode` no Codex, permissões no Copilot e no Gemini).
 - **Delegação.** Codex e Copilot delegam a subagents; o `orchestrator` usa isso. No Gemini CLI os comandos não delegam: o `orchestrator` entrega um runbook com o brief de cada passo para você rodar um a um.
+- **Ledger da entrega.** O `orchestrator` grava o andamento em `docs/delivery/<feature>.md`, que qualquer ferramenta lê para retomar. No Codex ele roda com `sandbox_mode` somente leitura (o sandbox não restringe por pasta): a gravação falha e ele mostra o bloco `Retomada` para você salvar ou colar.
 - **Modelo por tarefa.** Os nomes `haiku`/`sonnet`/`opus`/`fable` do orquestrador são do Claude; mapeie para os níveis da sua ferramenta ou use o modelo da sessão.
 - **Referências a `CLAUDE.md`** nas skills significam o arquivo de contexto da ferramenta (o instalador escreve isso nele).
 - **Verificado:** a geração e a instalação em pasta temporária, a sintaxe dos TOML e a ausência de referências ao Claude Code nos agents gerados. **Não verificado:** a execução dentro do Gemini CLI, do Codex e do Copilot, que não estão instalados onde isto foi produzido. Se um formato mudar, ajuste `scripts/portable.py` e rode `build`.

@@ -23,7 +23,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 FRONTMATTER = re.compile(r"\A---\r?\n(.*?)\r?\n---\r?\n", re.S)
 AGENT_ORDER = ["orchestrator", "product-manager", "architect", "tech-lead", "developer", "qa", "code-reviewer"]
+# O orchestrator só grava o ledger (docs/delivery/); como o sandbox do Codex não restringe
+# por pasta, ele fica somente leitura lá e cai no bloco Retomada se a gravação falhar.
 READ_ONLY = {"orchestrator", "tech-lead", "code-reviewer"}
+LEDGER_ONLY = {"orchestrator"}
 MARK_START = "<!-- squads:start -->"
 MARK_END = "<!-- squads:end -->"
 
@@ -200,12 +203,20 @@ def copilot_agent(name, agent):
     )
 
 
+def access_note(name):
+    if name in LEDGER_ONLY:
+        return "Somente leitura, exceto o ledger da entrega em docs/delivery/*.md."
+    if name in READ_ONLY:
+        return "Somente leitura: não dê ferramentas de escrita."
+    return "Pode alterar arquivos conforme o papel descrito."
+
+
 def generic_agent(name, agent):
     body = portable_body(name, agent["body"], "generic")
     return (
         f"<!-- Gerado por scripts/portable.py a partir de agents/{name}/{name}.md — não edite à mão. -->\n"
         f"<!-- Use este arquivo como system prompt. Papel: {name}. "
-        f"{'Somente leitura: não dê ferramentas de escrita.' if name in READ_ONLY else 'Pode alterar arquivos conforme o papel descrito.'} -->\n\n"
+        f"{access_note(name)} -->\n\n"
         + body
         + "\n"
     )

@@ -34,6 +34,17 @@ path=$(json_string file_path)
 [ -z "$path" ] && exit 0
 norm=${path//\\//}
 
+# O orchestrator só grava o ledger da entrega (docs/delivery/*.md). Vale quando o Claude Code
+# informa o agent no campo agent_type (subagent ou sessão aberta com --agent).
+case "$(json_string agent_type)" in
+  orchestrator|*:orchestrator)
+    case "$norm" in
+      docs/delivery/*.md|*/docs/delivery/*.md) ;;
+      *) ask "o orchestrator só grava o ledger em docs/delivery/*.md; o resto é trabalho dos especialistas" ;;
+    esac
+    ;;
+esac
+
 # Exemplos e modelos de .env não são segredo.
 case "$norm" in
   *.env.example|*.env.sample|*.env.template|*.env.dist) ;;

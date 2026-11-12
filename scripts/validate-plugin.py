@@ -50,7 +50,10 @@ KNOWN_TOOLS = {
     "NotebookEdit", "Read", "Skill", "TodoWrite", "WebFetch", "WebSearch", "Write",
 }
 WRITE_TOOLS = {"Edit", "MultiEdit", "NotebookEdit", "Write"}
-READ_ONLY_AGENTS = {"orchestrator", "tech-lead", "code-reviewer"}
+READ_ONLY_AGENTS = {"tech-lead", "code-reviewer"}
+# O orchestrator só grava o ledger (docs/delivery/), com Write; edição continua proibida.
+ORCHESTRATOR_WRITE_TOOLS = {"Write"}
+LEDGER_DIR = "docs/delivery/"
 SPECIALISTS = {"product-manager", "architect", "tech-lead", "developer", "qa", "code-reviewer"}
 
 # Seções que todos os especialistas repetem palavra por palavra (um agent não consegue
@@ -166,6 +169,10 @@ def check_agents(skills):
             error(where, "especialista sem a tool Skill (não conseguiria carregar as skills)")
         if folder == "orchestrator" and "Agent" not in tools:
             error(where, "orchestrator sem a tool Agent (não conseguiria delegar)")
+        if folder == "orchestrator" and tools & WRITE_TOOLS - ORCHESTRATOR_WRITE_TOOLS:
+            error(where, f"orchestrator declara {sorted(tools & WRITE_TOOLS - ORCHESTRATOR_WRITE_TOOLS)} (só pode Write, para o ledger)")
+        if folder == "orchestrator" and "Write" in tools and LEDGER_DIR not in read(agent_md):
+            error(where, f"orchestrator com Write sem restringir a gravação a {LEDGER_DIR}")
 
         text = read(agent_md)
         if folder in SPECIALISTS:

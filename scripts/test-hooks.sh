@@ -180,6 +180,20 @@ edit ok "$TMP/.env.example" "DB_PASSWORD=change-me"
 edit ok "$TMP/docs/adr/ADR-001-x.md" "# ADR-001"
 edit ok "$TMP/README.md" "Rode git push depois"            # texto em doc não é comando
 
+# ---------- guard-edits: o orchestrator só grava o ledger ----------
+agent_write() {  # agent_write <esperado> <agent_type> <file_path>
+  local expected=$1 agent=$2 path=$3
+  run "$EDITS" "$expected" "$agent → $path" \
+    "{\"agent_type\":\"$agent\",\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"$(esc "$path")\",\"content\":\"# Entrega\"}}"
+}
+agent_write ok  "squads:orchestrator" "$TMP/docs/delivery/renovacao-online.md"
+agent_write ok  "orchestrator"        "docs/delivery/renovacao-online.md"
+agent_write ok  "squads:orchestrator" 'C:\proj\docs\delivery\renovacao.md'
+agent_write ask "squads:orchestrator" "$TMP/src/main/java/BookService.java"
+agent_write ask "squads:orchestrator" "$TMP/docs/product/prd-renovacao.md"
+agent_write ask "orchestrator"        "$TMP/docs/delivery/notas.txt"
+agent_write ok  "squads:developer"    "$TMP/src/main/java/BookService.java"   # outro agent: regra não se aplica
+
 if [ "$failures" -eq 0 ]; then
   echo "OK: $total casos, 0 falhas"
   exit 0
