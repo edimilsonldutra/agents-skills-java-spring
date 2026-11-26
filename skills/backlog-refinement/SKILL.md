@@ -3,7 +3,7 @@ name: backlog-refinement
 description: Sessão de refinamento de backlog — preparação do PM, roteiro de 60 minutos com saídas por item, Definition of Ready estendida (privacidade, NFRs, contrato, migration, rollout, métricas), Example Mapping, fatiamento, estimativa e template de card refinado. Use quando preparar ou conduzir um refinamento ou avaliar se um item está pronto.
 ---
 
-Antes de aplicar este pattern, leia também [`../user-stories/SKILL.md`](../user-stories/SKILL.md) (formato, INVEST, critérios de aceite, DoR/DoD, three amigos, fatiamento), [`../agile-delivery/SKILL.md`](../agile-delivery/SKILL.md) (cadência, estimativa e forecast), [`../prioritization/SKILL.md`](../prioritization/SKILL.md) (a ordem do backlog) e [`../prd-writing/SKILL.md`](../prd-writing/SKILL.md) (de onde vêm os itens). Itens técnicos: `refactoring`, `technical-product-management`.
+Antes de aplicar este pattern, leia também [`../requirements-engineering/SKILL.md`](../requirements-engineering/SKILL.md) (elicitação, Glossário, Controle de Questões, regras de negócio `RN-n` e 8 critérios de verificação), [`../user-stories/SKILL.md`](../user-stories/SKILL.md) (formato, INVEST, critérios de aceite, DoR/DoD, three amigos, fatiamento), [`../agile-delivery/SKILL.md`](../agile-delivery/SKILL.md) (cadência, estimativa e forecast), [`../prioritization/SKILL.md`](../prioritization/SKILL.md) (a ordem do backlog) e [`../prd-writing/SKILL.md`](../prd-writing/SKILL.md) (de onde vêm os itens). Itens técnicos: `refactoring`, `technical-product-management`.
 
 # Refinamento de backlog
 

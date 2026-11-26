@@ -10,7 +10,7 @@ Guia de referência do plugin `squads` para o Claude Code: instalação, configu
 
 O plugin leva para o Claude Code um padrão único de construção de APIs REST com **Java 25 e Spring Boot 4** — package layout, code style, segurança, testes, documentação e entrega — em duas camadas:
 
-- **Skills (94)** — o *como*. Cada skill documenta uma maneira específica de fazer algo: uma entity, uma migration, um teste de integração, um design doc, um pipeline. São a **fonte de verdade do padrão**: agents e o próprio Claude Code as carregam sob demanda, em vez de responder de memória.
+- **Skills (95)** — o *como*. Cada skill documenta uma maneira específica de fazer algo: uma entity, uma migration, um teste de integração, um design doc, um pipeline. São a **fonte de verdade do padrão**: agents e o próprio Claude Code as carregam sob demanda, em vez de responder de memória.
 - **Agents (7)** — o *quem*. Especialistas com papel, permissões e formato de entrega próprios: `product-manager`, `architect`, `tech-lead`, `developer`, `qa` e `code-reviewer`, coordenados pelo `orchestrator`. Cada agent carrega as skills da sua tarefa antes de agir.
 
 ```
@@ -69,7 +69,7 @@ Os passos acima instalam o **plugin completo** no Claude Code. Para as outras fe
 
 | Ferramenta | Como instalar | O que chega |
 |---|---|---|
-| Gemini CLI | `gemini extensions install https://github.com/edimilsonldutra/agents-skills-java-spring` | 94 skills descobertas automaticamente e os 7 agents como `/squads:<agent>` |
+| Gemini CLI | `gemini extensions install https://github.com/edimilsonldutra/agents-skills-java-spring` | 95 skills descobertas automaticamente e os 7 agents como `/squads:<agent>` |
 | Codex | `python scripts/portable.py install --tool codex --project <projeto>` (repositório clonado) | `.agents/skills/`, `.codex/agents/*.toml` e a seção do squads no `AGENTS.md` |
 | GitHub Copilot | `python scripts/portable.py install --tool copilot --project <projeto>` | `.agents/skills/`, `.github/agents/*.agent.md` e a seção no `.github/copilot-instructions.md` |
 | Qualquer LLM | `python scripts/portable.py install --tool generic --project <projeto>` | `.agents/skills/`, `agents/*.md` como system prompts e `AGENTS.md` |
@@ -86,7 +86,7 @@ Na pasta do projeto onde as skills vão ficar, rode:
 npx skills add edimilsonldutra/agents-skills-java-spring --skill '*'
 ```
 
-O `'*'` instala **as 94 skills de uma vez** — e é o recomendado, porque as skills se referenciam umas às outras (a `design-docs` aponta para `prd-writing` e `threat-modeling`, por exemplo) e esses links só funcionam quando todas estão instaladas lado a lado. O CLI pergunta para quais ferramentas instalar.
+O `'*'` instala **as 95 skills de uma vez** — e é o recomendado, porque as skills se referenciam umas às outras (a `design-docs` aponta para `prd-writing` e `threat-modeling`, por exemplo) e esses links só funcionam quando todas estão instaladas lado a lado. O CLI pergunta para quais ferramentas instalar.
 
 | Quero… | Comando |
 |---|---|
@@ -154,7 +154,7 @@ Cada agent tem papel, permissões e formato de entrega próprios. Todos leem `co
 | Agent | Papel | Pode alterar | Skills que guiam o trabalho |
 |---|---|---|---|
 | `orchestrator` | Coordenar o time, verificar entregas, parar nos gates humanos | Só o ledger em `docs/delivery/<feature>.md` (delega e lê) | Não carrega skills: **cita no brief** de cada agent as skills da tarefa (ex.: mensageria → `messaging` + a do broker + `transactional-outbox` + `idempotency`) |
-| `product-manager` | O **quê**, o **porquê** e o **quão bom** | `docs/product/` (com confirmação) | As 12 de produto (`product-discovery`, `prd-writing`, `user-stories`, `prioritization`, `product-roadmap`, `product-metrics`, `release-management`, `privacy-lgpd`…), `backlog-refinement` e `threat-modeling` (casos de abuso) |
+| `product-manager` | O **quê**, o **porquê** e o **quão bom** | `docs/product/` (com confirmação) | As 13 de produto (`product-discovery`, `requirements-engineering`, `prd-writing`, `user-stories`, `prioritization`, `product-roadmap`, `product-metrics`, `release-management`, `privacy-lgpd`…), `backlog-refinement` e `threat-modeling` (casos de abuso) |
 | `architect` | Decisões estruturais e especificação técnica | `docs/design/`, `docs/adr/`, `docs/security/`, `docs/architecture/` (com confirmação) | `design-docs` (a spec), `threat-modeling`, `application-security`; **começa por `microservices`**; compara opções com as tabelas "quando usar × quando não" de `modular-monolith`, `ddd-hexagonal`, `messaging` e brokers, `kubernetes`/`aws-eks` × `aws-ecs-fargate` × `aws-lambda`, `spring-data-jpa` × `aws-dynamodb` × `aws-keyspaces`, `authentication` × `aws-cognito`; critérios de `technical-product-management` e `privacy-lgpd` |
 | `tech-lead` | Plano, tarefas, riscos, estimativa, DoD | Nada (somente leitura) | Planeja a partir dos critérios do design doc; **atribui uma skill a cada tarefa** do plano, para o `developer` e o `qa` executarem no padrão; DoD com `test-coverage` (90%); `repository-understanding`, `refactoring`, `backlog-refinement` |
 | `developer` | Implementar e corrigir, com testes e build real | Código e testes | **Sempre** `code-organization` + `code-style`, e `application-security` em todo endpoint; depois a skill da área (`spring-data-jpa`, `flyway-migrations`, `bean-validation`, `exception-handling`, `swagger`, `authentication`, `maven-config`…); `aws-sdk-java` antes de qualquer AWS; `testing`, `test-patterns`, `integration-testing`. Padrões estruturais (saga, CQRS, hexagonal) **só com ADR** |
@@ -373,14 +373,15 @@ Complementam as skills `aws-eks`, `aws-rds-secrets-manager`, `aws-s3-sqs`, `aws-
 
 **Ordem sugerida:** `microservices` (decidir) → `modular-monolith` ou os serviços → `ddd-hexagonal` (se o domínio for rico) → `api-gateway` e `service-communication` → `resilience` + `idempotency` → `messaging` + `transactional-outbox` → `saga-pattern` / `cqrs-event-sourcing` (só se necessário) → `contract-testing` → `argocd`/`kubernetes`. Para decisões de arquitetura, peça ao agent `architect`.
 
-**Produto: skills do perfil de PM (12 skills)**
+**Produto: skills do perfil de PM (13 skills)**
 
-*Usadas por:* `product-manager` (todas); `tech-lead` e `qa` consomem `prd-writing` e `user-stories` (critérios de aceite → tarefas e casos de teste); `release-management` e `privacy-lgpd` são usadas pelos 7 agents. São skills de **processo e documento** (sem código): trazem templates, critérios e os erros a evitar. **Nenhuma delas inventa dados** — números e pesquisa vêm de fontes reais; o resto é marcado como hipótese.
+*Usadas por:* `product-manager` (todas); `architect`, `tech-lead` e `qa` participam de `requirements-engineering` (consenso de escopo, verificação e rastreabilidade) e consomem `prd-writing` e `user-stories` (critérios de aceite → design doc, tarefas e casos de teste); `release-management` e `privacy-lgpd` são usadas pelos 7 agents. São skills de **processo e documento** (sem código): trazem templates, critérios e os erros a evitar. **Nenhuma delas inventa dados** — números e pesquisa vêm de fontes reais; o resto é marcado como hipótese.
 
 | Skill | Comando | Descrição | Exemplo de prompt |
 |---|---|---|---|
 | `product-strategy` | `/squads:product-strategy` | Visão e estratégia (diagnóstico → política → ações), posicionamento, análise competitiva, TAM/SAM/SOM sem inventar número, unit economics e business case. | "Monte o business case para a renovação online." |
 | `product-discovery` | `/squads:product-discovery` | Entender o problema antes de construir: quatro riscos, JTBD, entrevistas sem viés, hipóteses, experimentos baratos e a decisão seguir/ajustar/parar. | "Planeje a descoberta sobre por que sócios pagam multa." |
+| `requirements-engineering` | `/squads:requirements-engineering` | Engenharia de Requisitos orientada ao negócio (Vazquez & Simões): os 3 marcos (necessidade, consenso de escopo, detalhamento 80/20), taxonomia completa (negócio, partes interessadas, RF em 3 níveis, regras de negócio RN, RNF ISO/IEC 25010/FURPS+, requisitos de transição, restrições × premissas, requisitos inversos), elicitação em 4 passos + 5 técnicas (incl. Glossário), Diagrama de Contexto, processos As-Is/To-Be, verificação (8 critérios) × validação, Controle de Questões e pré/pós-rastreabilidade. | "Conduza o levantamento de requisitos do sistema de empréstimos (3 marcos, Glossário, Diagrama de Contexto, requisitos de transição e matriz de rastreabilidade)." |
 | `prd-writing` | `/squads:prd-writing` | PRD que a engenharia consegue executar: problema, não-objetivos, requisitos testáveis, NFRs com números, métricas, riscos, plano de lançamento. | "Escreva o PRD da renovação de empréstimo." |
 | `user-stories` | `/squads:user-stories` | Histórias INVEST com critérios Given/When/Then, story mapping, fatias verticais, DoR/DoD e three amigos. | "Quebre este épico em histórias pequenas." |
 | `prioritization` | `/squads:prioritization` | RICE (com exemplo calculado), ICE, MoSCoW, Kano, WSJF; capacidade para dívida técnica; como dizer não; vieses. | "Priorize estes 12 pedidos contra o objetivo do trimestre." |
@@ -392,7 +393,7 @@ Complementam as skills `aws-eks`, `aws-rds-secrets-manager`, `aws-s3-sqs`, `aws-
 | `privacy-lgpd` | `/squads:privacy-lgpd` | LGPD para produto e engenharia: bases legais, minimização, direitos do titular, eliminação ponta a ponta e checklist para o PRD. **Não é aconselhamento jurídico.** | "Quais requisitos de privacidade esta funcionalidade precisa?" |
 | `stakeholder-communication` | `/squads:stakeholder-communication` | Status com semáforo honesto, resumo executivo, decision log, release notes, comunicado de atraso, DACI e como negociar escopo. | "Escreva o comunicado de atraso do piloto." |
 
-**Ordem sugerida:** `product-strategy` → `product-discovery` → `prd-writing` + `user-stories` → `prioritization` → `product-roadmap` → (handoff ao `tech-lead`) → `agile-delivery` → `release-management` → `product-metrics`; `privacy-lgpd`, `technical-product-management` e `stakeholder-communication` valem em todas as etapas.
+**Ordem sugerida:** `product-strategy` → `product-discovery` → `requirements-engineering` → `prd-writing` + `user-stories` → `prioritization` → `product-roadmap` → (handoff ao `architect`/`tech-lead`) → `agile-delivery` → `release-management` → `product-metrics`; `privacy-lgpd`, `technical-product-management` e `stakeholder-communication` valem em todas as etapas.
 
 **Testes: padrões, integração, cobertura e testes de API (4 skills)**
 
@@ -418,7 +419,7 @@ Complementam a skill `testing` (unit e slice). *Usadas por:* `qa` (o dono do tem
 | `refactoring` | `/squads:refactoring` | Refatoração segura: rede de segurança (characterization tests), passos pequenos e verdes, catálogo de smells → refatoração, Parallel Change/Strangler/expand → contract e como revisar o PR. | "Refatore o `LoanService` sem mudar o comportamento." |
 | `backlog-refinement` | `/squads:backlog-refinement` | Sessão de refinamento de backlog: preparação, roteiro de 60 min, DoR estendida (privacidade, NFRs, contrato, migration, rollout, métricas), Example Mapping, fatiamento, estimativa e card refinado. Também usada pelo agent `product-manager`. | "Refine estes 5 itens do topo do backlog." |
 
-**Total: 94 skills, todas neste plugin.** Na dúvida sobre qual usar, pergunte à skill `guide` — ela lê o que está realmente instalado e indica a skill certa para cada necessidade.
+**Total: 95 skills, todas neste plugin.** Na dúvida sobre qual usar, pergunte à skill `guide` — ela lê o que está realmente instalado e indica a skill certa para cada necessidade.
 
 ---
 
