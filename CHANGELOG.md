@@ -2,6 +2,16 @@
 
 Mudanças notáveis do plugin `squads`. A versão é a de `.claude-plugin/plugin.json`; quem já instalou só recebe uma mudança quando ela sobe.
 
+## 2.9.0 — 2026-11-26
+
+### Complexidade cognitiva, coesão e testes
+- Nova skill `cognitive-complexity`: Cognitive-Driven Development (CDD) no padrão do pacote. O time combina num `cdd.json` versionado o que conta como ponto (desvio, `case`, ternário, loop, `try`/`catch`/`finally`, operador lógico, tipo do projeto, função como argumento) e o teto por classe; a contagem sai com `arquivo:linha`, comparada com a base do PR, e cada violação vem com uma extração que tira os pontos da classe. O modelo `templates/cdd.json` ignora `config/`, `controllers/docs/`, `data/dto/`, `mapper/` e `Startup.java` e começa com limite 12 (teste 15), calibrado no CRUD de referência, que soma 10.
+- `solid`: seção "Coesão: onde mora a regra" (tell don't ask, Lei de Demeter contada por níveis, inveja de funcionalidade sobre campos e coleções de outro objeto) com severidade conforme o layout: 🟡 no flat-by-layer, 🟠 quando a regra se repete ou com DDD decidido; leitura para reexpor não é achado.
+- `test-patterns`: dublê só na fronteira (entity e colaborador interno sem I/O reais; `@WebMvcTest` é a exceção), sem matcher coringa (`any()`) onde o teste conhece o valor, por que testar o limite e não o meio da faixa, e MC/DC em condições compostas com exemplo parametrizado.
+- `code-reviewer`: gatilho de `cognitive-complexity` quando o repositório tem `cdd.json` (🟠 classe que o PR leva acima do limite ou piora; 🔵 no fio; 🟣 já acima), achados de coesão e de testes (matcher coringa, entity mockada, limite sem os dois lados, condição composta sem MC/DC). `qa`, `developer` e `tech-lead` passam a usar as mesmas regras.
+- Eval `classe-dificil-de-ler` (gatilho de `cognitive-complexity`). Ainda não executado: rode a suíte antes de confiar nele.
+- 91 skills.
+
 ## 2.8.0 — 2026-11-11
 
 ### Orquestrador: ledger em arquivo

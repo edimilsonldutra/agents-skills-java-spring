@@ -1,6 +1,6 @@
 # squads fora do Claude Code: Gemini CLI, Codex, GitHub Copilot e qualquer LLM
 
-As 90 skills já estão no formato aberto [Agent Skills](https://agentskills.io/specification) (`SKILL.md`), que Gemini CLI, Codex e GitHub Copilot leem da mesma pasta de projeto, `.agents/skills/`. O que muda por ferramenta é o formato dos **7 agents** e o nome do **arquivo de contexto**. Esta pasta traz os dois, gerados a partir de `agents/*/*.md` por `scripts/portable.py` (não edite à mão: rode `python scripts/portable.py build`).
+As 91 skills já estão no formato aberto [Agent Skills](https://agentskills.io/specification) (`SKILL.md`), que Gemini CLI, Codex e GitHub Copilot leem da mesma pasta de projeto, `.agents/skills/`. O que muda por ferramenta é o formato dos **7 agents** e o nome do **arquivo de contexto**. Esta pasta traz os dois, gerados a partir de `agents/*/*.md` por `scripts/portable.py` (não edite à mão: rode `python scripts/portable.py build`).
 
 | Ferramenta | Skills | Agents | Arquivo de contexto |
 |---|---|---|---|
@@ -30,7 +30,7 @@ Sem Python, copie à mão: `skills/*` para `.agents/skills/` e a pasta da ferram
 gemini extensions install https://github.com/edimilsonldutra/agents-skills-java-spring
 ```
 
-A extensão traz as 90 skills (descobertas automaticamente; `/skills list`) e os 7 agents como comandos `/squads:<agent> <pedido>`. O `GEMINI.md` da raiz do repositório é o contexto da extensão; o do projeto (`portable/gemini/GEMINI.md` ou o que o instalador mescla) guarda as preferências.
+A extensão traz as 91 skills (descobertas automaticamente; `/skills list`) e os 7 agents como comandos `/squads:<agent> <pedido>`. O `GEMINI.md` da raiz do repositório é o contexto da extensão; o do projeto (`portable/gemini/GEMINI.md` ou o que o instalador mescla) guarda as preferências.
 
 ### Só as skills, por `npx skills`
 

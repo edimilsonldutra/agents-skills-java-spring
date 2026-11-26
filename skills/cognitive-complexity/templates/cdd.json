@@ -1,0 +1,65 @@
+{
+  "unit": "class",
+  "limit": 12,
+  "testLimit": 15,
+  "tests": [
+    "**/src/test/**"
+  ],
+  "ignore": [
+    "**/src/main/java/**/config/**",
+    "**/src/main/java/**/controllers/docs/**",
+    "**/src/main/java/**/data/dto/**",
+    "**/src/main/java/**/mapper/**",
+    "**/src/main/java/**/Startup.java",
+    "**/generated/**",
+    "**/target/**",
+    "**/build/**"
+  ],
+  "ignoreMembers": [
+    "equals",
+    "hashCode",
+    "toString"
+  ],
+  "rules": [
+    {
+      "id": "branch",
+      "points": 1,
+      "counts": "Cada ramo de um if: o if conta 1, cada else if conta 1 e o else final conta 1 (if com else soma 2). Não inclui o ternário (regra ternary) nem o switch (regra switch-case)."
+    },
+    {
+      "id": "switch-case",
+      "points": 1,
+      "counts": "Cada palavra-chave case e cada default de um switch, instrução ou expressão. case A, B -> conta 1; case A: case B: conta 2."
+    },
+    {
+      "id": "ternary",
+      "points": 1,
+      "counts": "Cada operador ternário (cond ? a : b). Conta 1 por operador."
+    },
+    {
+      "id": "loop",
+      "points": 1,
+      "counts": "Cada for, for-each, while e do-while, inclusive os aninhados. forEach, map e filter de Stream ou coleção não contam aqui: a função passada a eles conta em function-argument."
+    },
+    {
+      "id": "exception-handling",
+      "points": 1,
+      "counts": "Cada bloco de tratamento de exceção: o try conta 1 (try-with-resources também), cada catch conta 1 (catch (A | B e) conta 1) e o finally conta 1. throw e throws não contam."
+    },
+    {
+      "id": "logical-operator",
+      "points": 1,
+      "counts": "Cada && e cada || em qualquer expressão. ! não conta."
+    },
+    {
+      "id": "project-type",
+      "points": 1,
+      "counts": "Cada tipo distinto declarado no próprio repositório (classe, interface, enum, record, annotation) referenciado pelo nome em qualquer posição: campo, parâmetro, retorno, variável local com tipo explícito, new, chamada estática, argumento genérico, extends, implements, catch, annotation, Tipo.class. Conta 1 por tipo, não por uso. Não contam: a própria classe e seus tipos aninhados, tipos do JDK, do Spring e de bibliotecas, linhas de import e funções ou constantes importadas estaticamente."
+    },
+    {
+      "id": "function-argument",
+      "points": 1,
+      "counts": "Cada função passada como argumento numa chamada: lambda, method reference ou classe anônima. Conta 1 por argumento, no ponto da chamada."
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 ---
 name: test-patterns
-description: Padrões de teste em Java — Given/When/Then, FIRST, test doubles (dummy, stub, spy, mock, fake), não mocke o que não possui, Test Data Builder, @Nested, AssertJ, valores-limite, property-based (jqwik), approval e characterization tests, TDD/BDD, código assíncrono, test smells e testes flaky. Use quando escrever ou revisar testes frágeis, lentos ou sem asserts. Não use para configurar Testcontainers (integration-testing) nem JaCoCo (test-coverage).
+description: Padrões de teste em Java — Given/When/Then, FIRST, test doubles (dummy, stub, spy, mock, fake), não mocke o que não possui, dublê só na fronteira, sem matcher coringa (any()), Test Data Builder, @Nested, AssertJ, valores-limite, MC/DC em condições compostas, property-based (jqwik), approval e characterization tests, TDD/BDD, código assíncrono, test smells e testes flaky. Use quando escrever ou revisar testes frágeis, lentos ou sem asserts. Não use para configurar Testcontainers (integration-testing) nem JaCoCo (test-coverage).
 ---
 
 Antes de aplicar este pattern, leia também [`../testing/SKILL.md`](../testing/SKILL.md) (unit e slice com JUnit 5/Mockito/`@WebMvcTest`), [`../integration-testing/SKILL.md`](../integration-testing/SKILL.md), [`../test-coverage/SKILL.md`](../test-coverage/SKILL.md), [`../code-style/SKILL.md`](../code-style/SKILL.md) (sem comentários no código — o Given/When/Then é por linha em branco) e [`../ddd-hexagonal/SKILL.md`](../ddd-hexagonal/SKILL.md) (fakes para ports).
@@ -53,7 +53,9 @@ void appliesTheLateFeeWhenTheLoanIsOverdue() {
 - **`verify` só para efeitos colaterais que importam** (comandos que saem do sistema: publicar, enviar, gravar), **nunca para consultas** (`findById`).
 - **Fakes para suas próprias portas** (`LoanRepository`, `BookCatalog` — `ddd-hexagonal`): testes legíveis e **resistentes a refactor**. **Mockito para o `JpaRepository`** do Spring Data (um fake seria enorme).
 - **Não mocke o que você não possui** (*don't mock types you don't own*): `RestClient`, `S3Client`, `JdbcTemplate`. Mocar a API de terceiro **acopla o teste à sua suposição** sobre ela. Em vez disso, **encapsule** em um adapter **seu** (`CatalogGateway`, `FileStorage`) e **mocke/faça fake** do adapter; teste o adapter **contra o real** (WireMock/Testcontainers/LocalStack — `integration-testing`, `localstack`).
-- **Não mocke o que é simples e seu**: value objects, records, o próprio domínio. Instancie de verdade.
+- **Não mocke o que é simples e seu**: value objects, records, o próprio domínio. Instancie de verdade. `mock(Book.class)` com `when(book.getPrice())...` testa o stub, não a entity: construa o `Book` (builder, seção 4).
+- **Dublê só na fronteira.** Num unit test de service, colaborador **interno e sem I/O** (calculadora, validator, policy) entra **real**, pelo construtor; o dublê fica para o que sai do processo: repository, adapter HTTP, publisher, e-mail, `Clock`. Mocar a policy faz o teste passar com a regra quebrada. A exceção é o `@WebMvcTest` (`testing`): ali o service vira `@MockitoBean` porque o slice prova **só a camada web**, e a regra dele tem o próprio unit test.
+- **Matcher coringa esconde bug.** `when(repository.findById(anyLong()))` e `verify(repository).save(any(Book.class))` passam com o id errado e com qualquer objeto salvo. Use o valor e a referência que o próprio teste criou (`findById(42L)`, `save(book)`) ou um `ArgumentCaptor` para conferir o que foi salvo. Coringa só cabe em argumento que é **irrelevante** para o comportamento testado, e nunca no `verify` do efeito que o teste existe para provar.
 - **Strict stubs** (o `MockitoExtension` já falha em stub não usado): apague o stub sobrando em vez de `lenient()`.
 - **Muitos mocks num teste** (5+) é **sinal de design**: a classe tem dependências demais.
 
@@ -169,6 +171,34 @@ void titleLengthMustBeAtMost250(int length, boolean valid) {
 ```
 **Técnicas:** **classes de equivalência** (um representante por classe), **valores-limite** (`min−1, min, max, max+1`), **vazio/`null`/em branco**, **zero/negativo/máximo**, **unicode/acentos**, **datas** (passado, presente, futuro, bissexto), **ordenação/empate**. Use `@MethodSource` para dados complexos e `@EnumSource` para enums (com `mode = EXCLUDE` onde couber).
 
+**Por que o limite e não o meio da faixa:** `>` no lugar de `>=` e o limite deslocado em um só aparecem nos valores **colados** ao ponto em que o comportamento muda. `5` e `500` passam do mesmo jeito com o código certo e com o errado; `249/250/251` não.
+
+### Condições compostas: MC/DC
+
+Com `a && b` ou `a || b`, um teste "tudo verdadeiro" e outro "tudo falso" não provam nada sobre cada condição: os dois passariam também com o operador trocado. **MC/DC** (Modified Condition/Decision Coverage) pede, para cada condição, um par de casos em que **só ela muda** e o resultado muda junto. Para `a && b`: (V,V) → V, (F,V) → F, (V,F) → F. Para `a || b`: (F,F) → F, (V,F) → V, (F,V) → V. São `n + 1` casos para `n` condições, não `2ⁿ`.
+
+```java
+public boolean canRenew(LocalDate today) {
+    return renewals < 2 && !today.isAfter(dueDate);
+}
+```
+```java
+@ParameterizedTest
+@CsvSource({
+    "1, 2026-03-10, true",
+    "2, 2026-03-10, false",
+    "1, 2026-03-11, false"
+})
+void canRenewOnlyBelowTwoRenewalsAndUpToTheDueDate(int renewals, LocalDate today, boolean expected) {
+    var loan = aLoan().withRenewals(renewals).dueOn(LocalDate.of(2026, 3, 10)).build();
+
+    var renewable = loan.canRenew(today);
+
+    assertThat(renewable).isEqualTo(expected);
+}
+```
+A primeira linha liga as duas condições; a segunda muda só a quantidade de renovações; a terceira muda só a data. E os valores já são os **limites** (`1`/`2` renovações, o dia do vencimento e o seguinte): MC/DC e valor-limite no mesmo conjunto de casos. O relatório de **branch** do JaCoCo (`test-coverage`) mostra se cada lado da decisão rodou, mas não se cada condição sozinha decide o resultado: isso é o que o MC/DC acrescenta, e o mutation testing (PIT, que troca `&&` por `||`) confirma.
+
 ## 7. Property-based testing (jqwik)
 
 Em vez de **exemplos** escolhidos à mão, você declara **propriedades que valem para qualquer entrada** e o framework **gera centenas de casos** (e **reduz** a falha ao menor contra-exemplo — *shrinking*). Ótimo para **parsers, cálculos, conversões, invariantes de domínio**:
@@ -280,10 +310,12 @@ Um teste **flaky** passa e falha **sem mudança de código**. Corrói a confian�
 - O teste **falharia** se o código estivesse errado? (mutation check)
 - O **nome** descreve o comportamento? Given/When/Then visíveis?
 - **Um** comportamento; **sem lógica**; **dados visíveis** (builders)?
-- Mocks **só onde necessário**; **fakes** para portas; **não** mocka o que não possui?
+- Mocks **só onde necessário** (fronteira: repository, adapter HTTP, publisher); **fakes** para portas; **não** mocka o que não possui; entity e colaborador interno sem I/O **reais**?
+- **Sem matcher coringa** (`any()`, `anyLong()`, `any(X.class)`) no stub ou no `verify` do efeito que o teste prova?
 - **Determinístico** (Clock, sem sleep, sem aleatório, sem ordem)?
 - **Rápido** no nível certo? **Independente**?
-- **Cobre o limite e o erro**, não só o caminho feliz?
+- **Cobre o limite e o erro**, não só o caminho feliz? Os **dois lados** de cada limite do código testado?
+- Cada condição de um `&&`/`||` do código novo **decide o resultado sozinha** em algum caso (MC/DC)?
 - Sem `@Disabled`/asserts afrouxados para "passar"?
 
 ---
@@ -292,10 +324,11 @@ Um teste **flaky** passa e falha **sem mudança de código**. Corrói a confian�
 
 - **Given/When/Then** em blocos separados (sem comentários), **um When**, **nome = comportamento**, **sem lógica** no teste; **FIRST**.
 - **Test doubles com o nome certo**: stub controla entradas, **mock** verifica **efeitos colaterais que importam**, **fake** para suas portas; **prefira estado a interação**; **`verify` não vale para consultas**.
-- **Não mocke o que você não possui** (encapsule em adapter seu e teste o adapter contra o real); **não mocke o simples e seu**; muitos mocks = design ruim; sem `lenient()` para esconder stub sobrando.
+- **Não mocke o que você não possui** (encapsule em adapter seu e teste o adapter contra o real); **não mocke o simples e seu** (entity, value object, colaborador interno sem I/O: dublê só na fronteira; `@WebMvcTest` é a exceção); muitos mocks = design ruim; sem `lenient()` para esconder stub sobrando.
+- **Sem matcher coringa** onde o teste conhece o valor: stub e `verify` com as referências criadas no teste ou `ArgumentCaptor`.
 - **Test Data Builder** (defaults válidos, o teste mostra só o relevante) e **Object Mother**; **`Clock` e aleatoriedade injetados**; **nada de instâncias mutáveis compartilhadas**.
 - **`@Nested`** por contexto; **AssertJ** expressivo (`extracting`, `usingRecursiveComparison`, `SoftAssertions`); **um conceito por teste**.
-- **Parametrização e valores-limite** (`min−1, min, max, max+1`, vazio/null/unicode); **property-based (jqwik)** para lógica com muitas combinações; **approval/snapshot** revisados como código; **characterization** para legado.
+- **Parametrização e valores-limite** (`min−1, min, max, max+1`, vazio/null/unicode); **MC/DC** em condições compostas (`n + 1` casos, cada condição decidindo sozinha); **property-based (jqwik)** para lógica com muitas combinações; **approval/snapshot** revisados como código; **characterization** para legado.
 - **TDD** para regras de negócio e reprodução de bug; **BDD** como linguagem comum (JUnit basta; Cucumber só com não-técnicos mantendo cenários).
 - **Assíncrono com Awaitility**, concorrência com latches e `@RepeatedTest`, tempo com `Clock` — **nunca `sleep`**.
 - **Combata os test smells** e **trate flaky como bug** (causa, quarentena com dono/prazo, medir a taxa; nunca "resolver" com retry).

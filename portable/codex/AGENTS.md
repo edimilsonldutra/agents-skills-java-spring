@@ -1,9 +1,9 @@
 <!-- squads:start -->
-## squads — padrão Java 25 / Spring Boot 4 (v2.8.0)
+## squads — padrão Java 25 / Spring Boot 4 (v2.9.0)
 
 Este projeto segue o padrão do plugin [squads](https://github.com/edimilsonldutra/agents-skills-java-spring): layout flat-by-layer sob `br.com.edimilsonldutra`, sem Lombok, entities nunca expostas (DTO + mapper), Flyway dono do schema, contrato de erro único (`ExceptionResponse`/`ProblemDetail`), OpenAPI com springdoc, autorização por objeto, testes com JUnit 5, Mockito, Testcontainers (nunca H2) e cobertura mínima de 90%.
 
-**Skills.** As 90 skills estão em `.agents/skills/<nome>/SKILL.md`. Antes de gerar ou revisar código, leia `.agents/skills/code-organization/SKILL.md` e `.agents/skills/code-style/SKILL.md`, depois a skill do tema (a `description` de cada uma diz quando usá-la; `.agents/skills/guide/SKILL.md` é o índice). Nunca descreva uma skill de memória: leia o arquivo. Onde uma skill mandar ler o `CLAUDE.md`, leia **este** arquivo.
+**Skills.** As 91 skills estão em `.agents/skills/<nome>/SKILL.md`. Antes de gerar ou revisar código, leia `.agents/skills/code-organization/SKILL.md` e `.agents/skills/code-style/SKILL.md`, depois a skill do tema (a `description` de cada uma diz quando usá-la; `.agents/skills/guide/SKILL.md` é o índice). Nunca descreva uma skill de memória: leia o arquivo. Onde uma skill mandar ler o `CLAUDE.md`, leia **este** arquivo.
 
 **Time de agents.** Cada papel tem um prompt próprio ("use o agent `<agent>`" (Codex escolhe o custom agent de `.codex/agents/` pela descrição, ou você o nomeia)). Para uma entrega de ponta a ponta, comece pelo `orchestrator` (peça "atue como o agent orchestrator definido em `.codex/agents/orchestrator.toml`").
 - `orchestrator`: Orquestrador do time de agents.

@@ -38,7 +38,7 @@ Antes de descrever a lista de skills, verifique o que realmente está presente e
 - **Arquivos e e-mail:** `file-upload-download` (upload/download seguro), `file-import-export` (XLSX/CSV, criação em massa), `pdf-reports` (JasperReports 7, QR code), `email` (Spring Mail/SMTP, assíncrono depois do commit; na AWS, `aws-ses`).
 - **Finalize um projeto novo:** `project-claude-md` gera o `CLAUDE.md` do próprio projeto do desenvolvedor.
 - **Especificação:** `design-docs` (design doc / tech spec como spec do fluxo spec-driven: critérios `CA-n`, aprovação antes do plano, rastreabilidade critério → tarefa → teste).
-- **Segurança e design de código:** `application-security` (OWASP API Security Top 10: IDOR, mass assignment, limites, injeção, SSRF, headers, segredos, SBOM), `threat-modeling` (STRIDE e casos de abuso antes de construir), `solid` (princípios e quando não aplicar), `design-patterns` (padrões no Spring, auto-invocação, anti-padrões).
+- **Segurança e design de código:** `application-security` (OWASP API Security Top 10: IDOR, mass assignment, limites, injeção, SSRF, headers, segredos, SBOM), `threat-modeling` (STRIDE e casos de abuso antes de construir), `solid` (princípios, coesão e quando não aplicar), `cognitive-complexity` (CDD: pontos por classe e limite combinado no `cdd.json`), `design-patterns` (padrões no Spring, auto-invocação, anti-padrões).
 - **Segurança e Java:** `authentication` (JWT + Spring Security 7), `caching` (Caffeine/Redis), `java-modern-features` (Java 17–25, virtual threads), `jvm-performance` (JVM em container, pool, queries, diagnóstico).
 - **Testes:** `testing` (unit + slice), `test-patterns`, `integration-testing` (Testcontainers + REST Assured, banco real), `test-coverage` (JaCoCo, PIT), `postman-newman` (caixa-preta e smoke pós-deploy).
 - **Docker e Kubernetes:** `docker-and-docker-compose`, `observability` (Actuator, Micrometer, probes), `kubernetes`, `helm-charts`.
@@ -68,7 +68,8 @@ Antes de descrever a lista de skills, verifique o que realmente está presente e
 | Revisão de segurança da API, IDOR, mass assignment, rate limit, security headers, SSRF | `application-security` |
 | Pensar em ameaças e abusos antes de construir uma feature | `threat-modeling` |
 | Design doc, tech spec, SDD, RFC; desenvolver seguindo uma especificação | `design-docs` (decisão isolada: ADR do agent `architect`) |
-| Classe difícil de testar ou de mudar, princípios SOLID | `solid` |
+| Classe difícil de testar ou de mudar, princípios SOLID, regra no lugar errado (tell don't ask, Demeter) | `solid` |
+| Medir a legibilidade, classe grande demais, teto de complexidade por classe (CDD, `cdd.json`) | `cognitive-complexity` |
 | Qual padrão de projeto usar (Strategy, Adapter, Observer, State…), `@Transactional` que não funciona | `design-patterns` |
 | Listas paginadas (page, size, direction, limite, ordenação) | `pagination` |
 | Links HATEOAS (HAL) nas respostas | `hateoas` |
@@ -102,7 +103,7 @@ Antes de descrever a lista de skills, verifique o que realmente está presente e
 | Começar com a AWS em Java (SDK v2, credenciais, timeouts) | `aws-sdk-java` |
 | Rodar/testar a AWS localmente sem conta (LocalStack) | `localstack` |
 | Unit e slice tests (JUnit, Mockito, `@WebMvcTest`) | `testing` |
-| Padrões de teste: test doubles, builders, test smells, flaky, TDD/BDD, property-based | `test-patterns` |
+| Padrões de teste: test doubles, builders, matchers coringa, valores-limite e MC/DC, test smells, flaky, TDD/BDD, property-based | `test-patterns` |
 | Testes de integração com banco real em container (Testcontainers, REST Assured) | `integration-testing` |
 | Cobertura de testes (JaCoCo), diff coverage, gate no CI, mutation testing (PIT) | `test-coverage` |
 | Deploy por GitOps, promoção dev → staging → prod, rollback por Git | `argocd` |

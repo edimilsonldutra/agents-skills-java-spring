@@ -1,6 +1,6 @@
 ---
 name: solid
-description: Princípios SOLID aplicados a Spring Boot no padrão do pacote — responsabilidade única em services e controllers, aberto/fechado com estratégias como beans, substituição de Liskov em hierarquias e exceptions, segregação de interfaces (ports, ControllerDocs, repositories) e inversão de dependência com injeção do Spring — mais coesão, acoplamento, DRY, KISS, YAGNI, Lei de Demeter, composição sobre herança, sinais de violação e quando NÃO aplicar. Use ao desenhar classes novas, revisar design de código ou quando uma classe ficar difícil de testar ou de mudar.
+description: Princípios SOLID aplicados a Spring Boot no padrão do pacote — responsabilidade única em services e controllers, aberto/fechado com estratégias como beans, substituição de Liskov em hierarquias e exceptions, segregação de interfaces (ports, ControllerDocs, repositories) e inversão de dependência com injeção do Spring — mais coesão (tell don't ask, Lei de Demeter por níveis, inveja de funcionalidade, com severidade conforme o layout), acoplamento, DRY, KISS, YAGNI, composição sobre herança, sinais de violação e quando NÃO aplicar. Use ao desenhar classes novas, revisar design de código ou quando uma classe ficar difícil de testar ou de mudar.
 ---
 
 Antes de aplicar este pattern, leia também [`../code-organization/SKILL.md`](../code-organization/SKILL.md) (layout flat-by-layer e preferência de injeção) e [`../code-style/SKILL.md`](../code-style/SKILL.md). Mudar o design de código existente com segurança: [`../refactoring/SKILL.md`](../refactoring/SKILL.md). Soluções recorrentes: [`../design-patterns/SKILL.md`](../design-patterns/SKILL.md). Domínio rico: [`../ddd-hexagonal/SKILL.md`](../ddd-hexagonal/SKILL.md).
@@ -147,6 +147,41 @@ A regra de negócio depende de **abstrações**; os detalhes (SMTP, S3, HTTP, ba
 
 ---
 
+## Coesão: onde mora a regra
+
+Os três sinais abaixo têm a mesma cura: **a regra sobre um dado vai para quem é dono do dado**, e quem precisa dela manda uma mensagem e recebe a resposta pronta.
+
+**1. Decisão sobre o estado de outro objeto (tell, don't ask).**
+```java
+if (quantity > item.getBook().getMaxCopiesPerLoan()) {
+    throw new BadRequestException("Quantity above the limit for this book");
+}
+```
+A regra "quantas cópias cabem num empréstimo" mora fora do `Book`. Movida para o dono, ela tem um lugar só e um teste só:
+```java
+public boolean acceptsQuantity(int quantity) {
+    return quantity >= 1 && quantity <= maxCopiesPerLoan;
+}
+```
+```java
+if (!item.getBook().acceptsQuantity(quantity)) {
+    throw new BadRequestException("Quantity above the limit for this book");
+}
+```
+Não é achado decidir sobre o estado da própria classe, sobre um parâmetro primitivo ou sobre um valor criado no próprio método.
+
+**2. Navegação além de um nível (Lei de Demeter).** Cada leitura sobre o valor devolvido pela leitura anterior é um nível: `loan.getMember().getAddress().getCity()` tem três. Guardar o intermediário numa variável (`var member = loan.getMember();` e depois `member.getAddress()`) não zera a contagem. Ler um nível e **mandar uma mensagem** ao valor obtido (`item.getBook().acceptsQuantity(q)`) está certo: é exatamente o alvo. **Não são navegação:** APIs fluentes e builders (`ResponseEntity.ok().header(...).body(...)`, `logger.atInfo()...`), `Stream` e `Optional` encadeados, query DSLs, e ler um id para buscar no repository (`repository.findById(dto.getBookId())`).
+
+**3. Inveja de funcionalidade.** Um método que faz a conta com **dois ou mais campos de outro objeto** (`loan.getDailyFee().multiply(BigDecimal.valueOf(loan.getDaysLate()))`) ou que **deriva uma coleção a partir da coleção exposta por outro objeto**:
+```java
+var bookIds = request.getItems().stream().map(LoanItemRequest::getBookId).toList();
+```
+A derivação vai para o dono: `request.bookIds()`. Vale também para DTO de request, que pode entregar o próprio dado derivado; um método sem o prefixo `get` não vira property para o Jackson. Iterar uma variável local, um campo da própria classe ou um parâmetro que já é a coleção não é achado.
+
+**Severidade depende do layout do projeto.** No flat-by-layer do pacote, entities com getters/setters e regras no service **são o padrão** (`code-organization`): o service lendo campos da entity para mapear, persistir ou montar o DTO de resposta não é achado. Ali, os três sinais são 🟡 **Minor** (sugestão de mover a regra para a entity ou para uma policy), e passam a 🟠 **Major** quando a **mesma regra aparece em dois lugares** (conhecimento duplicado, que diverge na primeira mudança). Em contexto com DDD decidido (`ddd-hexagonal`), regra de negócio fora do aggregate dono é 🟠 desde a primeira vez. Navegação longa só para **ler e reexpor** (DTO de saída, log, e-mail) é no máximo 🔵 **Nit**: sugira um acessor delegado (`loan.memberCity()`) ou traga o dado pronto no DTO.
+
+---
+
 ## Quando NÃO aplicar
 
 - **CRUD simples** no layout flat-by-layer: controller → service → repository já é o suficiente. Não crie interfaces, factories e estratégias para um cadastro que só grava e lê.
@@ -166,8 +201,11 @@ A regra de negócio depende de **abstrações**; os detalhes (SMTP, S3, HTTP, ba
 | `new` de um cliente/infra dentro do service | D | Isso não deveria ser injetado? |
 | Interface + `Impl` com uma implementação, sem port nem dependência externa | D (excesso) | Que problema essa abstração resolve hoje? |
 | Cadeia `a.getB().getC().getD()` | Demeter | Qual objeto deveria responder isso? |
+| `if` comparando com um campo lido de outro objeto | Coesão (tell, don't ask) | Essa regra é de quem? Ela já existe em outro lugar? |
+| Conta ou `stream().map(...)` sobre os campos/coleção de outro objeto | Coesão (inveja) | O dono não deveria entregar o resultado pronto? |
+| Classe acima do limite do `cdd.json` | Carga cognitiva (`cognitive-complexity`) | Qual bloco leva os pontos para outra classe? |
 
-Achados de design são, em geral, 🟡 **Minor** — 🟠 **Major** quando já causam bug, impedem o teste ou vão se espalhar (`code-reviewer`).
+Achados de design são, em geral, 🟡 **Minor** — 🟠 **Major** quando já causam bug, impedem o teste ou vão se espalhar (`code-reviewer`). As severidades de coesão por layout estão em "Coesão: onde mora a regra".
 
 ---
 
@@ -180,5 +218,6 @@ Achados de design são, em geral, 🟡 **Minor** — 🟠 **Major** quando já c
 - **I:** interfaces pequenas pelo cliente: ports por caso de uso, `*ControllerDocs` por controller, repositories só com os métodos usados quando apagar em massa é perigoso.
 - **D:** dependências injetadas, nunca `new` de infraestrutura no service; interface só com duas implementações reais, port de domínio ou dependência externa instável.
 - DRY sobre conhecimento, não sobre código parecido; KISS; YAGNI; Lei de Demeter; tell, don't ask.
+- **Coesão:** regra sobre um dado mora no dono do dado; um nível de navegação e uma mensagem; derivação sobre os campos ou a coleção de outro objeto vai para ele. No flat-by-layer é 🟡 (🟠 se a regra se repete); com DDD decidido é 🟠; leitura para reexpor não é achado de coesão.
 - CRUD simples continua simples.
 - **Sem Lombok** — deliberado.
