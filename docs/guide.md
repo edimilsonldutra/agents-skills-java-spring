@@ -10,7 +10,7 @@ Guia de referência do plugin `squads` para o Claude Code: instalação, configu
 
 O plugin leva para o Claude Code um padrão único de construção de APIs REST com **Java 25 e Spring Boot 4** — package layout, code style, segurança, testes, documentação e entrega — em duas camadas:
 
-- **Skills (95)** — o *como*. Cada skill documenta uma maneira específica de fazer algo: uma entity, uma migration, um teste de integração, um design doc, um pipeline. São a **fonte de verdade do padrão**: agents e o próprio Claude Code as carregam sob demanda, em vez de responder de memória.
+- **Skills (96)** — o *como*. Cada skill documenta uma maneira específica de fazer algo: uma entity, uma migration, um teste de integração, um design doc, um pipeline. São a **fonte de verdade do padrão**: agents e o próprio Claude Code as carregam sob demanda, em vez de responder de memória.
 - **Agents (7)** — o *quem*. Especialistas com papel, permissões e formato de entrega próprios: `product-manager`, `architect`, `tech-lead`, `developer`, `qa` e `code-reviewer`, coordenados pelo `orchestrator`. Cada agent carrega as skills da sua tarefa antes de agir.
 
 ```
@@ -69,7 +69,7 @@ Os passos acima instalam o **plugin completo** no Claude Code. Para as outras fe
 
 | Ferramenta | Como instalar | O que chega |
 |---|---|---|
-| Gemini CLI | `gemini extensions install https://github.com/edimilsonldutra/agents-skills-java-spring` | 95 skills descobertas automaticamente e os 7 agents como `/squads:<agent>` |
+| Gemini CLI | `gemini extensions install https://github.com/edimilsonldutra/agents-skills-java-spring` | 96 skills descobertas automaticamente e os 7 agents como `/squads:<agent>` |
 | Codex | `python scripts/portable.py install --tool codex --project <projeto>` (repositório clonado) | `.agents/skills/`, `.codex/agents/*.toml` e a seção do squads no `AGENTS.md` |
 | GitHub Copilot | `python scripts/portable.py install --tool copilot --project <projeto>` | `.agents/skills/`, `.github/agents/*.agent.md` e a seção no `.github/copilot-instructions.md` |
 | Qualquer LLM | `python scripts/portable.py install --tool generic --project <projeto>` | `.agents/skills/`, `agents/*.md` como system prompts e `AGENTS.md` |
@@ -86,7 +86,7 @@ Na pasta do projeto onde as skills vão ficar, rode:
 npx skills add edimilsonldutra/agents-skills-java-spring --skill '*'
 ```
 
-O `'*'` instala **as 95 skills de uma vez** — e é o recomendado, porque as skills se referenciam umas às outras (a `design-docs` aponta para `prd-writing` e `threat-modeling`, por exemplo) e esses links só funcionam quando todas estão instaladas lado a lado. O CLI pergunta para quais ferramentas instalar.
+O `'*'` instala **as 96 skills de uma vez** — e é o recomendado, porque as skills se referenciam umas às outras (a `design-docs` aponta para `prd-writing` e `threat-modeling`, por exemplo) e esses links só funcionam quando todas estão instaladas lado a lado. O CLI pergunta para quais ferramentas instalar.
 
 | Quero… | Comando |
 |---|---|
@@ -245,12 +245,13 @@ Skills que os agents carregam e que também podem ser usadas diretamente (pedido
 | `bean-validation` | `/squads:bean-validation` | Rejeita input inválido na porta de entrada: uma request com title em branco recebe uma mensagem `400` clara por campo, em vez de um `500` vindo do database. Valida o body, path variables e query parameters, com as mensagens no idioma que você escolheu. | "Valide a request de Book: title obrigatório, price positivo." |
 | `project-claude-md` | `/squads:project-claude-md` | Escreve o arquivo `CLAUDE.md` do seu projeto (comandos, notas de teste, suas preferências salvas) para que o Claude Code conheça seu projeto em toda sessão futura. | "Crie o CLAUDE.md para este projeto." |
 
-**API: paginação, links, versões e documentação avançada (4 skills)**
+**API: desenho, paginação, links, versões e documentação avançada (5 skills)**
 
 *Usadas por:* `developer` (implementar), `tech-lead` (atribuir às tarefas), `architect` (contrato e evolução da API), `qa` (limites, links e versões) e `code-reviewer` (paginação sem limite, quebra de contrato).
 
 | Skill | Comando | Descrição | Exemplo de prompt |
 |---|---|---|---|
+| `api-design` | `/squads:api-design` | Desenho da API por padrões (Zimmermann et al.): visibilidade e tipo de integração, papéis de endpoint (processamento, dado operacional, mestre, de referência), responsabilidades de operação com **transição de estado como ação**, estrutura de mensagens, embutir × link, `?view=`/`?fields=`, request bundle, **ETag e `If-Match`** (304, 412, 428) e garantias de ciclo de vida. | "Desenhe a API de empréstimos: renovação, devolução e edição concorrente do livro." |
 | `pagination` | `/squads:pagination` | Listagens paginadas com `page`, `size` (com máximo) e `direction`, ordenação só por campos permitidos, formato estável (HAL ou `PagedModel`), custo do `count` e keyset para páginas profundas. | "Pagine a listagem de Book com no máximo 100 itens por página." |
 | `hateoas` | `/squads:hateoas` | Links nas respostas (`_links` em HAL): DTO com `RepresentationModel` e `@Relation`, links montados no service, links condicionais por estado, XML/YAML e testes. | "Adicione links HATEOAS aos endpoints de Book." |
 | `api-versioning` | `/squads:api-versioning` | Quando criar uma versão nova, v1 → v2 convivendo (um service, DTO e controller por versão), versionamento nativo do Spring 7, deprecação com `Deprecation`/`Sunset` e desligamento. | "Preciso trocar author por uma lista de authors sem quebrar quem usa a v1." |
@@ -419,7 +420,7 @@ Complementam a skill `testing` (unit e slice). *Usadas por:* `qa` (o dono do tem
 | `refactoring` | `/squads:refactoring` | Refatoração segura: rede de segurança (characterization tests), passos pequenos e verdes, catálogo de smells → refatoração, Parallel Change/Strangler/expand → contract e como revisar o PR. | "Refatore o `LoanService` sem mudar o comportamento." |
 | `backlog-refinement` | `/squads:backlog-refinement` | Sessão de refinamento de backlog: preparação, roteiro de 60 min, DoR estendida (privacidade, NFRs, contrato, migration, rollout, métricas), Example Mapping, fatiamento, estimativa e card refinado. Também usada pelo agent `product-manager`. | "Refine estes 5 itens do topo do backlog." |
 
-**Total: 95 skills, todas neste plugin.** Na dúvida sobre qual usar, pergunte à skill `guide` — ela lê o que está realmente instalado e indica a skill certa para cada necessidade.
+**Total: 96 skills, todas neste plugin.** Na dúvida sobre qual usar, pergunte à skill `guide` — ela lê o que está realmente instalado e indica a skill certa para cada necessidade.
 
 ---
 

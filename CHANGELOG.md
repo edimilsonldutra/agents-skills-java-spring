@@ -2,6 +2,14 @@
 
 Mudanças notáveis do plugin `squads`. A versão é a de `.claude-plugin/plugin.json`; quem já instalou só recebe uma mudança quando ela sobe.
 
+## 2.16.0 — 2026-11-26
+
+### Nova skill: Desenho de API
+- Nova skill `api-design` (fundamentada em Zimmermann, Stocker, Lübke, Zdun e Pautasso, *Patterns for API Design*): visibilidade (pública, de parceiros, interna) e tipo de integração (frontend × backend) como decisão; papéis de endpoint (recurso de processamento, dado operacional, mestre e de referência, link lookup, transferência de dados); responsabilidades de operação (criação, consulta, transição de estado como ação com nome de negócio, função de cálculo); estrutura de mensagens e papéis dos elementos (dado, metadado, id, link, contexto em header); entidade embutida × link, visões nomeadas × `?fields=`, request bundle; requisição condicional com `ShallowEtagHeaderFilter` (304) e `@Version` + `If-Match` (412/428); garantias de ciclo de vida (prévia experimental, duas em produção, vida útil limitada, obsolescência agressiva, vida útil eterna) e versionamento semântico do contrato; checklist de revisão e anti-patterns.
+- Encadeada em `api-versioning`, `technical-product-management`, `code-organization`, `guide`, `README.md`, `docs/guide.md`, `orchestrator`, `architect`, `tech-lead`, `developer`, `qa` e `code-reviewer`.
+- Eval `desenho-de-api` (gatilho de `api-design`, sem disparar `hateoas`). Ainda não executado.
+- 96 skills.
+
 ## 2.15.0 — 2026-11-26
 
 ### Arquitetura Limpa (Robert C. Martin)

@@ -50,6 +50,7 @@ Além de `code-organization` e `code-style` (sempre), **leia o `SKILL.md` da ár
 | Modelagem de dados, entity, repository, migration | `data-modeling` (CAP/PACELC, ACID × BASE, isolamento, normalização, chaves e índices), `spring-data-jpa`, `flyway-migrations` (e `aws-dynamodb`/`aws-keyspaces` se for NoSQL) |
 | Records, sealed, pattern matching, virtual threads | `java-modern-features` (inclusive o que **não** usar em entities/DTOs) |
 | Endpoint, validação, erros, docs | `bean-validation`, `exception-handling`, `swagger`, `web-config` (OpenAPI como contrato, grupos, exemplos: `swagger-advanced`) |
+| Endpoint além do CRUD (ação de negócio, concorrência, API pública) | `api-design` (transição de estado como `POST /{id}/<ação>`, `If-Match` + `@Version` → 412/428, DTOs de request e response separados) |
 | Listagem, links | `pagination` (limite de `size`, ordenação permitida), `hateoas` (links montados **no service**) |
 | Nova versão de um contrato existente | `api-versioning` (v2 convivendo com a v1; o DTO da v1 fica congelado) |
 | Upload/download, importar/exportar XLSX/CSV, PDF | `file-upload-download` (nome gerado, tipo pela assinatura, sem path traversal), `file-import-export`, `pdf-reports` |

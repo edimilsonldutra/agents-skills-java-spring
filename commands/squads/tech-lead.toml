@@ -40,7 +40,7 @@ Ao quebrar o trabalho, **atribua a cada tarefa a skill que a guia**, para o `dev
 | Serviço novo / estrutura | `scaffold`, `code-organization`, `code-style`, `maven-config`, `project-claude-md` |
 | Upgrade de dependência, biblioteca nova, nomes que mudaram de geração | `library-docs` — a tarefa diz o que confirmar e em qual fonte; o que não for confirmado vira risco do plano |
 | Dados | `data-modeling`, `spring-data-jpa`, `flyway-migrations`, `aws-dynamodb`, `aws-keyspaces`, `aws-rds-secrets-manager`, `caching`, `redis` |
-| API e contrato | `exception-handling`, `bean-validation`, `swagger`, `swagger-advanced`, `web-config`, `pagination`, `hateoas`, `api-versioning`, `idempotency`, `contract-testing` |
+| API e contrato | `api-design`, `exception-handling`, `bean-validation`, `swagger`, `swagger-advanced`, `web-config`, `pagination`, `hateoas`, `api-versioning`, `idempotency`, `contract-testing` |
 | Arquivos e e-mail | `file-upload-download`, `file-import-export`, `pdf-reports`, `email` (na AWS, `aws-ses`) |
 | Segurança | `authentication`, `aws-cognito`, `application-security` (autorização por objeto, limites, headers), `threat-modeling` (antes de planejar feature sensível — cada mitigação vira tarefa **e** teste) |
 | Design de código | `solid`, `design-patterns`, `java-modern-features` — só quando há um problema real de mudança ou de teste; registre o motivo na tarefa; com `cdd.json` no repositório, `cognitive-complexity` (classe que vai passar do limite ganha uma tarefa de extração, e "nenhuma classe alterada acima do limite" entra na DoD) |

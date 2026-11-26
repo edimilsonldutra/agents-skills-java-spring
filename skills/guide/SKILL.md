@@ -33,7 +33,7 @@ Antes de descrever a lista de skills, verifique o que realmente está presente e
 
 - **Projeto novo e fundação (lida por todas as outras):** `scaffold` (criar projeto do zero), `code-organization` (package layout, o questionário de preferências compartilhado), `code-style` (formatação, comentários, logging).
 - **Construa a data layer:** `maven-config` (dependencies/build file), `library-docs` (confirmar classe, starter, property e versão na versão resolvida, com a fonte), `data-modeling` (CAP, PACELC, ACID × BASE, níveis de isolamento, normalização, chaves, índices, particionamento e escolha SQL × NoSQL), `spring-data-jpa` (entities, repositories, DTOs), `flyway-migrations` (schema como SQL versionado).
-- **Deixe a API sólida:** `exception-handling` (um contrato de erro), `web-config` (CORS + JSON/XML/YAML), `bean-validation` (rejeitar input ruim com 400), `pagination` (listas paginadas com limite), `hateoas` (links HAL nas respostas), `api-versioning` (v1 → v2 sem quebrar clients; versionamento nativo do Spring 7).
+- **Deixe a API sólida:** `api-design` (papéis de endpoint, transição de estado como ação, mensagens, ETag/`If-Match`, visibilidade e garantias de ciclo de vida), `exception-handling` (um contrato de erro), `web-config` (CORS + JSON/XML/YAML), `bean-validation` (rejeitar input ruim com 400), `pagination` (listas paginadas com limite), `hateoas` (links HAL nas respostas), `api-versioning` (v1 → v2 sem quebrar clients; versionamento nativo do Spring 7).
 - **Documente:** `swagger` (springdoc/OpenAPI), `swagger-advanced` (grupos por versão, erros comuns, exemplos, OpenAPI como contrato no CI, geração de clients).
 - **Arquivos e e-mail:** `file-upload-download` (upload/download seguro), `file-import-export` (XLSX/CSV, criação em massa), `pdf-reports` (JasperReports 7, QR code), `email` (Spring Mail/SMTP, assíncrono depois do commit; na AWS, `aws-ses`).
 - **Finalize um projeto novo:** `project-claude-md` gera o `CLAUDE.md` do próprio projeto do desenvolvedor.
@@ -84,6 +84,7 @@ Antes de descrever a lista de skills, verifique o que realmente está presente e
 | Deploy por CI na AWS (GitHub Actions → ECR → EKS com OIDC) | `github-actions-aws` |
 | Deploy por CI no Google Cloud ou no Azure | `github-actions-cloud` |
 | Deploy no Kubernetes / empacotar com Helm | `kubernetes`, `helm-charts` |
+| Desenhar endpoints além do CRUD: papéis, transição de estado como ação, embutir × link, ETag e `If-Match`, API pública × interna | `api-design` |
 | Versionar a API (v1 → v2, versionamento nativo do Spring 7, deprecação) | `api-versioning` (deprecação também em `release-management`) |
 | Metrics / health probes | `observability` |
 | Uma suíte Postman/Newman, smoke test pós-deploy | `postman-newman` |

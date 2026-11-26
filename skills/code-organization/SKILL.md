@@ -225,6 +225,8 @@ public class BookDTO implements Serializable {
 ```
 
 ### Controller
+O CRUD abaixo é o ponto de partida para dado simples. Recurso com regra, ciclo de vida ou consumidor externo: desenhe antes com `api-design` (papel do endpoint, transição de estado como ação, `If-Match`).
+
 `@Autowired` no campo por default. Implementa `*ControllerDocs` quando a preferência de Swagger é a interface. Retorna `ResponseEntity<>` quando é preciso controlar o status HTTP, o DTO diretamente caso contrário. Os endpoints declaram os media types escolhidos pelo projeto — JSON sempre, XML/YAML somente quando o projeto os pediu (veja `web-config`). Validations rápidas de input vivem em métodos privados.
 ```java
 @RestController
