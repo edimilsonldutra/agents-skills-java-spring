@@ -10,7 +10,7 @@ Guia de referência do plugin `squads` para o Claude Code: instalação, configu
 
 O plugin leva para o Claude Code um padrão único de construção de APIs REST com **Java 25 e Spring Boot 4** — package layout, code style, segurança, testes, documentação e entrega — em duas camadas:
 
-- **Skills (92)** — o *como*. Cada skill documenta uma maneira específica de fazer algo: uma entity, uma migration, um teste de integração, um design doc, um pipeline. São a **fonte de verdade do padrão**: agents e o próprio Claude Code as carregam sob demanda, em vez de responder de memória.
+- **Skills (93)** — o *como*. Cada skill documenta uma maneira específica de fazer algo: uma entity, uma migration, um teste de integração, um design doc, um pipeline. São a **fonte de verdade do padrão**: agents e o próprio Claude Code as carregam sob demanda, em vez de responder de memória.
 - **Agents (7)** — o *quem*. Especialistas com papel, permissões e formato de entrega próprios: `product-manager`, `architect`, `tech-lead`, `developer`, `qa` e `code-reviewer`, coordenados pelo `orchestrator`. Cada agent carrega as skills da sua tarefa antes de agir.
 
 ```
@@ -69,7 +69,7 @@ Os passos acima instalam o **plugin completo** no Claude Code. Para as outras fe
 
 | Ferramenta | Como instalar | O que chega |
 |---|---|---|
-| Gemini CLI | `gemini extensions install https://github.com/edimilsonldutra/agents-skills-java-spring` | 92 skills descobertas automaticamente e os 7 agents como `/squads:<agent>` |
+| Gemini CLI | `gemini extensions install https://github.com/edimilsonldutra/agents-skills-java-spring` | 93 skills descobertas automaticamente e os 7 agents como `/squads:<agent>` |
 | Codex | `python scripts/portable.py install --tool codex --project <projeto>` (repositório clonado) | `.agents/skills/`, `.codex/agents/*.toml` e a seção do squads no `AGENTS.md` |
 | GitHub Copilot | `python scripts/portable.py install --tool copilot --project <projeto>` | `.agents/skills/`, `.github/agents/*.agent.md` e a seção no `.github/copilot-instructions.md` |
 | Qualquer LLM | `python scripts/portable.py install --tool generic --project <projeto>` | `.agents/skills/`, `agents/*.md` como system prompts e `AGENTS.md` |
@@ -86,7 +86,7 @@ Na pasta do projeto onde as skills vão ficar, rode:
 npx skills add edimilsonldutra/agents-skills-java-spring --skill '*'
 ```
 
-O `'*'` instala **as 92 skills de uma vez** — e é o recomendado, porque as skills se referenciam umas às outras (a `design-docs` aponta para `prd-writing` e `threat-modeling`, por exemplo) e esses links só funcionam quando todas estão instaladas lado a lado. O CLI pergunta para quais ferramentas instalar.
+O `'*'` instala **as 93 skills de uma vez** — e é o recomendado, porque as skills se referenciam umas às outras (a `design-docs` aponta para `prd-writing` e `threat-modeling`, por exemplo) e esses links só funcionam quando todas estão instaladas lado a lado. O CLI pergunta para quais ferramentas instalar.
 
 | Quero… | Comando |
 |---|---|
@@ -279,15 +279,16 @@ Skills que os agents carregam e que também podem ser usadas diretamente (pedido
 | `cognitive-complexity` | `/squads:cognitive-complexity` | Complexidade cognitiva por classe com **Cognitive-Driven Development**: o time combina num `cdd.json` o que conta como ponto (desvio, loop, `catch`, operador lógico, tipo do projeto, lambda) e o teto por classe; a contagem sai com `arquivo:linha`, comparada com a base do PR, e cada violação vem com uma extração que de fato tira pontos da classe. Traz um modelo de `cdd.json` calibrado para o layout do pacote. | "Meça a complexidade cognitiva das classes alteradas nesta branch." |
 | `design-patterns` | `/squads:design-patterns` | Padrões de projeto que aparecem de verdade numa API Spring Boot (Strategy, Factory, Adapter, Proxy/AOP, Observer, State, Specification…), onde o Spring já os usa, a armadilha da auto-invocação e os anti-padrões. | "Qual padrão usar para calcular multas diferentes por tipo de sócio?" |
 
-**Java/Spring Boot, Kubernetes e AWS (13 skills)**
+**Java/Spring Boot, Kubernetes e AWS (14 skills)**
 
-*Usadas por:* `developer` (implementar), `architect` (escolher plataforma, cache, identidade), `code-reviewer` (checklists de segurança, Docker, Kubernetes, CI) e `tech-lead`; `qa` usa `testing`, `authentication` e `jvm-performance`.
+*Usadas por:* `developer` (implementar), `architect` (escolher plataforma, cache, Redis/Valkey, identidade), `code-reviewer` (checklists de segurança, Redis, Docker, Kubernetes, CI) e `tech-lead`; `qa` usa `testing`, `authentication`, `redis` e `jvm-performance`.
 
 | Skill | Comando | Descrição | Exemplo de prompt |
 |---|---|---|---|
 | `authentication` | `/squads:authentication` | Login stateless com JWT e Spring Security 7: access/refresh token, senhas com BCrypt, autorização por permission. Para login gerenciado (MFA, social), veja `aws-cognito`. | "Adicione autenticação JWT a este projeto." |
 | `testing` | `/squads:testing` | Unit tests de service (JUnit 5 + Mockito + AssertJ, sem Spring) e slice tests de controller (`@WebMvcTest` + `@MockitoBean`), com `@ParameterizedTest`, `ArgumentCaptor` e o que testar ou não. | "Escreva os testes do BookService e do BookController." |
 | `caching` | `/squads:caching` | Cache com Caffeine (local) ou Redis/ElastiCache (distribuído), com TTL, invalidação e métricas. | "Cacheie o findById de Book com Redis." |
+| `redis` | `/squads:redis` | Redis e Valkey em produção com Spring Data Redis: `StringRedisTemplate`/`RedisTemplate` com Jackson 3, TTL por cache, estruturas, scripts Lua atômicos, locks distribuídos (e quando preferir lock no banco), rate limiting, revogação de JWT/sessões, Streams × Pub/Sub, política de memória/eviction, `SCAN` (nunca `KEYS *`), Sentinel × Cluster com hash tags, ElastiCache e testes com Testcontainers. | "Implemente um lock distribuído seguro e rate limit com Redis e Lua sem misturar com o cache." |
 | `java-modern-features` | `/squads:java-modern-features` | Java 17–25: records, sealed interfaces, pattern matching, text blocks, virtual threads e Scoped Values, e quando usar cada um. | "Devo ligar virtual threads neste projeto?" |
 | `jvm-performance` | `/squads:jvm-performance` | Tuning da JVM em container, pool de conexões, queries, startup, diagnóstico e teste de carga. | "A API está lenta e o pod leva OOMKilled. Me ajude a investigar." |
 | `observability` | `/squads:observability` | Actuator, health probes (liveness/readiness), métricas Micrometer/Prometheus, tracing e logs JSON. | "Adicione health checks e métricas a este projeto." |
@@ -299,7 +300,7 @@ Skills que os agents carregam e que também podem ser usadas diretamente (pedido
 | `aws-s3-sqs` | `/squads:aws-s3-sqs` | Upload/download no S3 (presigned URLs) e filas SQS com DLQ, testados com LocalStack. | "Guarde os uploads no S3 e publique um evento no SQS." |
 | `github-actions-aws` | `/squads:github-actions-aws` | Pipeline GitHub Actions → ECR → EKS autenticando por OIDC (sem access keys), com rollback automático. | "Crie o pipeline de CI/CD para o EKS." |
 
-**Ordem sugerida para ir à AWS:** `docker-and-docker-compose` → `observability` → `kubernetes` → `aws-eks` → `aws-rds-secrets-manager` → `github-actions-aws` (e `aws-s3-sqs`, `caching`, `jvm-performance` conforme a necessidade).
+**Ordem sugerida para ir à AWS:** `docker-and-docker-compose` → `observability` → `kubernetes` → `aws-eks` → `aws-rds-secrets-manager` → `github-actions-aws` (e `aws-s3-sqs`, `caching`, `redis`, `jvm-performance` conforme a necessidade).
 
 **Mensageria (6 skills)**
 
@@ -416,7 +417,7 @@ Complementam a skill `testing` (unit e slice). *Usadas por:* `qa` (o dono do tem
 | `refactoring` | `/squads:refactoring` | Refatoração segura: rede de segurança (characterization tests), passos pequenos e verdes, catálogo de smells → refatoração, Parallel Change/Strangler/expand → contract e como revisar o PR. | "Refatore o `LoanService` sem mudar o comportamento." |
 | `backlog-refinement` | `/squads:backlog-refinement` | Sessão de refinamento de backlog: preparação, roteiro de 60 min, DoR estendida (privacidade, NFRs, contrato, migration, rollout, métricas), Example Mapping, fatiamento, estimativa e card refinado. Também usada pelo agent `product-manager`. | "Refine estes 5 itens do topo do backlog." |
 
-**Total: 92 skills, todas neste plugin.** Na dúvida sobre qual usar, pergunte à skill `guide` — ela lê o que está realmente instalado e indica a skill certa para cada necessidade.
+**Total: 93 skills, todas neste plugin.** Na dúvida sobre qual usar, pergunte à skill `guide` — ela lê o que está realmente instalado e indica a skill certa para cada necessidade.
 
 ---
 

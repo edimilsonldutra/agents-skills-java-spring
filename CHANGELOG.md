@@ -2,6 +2,19 @@
 
 Mudanças notáveis do plugin `squads`. A versão é a de `.claude-plugin/plugin.json`; quem já instalou só recebe uma mudança quando ela sobe.
 
+## 2.11.0 — 2026-11-26
+
+### Nova skill: Redis e Valkey
+- Nova skill `redis`: uso direto de Redis e Valkey em produção com Spring Boot 4 / Spring Data Redis — decisão Redis × banco relacional × broker, `StringRedisTemplate`/`RedisTemplate` com Jackson 3 (sem serialização Java), TTL por cache com `RedisCacheManagerBuilderCustomizer`, estruturas de dados, scripts Lua atômicos (rate limiting distribuído e locks distribuídos com liberação segura conferindo dono), revogação de JWT e sessões, Redis Streams × Pub/Sub, política de memória/eviction com isolamento entre cache e estado crítico, `SCAN` (proibindo `KEYS *`), Lettuce, Sentinel × Cluster com hash tags, Amazon ElastiCache (Serverless e Multi-AZ) e testes com Testcontainers. Integrada em `caching`, `localstack`, `guide`, `README.md`, `docs/guide.md`, `orchestrator`, `architect`, `tech-lead`, `developer`, `qa` e `code-reviewer`.
+- Eval `redis-lock-distribuido` (gatilho de `redis`, sem disparar `caching`). Ainda não executado.
+- 93 skills.
+
+### Auditoria de guardrails, portabilidade, agents e skills
+- `hooks/guard-commands.sh` e `hooks/guard-edits.sh`: cobertura de flags globais em `git`/`kubectl`, correção do bypass de `localhost`, inspeção de todas as entradas em `MultiEdit`, proteção de caminhos relativos e `hooks/*.sh`, e restrição de escrita por papel para `qa`, `product-manager` e `architect` além do `orchestrator`. `scripts/test-hooks.sh` sobe para 144 casos.
+- `scripts/portable.py` e `scripts/validate-plugin.py`: `## Project preferences` movido para fora dos marcadores gerenciados do arquivo de contexto (com migração automática de instalações anteriores), sincronização de `Base package` e `User-facing text language`, remoção de vazamentos do Claude Code nos artefatos portáveis, descrições sem corte no meio da palavra no Gemini CLI e validação completa de `skills/guide/SKILL.md`.
+- Agents e `design-docs`: fechado o fluxo da seção 13 (QA entrega matriz e provas → `code-reviewer` re-executa e bloqueia qualquer pendência → `architect` grava o status final), qualificada a regra de legado em `developer`/`code-reviewer` (nunca prevalece sobre segurança ou corretude) e unificada a convenção `*IntegrationTest`.
+- Skills, scripts e prompts: correções técnicas, de segurança e de compatibilidade com Spring Boot 4 / Java 25 nas skills de Spring, API, microsserviços, mensageria, testes, Cloud e AWS; correções em `drawio_aws.py` e `example_renovacao.py`; atualização de `skills/guide/SKILL.md`, `prompts/` e remoção de boilerplate redundante das skills sem Java.
+
 ## 2.10.0 — 2026-11-26
 
 ### Documentação de bibliotecas na versão certa
