@@ -32,7 +32,7 @@ Antes de descrever a lista de skills, verifique o que realmente está presente e
 ## Como as skills se agrupam
 
 - **Fundação, lida por todas as outras:** `code-organization` (package layout, o questionário de preferências compartilhado), `code-style` (formatação, comentários, logging).
-- **Construa a data layer:** `maven-config` (dependencies/build file), `spring-data-jpa` (entities, repositories, DTOs), `flyway-migrations` (schema como SQL versionado).
+- **Construa a data layer:** `maven-config` (dependencies/build file), `library-docs` (confirmar classe, starter, property e versão na versão resolvida, com a fonte), `spring-data-jpa` (entities, repositories, DTOs), `flyway-migrations` (schema como SQL versionado).
 - **Deixe a API sólida:** `exception-handling` (um contrato de erro), `web-config` (CORS + JSON/XML/YAML), `bean-validation` (rejeitar input ruim com 400), `pagination` (listas paginadas com limite), `hateoas` (links HAL nas respostas), `api-versioning` (v1 → v2 sem quebrar clients; versionamento nativo do Spring 7).
 - **Documente:** `swagger` (springdoc/OpenAPI), `swagger-advanced` (grupos por versão, erros comuns, exemplos, OpenAPI como contrato no CI, geração de clients).
 - **Arquivos e e-mail:** `file-upload-download` (upload/download seguro), `file-import-export` (XLSX/CSV, criação em massa), `pdf-reports` (JasperReports 7, QR code), `email` (Spring Mail/SMTP, assíncrono depois do commit; na AWS, `aws-ses`).
@@ -103,6 +103,7 @@ Antes de descrever a lista de skills, verifique o que realmente está presente e
 | Começar com a AWS em Java (SDK v2, credenciais, timeouts) | `aws-sdk-java` |
 | Rodar/testar a AWS localmente sem conta (LocalStack) | `localstack` |
 | Unit e slice tests (JUnit, Mockito, `@WebMvcTest`) | `testing` |
+| Confirmar um nome ou versão de biblioteca (Boot 3 → 4, Jackson 3), Context7, "não responda de memória" | `library-docs` |
 | Padrões de teste: test doubles, builders, matchers coringa, valores-limite e MC/DC, test smells, flaky, TDD/BDD, property-based | `test-patterns` |
 | Testes de integração com banco real em container (Testcontainers, REST Assured) | `integration-testing` |
 | Cobertura de testes (JaCoCo), diff coverage, gate no CI, mutation testing (PIT) | `test-coverage` |

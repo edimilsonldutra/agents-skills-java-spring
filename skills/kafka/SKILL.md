@@ -9,7 +9,7 @@ Antes de aplicar este pattern, leia também [`../code-organization/SKILL.md`](..
 
 Kafka é um **log distribuído e particionado**: mensagens ficam retidas por tempo/tamanho, vários **consumer groups** leem o mesmo tópico de forma independente, e é possível **reprocessar** (replay) voltando o offset. Ótimo para streaming de eventos em escala; é mais pesado de operar que uma fila. Se o caso é "fila de tarefas" simples, avalie `rabbitmq`/`aws-sns-sqs` (veja `messaging`).
 
-> As APIs do **Spring Kafka 4 / Boot 4** mudaram com a modularização e o Jackson 3 (por exemplo, o starter próprio e as classes de serializer JSON). Confirme os nomes exatos na versão resolvida (Context7, veja `maven-config`) em vez de copiar de um projeto Boot 3; os pontos incertos estão marcados abaixo.
+> As APIs do **Spring Kafka 4 / Boot 4** mudaram com a modularização e o Jackson 3 (por exemplo, o starter próprio e as classes de serializer JSON). Confirme os nomes exatos na versão resolvida (`library-docs`) em vez de copiar de um projeto Boot 3; os pontos incertos estão marcados abaixo.
 
 ## Dependencies
 

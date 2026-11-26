@@ -24,7 +24,7 @@ Os três sinais: **metrics** (números agregados: quantos, quão rápido, quanto
     <scope>runtime</scope>
 </dependency>
 ```
-O BOM gerencia as versões. O Boot 4 modularizou a auto-configuration (veja `maven-config`): se um endpoint ou registry não aparecer, confirme no Context7 o starter/módulo exato da versão resolvida em vez de assumir o nome do Boot 3.
+O BOM gerencia as versões. O Boot 4 modularizou a auto-configuration (veja `maven-config`): se um endpoint ou registry não aparecer, confirme o starter/módulo exato na versão resolvida (`library-docs`) em vez de assumir o nome do Boot 3.
 
 ## application.yml
 
@@ -149,7 +149,7 @@ logging:
 
 ## Tracing distribuído
 
-Para seguir uma request por vários serviços, o Boot usa Micrometer Tracing com OpenTelemetry (o Boot 4 traz um starter OpenTelemetry próprio — confirme o nome no Context7). Configuração mínima:
+Para seguir uma request por vários serviços, o Boot usa Micrometer Tracing com OpenTelemetry (o Boot 4 traz um starter OpenTelemetry próprio — confirme o nome com `library-docs`). Configuração mínima:
 ```yaml
 management:
   tracing:

@@ -23,7 +23,7 @@ Para slice tests da web layer, o Boot 4 tem um módulo de teste próprio:
     <scope>test</scope>
 </dependency>
 ```
-No Boot 4 as annotations de slice mudaram de package junto com os starters (`@WebMvcTest` em `org.springframework.boot.webmvc.test.autoconfigure`, como `@DataJpaTest` em `org.springframework.boot.data.jpa.test.autoconfigure`). Confirme o import exato na versão que o projeto resolveu (Context7, veja `maven-config`) em vez de copiar de um projeto Boot 3.
+No Boot 4 as annotations de slice mudaram de package junto com os starters (`@WebMvcTest` em `org.springframework.boot.webmvc.test.autoconfigure`, como `@DataJpaTest` em `org.springframework.boot.data.jpa.test.autoconfigure`). Confirme o import exato na versão que o projeto resolveu (`library-docs`: o jar do módulo de teste responde) em vez de copiar de um projeto Boot 3.
 
 ---
 

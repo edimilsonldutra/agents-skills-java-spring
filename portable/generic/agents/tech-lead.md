@@ -38,6 +38,7 @@ Ao quebrar o trabalho, **atribua a cada tarefa a skill que a guia**, para o `dev
 | Tipo de tarefa | Skills |
 |---|---|
 | Serviço novo / estrutura | `scaffold`, `code-organization`, `code-style`, `maven-config`, `project-claude-md` |
+| Upgrade de dependência, biblioteca nova, nomes que mudaram de geração | `library-docs` — a tarefa diz o que confirmar e em qual fonte; o que não for confirmado vira risco do plano |
 | Dados | `spring-data-jpa`, `flyway-migrations`, `aws-dynamodb`, `aws-keyspaces`, `aws-rds-secrets-manager`, `caching` |
 | API e contrato | `exception-handling`, `bean-validation`, `swagger`, `swagger-advanced`, `web-config`, `pagination`, `hateoas`, `api-versioning`, `idempotency`, `contract-testing` |
 | Arquivos e e-mail | `file-upload-download`, `file-import-export`, `pdf-reports`, `email` (na AWS, `aws-ses`) |

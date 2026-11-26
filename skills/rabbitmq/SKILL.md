@@ -9,7 +9,7 @@ Antes de aplicar este pattern, leia também [`../code-organization/SKILL.md`](..
 
 RabbitMQ é um **broker "esperto"** (AMQP 0-9-1): o produtor publica em uma **exchange**, que **roteia** para **queues** conforme **bindings** e **routing keys**; consumers leem das queues. A mensagem é entregue, confirmada (*ack*) e **removida** — não é um log com replay (para isso, `kafka`). Excelente para **filas de tarefas/comandos**, roteamento flexível, prioridade e atrasos.
 
-> Nomes de classes do **Spring AMQP 4 / Boot 4** (conversor JSON com Jackson 3) mudaram em relação ao Boot 3. Confirme na versão resolvida (Context7, `maven-config`); os pontos incertos estão marcados.
+> Nomes de classes do **Spring AMQP 4 / Boot 4** (conversor JSON com Jackson 3) mudaram em relação ao Boot 3. Confirme na versão resolvida (`library-docs`); os pontos incertos estão marcados.
 
 ## Dependencies
 

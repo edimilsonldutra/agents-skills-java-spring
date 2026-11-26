@@ -15,10 +15,10 @@ O parent é sempre `spring-boot-starter-parent` — ele herda plugin management,
 
 Não chute versões de memória — o Spring Boot se move rápido e várias libraries aqui têm uma linha major por geração do Boot (springdoc 3.x mira o Boot 4; a linha 2.x mira o Boot 3).
 
-1. **Use um documentation MCP server quando disponível.** O Context7 é o recomendado: ele retorna documentação atual, específica por versão, e informações de release. Se o desenvolvedor não o tem (ou um equivalente) configurado, recomende instalá-lo antes de continuar — para o Claude Code, `npx ctx7 setup --claude`, ou adicione o plugin/MCP server do Context7 como descrito na sua documentação atual.
+1. **Siga `library-docs`** para confirmar versão, artifact e nomes: jar resolvido, Context7 (MCP na sessão principal; API REST nos agents), `maven-metadata.xml` e documentação oficial, com a fonte declarada. O Context7 é o servidor de documentação recomendado; se o desenvolvedor não o tem configurado, recomende instalá-lo — no Claude Code, `npx ctx7 setup --claude`, ou como a documentação atual do Context7 indicar.
 2. **O próprio Spring Boot:** leia `https://repo.maven.apache.org/maven2/org/springframework/boot/spring-boot-starter-parent/maven-metadata.xml` e pegue a release mais nova que não seja milestone nem RC.
 3. **Libraries que o BOM gerencia** (veja abaixo) não precisam de version nenhuma — o parent decide.
-4. **Libraries que o BOM não gerencia** recebem uma property nomeada com a última estável do Maven Central (ou do Context7 quando a library documenta uma linha específica para o Boot 4).
+4. **Libraries que o BOM não gerencia** recebem uma property nomeada com a última estável do Maven Central (ou a linha que a library documenta para o Boot 4 — `library-docs`).
 5. **Java:** a última LTS que a máquina e o runner de CI têm (`java.version`); o `scaffold` pergunta por ela e avisa sobre versões não-LTS. Faça build e execute os testes com `JAVA_HOME` apontando para esse JDK.
 
 ---

@@ -9,7 +9,7 @@ Antes de aplicar este pattern, leia também [`../code-organization/SKILL.md`](..
 
 **Jakarta Messaging (JMS)** é a API padrão Java para mensageria; o **Artemis** é o broker moderno da família ActiveMQ (alto desempenho, journal em disco, protocolos AMQP/MQTT/STOMP/OpenWire, HA por replicação ou shared-store). **Escolha-o quando JMS for requisito** — integração com sistemas Java EE/Jakarta existentes, transações **XA**, migração de legado (IBM MQ, ActiveMQ Classic) ou padrão corporativo. Para sistemas **novos** sem essa exigência, `rabbitmq`, `kafka` ou `aws-sns-sqs` costumam ter mais ecossistema e mão de obra (veja `messaging`).
 
-> A integração de JMS mudou com o **Spring Framework 7 / Jackson 3** (classes de conversor JSON). Confirme os nomes exatos na versão resolvida (Context7, `maven-config`); os pontos incertos estão marcados.
+> A integração de JMS mudou com o **Spring Framework 7 / Jackson 3** (classes de conversor JSON). Confirme os nomes exatos na versão resolvida (`library-docs`); os pontos incertos estão marcados.
 
 ## Dependencies
 

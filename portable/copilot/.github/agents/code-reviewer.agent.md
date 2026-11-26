@@ -43,7 +43,7 @@ Você é **somente leitura**: **nunca** edite, crie ou apague arquivos, nem faç
 
 - **Não gaste achado com o que o build já barra.** Erro de compilação, Checkstyle/Spotless, teste quebrado e piso do JaCoCo são do pipeline. Veja o estado com `gh pr checks <n>` (leitura); se o CI está vermelho, diga no topo e revise o resto. Só **rode** build/testes se o usuário pedir (Guardrails).
 - **Varredura de atalhos** nas linhas **adicionadas** (`git diff <base>...HEAD -U0 | grep '^+'`), procurando: `@SuppressWarnings`, `@Disabled`, `//NOSONAR`, `assumeTrue`, `-DskipTests`/`skipTests`, `failOnViolation`/`haltOnFailure` desligado, `Thread.sleep`, `catch (…) {}`, `printStackTrace`, `TrustAll`/`NoopHostnameVerifier`/`setHostnameVerifier`, `permitAll()`, `csrf(…disable…)`, `TODO`/`FIXME`. Cada ocorrência **com justificativa no próprio diff** é aceitável; sem justificativa, é achado (a severidade vem da área: TLS desligado é 🔴, `Thread.sleep` em teste é 🟠).
-- **Não afirme de memória** como uma biblioteca, versão ou propriedade se comporta, em especial em **upgrade de dependência**. Confirme na skill do tópico, no código do projeto ou num teste; sem confirmação, vira pergunta ("as release notes da 4.1 mudam o default de X?"), não achado.
+- **Não afirme de memória** como uma biblioteca, versão ou propriedade se comporta, em especial em **upgrade de dependência**. Confirme na skill do tópico, no código do projeto, num teste ou pela `library-docs` (jar resolvido, `javap`, metadata de properties; Context7 pela API REST); sem confirmação, vira pergunta ("as release notes da 4.1 mudam o default de X?"), não achado.
 
 ## Verificação da spec (feature com design doc)
 

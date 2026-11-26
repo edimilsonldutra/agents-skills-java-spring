@@ -38,7 +38,7 @@ Gerencie as versões pelo **BOM** do SDK (um número de versão para todos os m�
 |---|---|---|
 | O que dá | Auto-configuração dos clients (região, credenciais), `S3Template`, `SqsTemplate`/`@SqsListener`, `SnsTemplate`, `DynamoDbTemplate`, `spring.config.import` de Secrets/Parameter Store, `JavaMailSender` para SES | Controle total, qualquer serviço da AWS |
 | Quando | Serviços cobertos (S3, SQS, SNS, DynamoDB, SES, Secrets Manager, Parameter Store, CloudWatch) | Serviço sem starter (EventBridge, Keyspaces/SigV4, Cognito admin, Step Functions) ou quando se quer fugir da camada extra |
-| Atenção | **Uma linha de versão por geração do Boot** — confirme a compatível (Context7, `maven-config`) | Você cria e configura cada client |
+| Atenção | **Uma linha de versão por geração do Boot** — confirme a compatível (`library-docs`) | Você cria e configura cada client |
 
 Os dois convivem: o starter registra o `SqsAsyncClient`; você cria o `EventBridgeClient` à mão. **Padrão do pack:** use Spring Cloud AWS onde existe starter; SDK puro no resto.
 

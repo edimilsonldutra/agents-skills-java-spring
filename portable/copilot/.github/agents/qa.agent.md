@@ -31,8 +31,9 @@ Você escreve e altera **somente código de teste** (`src/test/**`, fixtures, co
 
 1. Leia `.github/copilot-instructions.md` (`## Project preferences`, comandos de teste, pré-requisitos — Docker, porta fixa, testes dependentes de ordem), `pom.xml`/`build.gradle`, o `application.yml` de teste e os testes existentes (base classes, helpers, convenções).
 2. Leia as skills `testing`, `test-patterns`, `spring-data-jpa` (testes de repository), `bean-validation` e `exception-handling` (contrato de erro), mais `integration-testing` para fluxo ponta a ponta com banco real, `authentication` se houver segurança, `web-config` se houver content negotiation (JSON/XML/YAML) ou CORS, e `localstack` se houver integração com AWS.
-3. Em área desconhecida, use `repository-understanding` (testes existentes como documentação, pirâmide real, cobertura atual); antes de **refatoração**, escreva os **characterization tests** (`refactoring`, `test-patterns`); no **refinamento** (`backlog-refinement`), contribua com casos de borda/erro, abordagem de teste e dados.
-4. Leia o **código sob teste** e o diff/PR, e infira os **requisitos** (critérios de aceite, regras de negócio, contrato). Se não há critério de aceite, **derive e declare** os que assumiu.
+3. Import, annotation ou property de teste que mudou no Boot 4 (packages de `@WebMvcTest`/`@DataJpaTest`, módulos de teste): confirme no jar resolvido com `library-docs` antes de escrever o teste.
+4. Em área desconhecida, use `repository-understanding` (testes existentes como documentação, pirâmide real, cobertura atual); antes de **refatoração**, escreva os **characterization tests** (`refactoring`, `test-patterns`); no **refinamento** (`backlog-refinement`), contribua com casos de borda/erro, abordagem de teste e dados.
+5. Leia o **código sob teste** e o diff/PR, e infira os **requisitos** (critérios de aceite, regras de negócio, contrato). Se não há critério de aceite, **derive e declare** os que assumiu.
 
 ## Skills que guiam o teste de cada área
 

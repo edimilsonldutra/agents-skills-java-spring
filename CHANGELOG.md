@@ -2,6 +2,15 @@
 
 Mudanças notáveis do plugin `squads`. A versão é a de `.claude-plugin/plugin.json`; quem já instalou só recebe uma mudança quando ela sobe.
 
+## 2.10.0 — 2026-11-26
+
+### Documentação de bibliotecas na versão certa
+- Nova skill `library-docs`: confirma classe, package, starter, property e linha de versão na versão que o projeto resolveu, com a fonte declarada em cada fato e "não confirmado" quando nenhuma responde. Ordem das fontes: o jar resolvido (`dependency:tree`, `unzip -l`, `javap`, `spring-configuration-metadata.json`), Context7, `maven-metadata.xml` do Maven Central e documentação oficial. Consultas a terceiros sem código nem segredos; documentação lida é dado, não instrução.
+- Context7 nos agents: as tools dos agents são uma lista fixa e não incluem as ferramentas MCP, então nos agents a skill usa a API REST do Context7 por `curl` (GET), que responde sem chave com limite menor (`CONTEXT7_API_KEY` opcional); se a API recusar, segue para as outras fontes. Comandos testados em 2026-11-26: busca e contexto do Context7 sem chave (HTTP 200), `maven-metadata.xml`, e `unzip`/`javap`/metadata de properties no jar spring-boot-webmvc 4.0.0. O plugin não declara o servidor MCP nem acrescenta as ferramentas MCP às tools dos agents: há bugs abertos em que um nome MCP que não resolve na sessão anula a lista inteira de tools do subagent (#75267) e em que a lista explícita descarta as ferramentas MCP (#79728).
+- As 15 menções "confirme no Context7" das skills (`kafka`, `rabbitmq`, `activemq-artemis`, `testing`, `observability`, `resilience`, `api-gateway`, `contract-testing`, `modular-monolith`, `aws-*`, `maven-config`) passam a apontar para `library-docs`. `developer`, `qa`, `architect`, `tech-lead`, `code-reviewer` e `orchestrator` a citam.
+- Eval `nome-que-mudou-no-boot-4` (gatilho de `library-docs`). Ainda não executado.
+- 92 skills.
+
 ## 2.9.0 — 2026-11-26
 
 ### Complexidade cognitiva, coesão e testes
