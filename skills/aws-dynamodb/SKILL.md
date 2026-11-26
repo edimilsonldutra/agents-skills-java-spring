@@ -3,7 +3,7 @@ name: aws-dynamodb
 description: Amazon DynamoDB com o Enhanced Client do SDK v2 — modelagem por padrões de acesso (PK, SK, GSI), repository sem Lombok, query × scan, paginação, escrita condicional e optimistic locking, transações, TTL, streams, capacidade, IAM, IaC e testes com LocalStack. Use quando persistir dados em DynamoDB ou revisar um modelo de tabela.
 ---
 
-Antes de aplicar este pattern, leia também [`../code-organization/SKILL.md`](../code-organization/SKILL.md), [`../code-style/SKILL.md`](../code-style/SKILL.md) e [`../aws-sdk-java/SKILL.md`](../aws-sdk-java/SKILL.md) (credenciais, clients, timeouts, LocalStack — **não repetidos aqui**).
+Antes de aplicar este pattern, leia também [`../code-organization/SKILL.md`](../code-organization/SKILL.md), [`../code-style/SKILL.md`](../code-style/SKILL.md), [`../data-modeling/SKILL.md`](../data-modeling/SKILL.md) (CAP, PACELC, ACID × BASE e escolha relacional × NoSQL) e [`../aws-sdk-java/SKILL.md`](../aws-sdk-java/SKILL.md) (credenciais, clients, timeouts, LocalStack — **não repetidos aqui**).
 
 # Amazon DynamoDB
 

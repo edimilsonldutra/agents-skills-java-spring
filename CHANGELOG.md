@@ -2,6 +2,13 @@
 
 Mudanças notáveis do plugin `squads`. A versão é a de `.claude-plugin/plugin.json`; quem já instalou só recebe uma mudança quando ela sobe.
 
+## 2.12.0 — 2026-11-26
+
+### Nova skill: Modelagem de dados e consistência
+- Nova skill `data-modeling`: escolha de banco e consistência com Teorema CAP, PACELC (`PC/EC`, `PA/EL`, `PA/EC`, `PC/EL`) e ACID × BASE; níveis de isolamento SQL (`READ COMMITTED`, `REPEATABLE READ`, `SERIALIZABLE`), anomalias (lost update, write skew, phantom), MVCC e locking (`@Version` × `SELECT FOR UPDATE` / `SKIP LOCKED`); modelagem conceitual/lógica/física (`erDiagram`), normalização (1FN–3FN/BCNF) × desnormalização controlada, chaves (`BIGINT IDENTITY`, `UUIDv7`, sem `UUIDv4` nem PII como PK), constraints no banco, estados explícitos × soft delete (impacto em `UNIQUE` e LGPD), JSONB, índices compostos e parciais (`EXPLAIN`), particionamento × sharding e read replicas. Integrada em `spring-data-jpa`, `flyway-migrations`, `aws-dynamodb`, `aws-keyspaces`, `guide`, `README.md`, `docs/guide.md`, `orchestrator`, `architect`, `tech-lead`, `developer`, `qa` e `code-reviewer`.
+- Eval `modelagem-cap-pacelc` (gatilho de `data-modeling`, sem disparar `spring-data-jpa`). Ainda não executado.
+- 94 skills.
+
 ## 2.11.0 — 2026-11-26
 
 ### Nova skill: Redis e Valkey

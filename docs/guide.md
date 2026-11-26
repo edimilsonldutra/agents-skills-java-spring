@@ -10,7 +10,7 @@ Guia de referência do plugin `squads` para o Claude Code: instalação, configu
 
 O plugin leva para o Claude Code um padrão único de construção de APIs REST com **Java 25 e Spring Boot 4** — package layout, code style, segurança, testes, documentação e entrega — em duas camadas:
 
-- **Skills (93)** — o *como*. Cada skill documenta uma maneira específica de fazer algo: uma entity, uma migration, um teste de integração, um design doc, um pipeline. São a **fonte de verdade do padrão**: agents e o próprio Claude Code as carregam sob demanda, em vez de responder de memória.
+- **Skills (94)** — o *como*. Cada skill documenta uma maneira específica de fazer algo: uma entity, uma migration, um teste de integração, um design doc, um pipeline. São a **fonte de verdade do padrão**: agents e o próprio Claude Code as carregam sob demanda, em vez de responder de memória.
 - **Agents (7)** — o *quem*. Especialistas com papel, permissões e formato de entrega próprios: `product-manager`, `architect`, `tech-lead`, `developer`, `qa` e `code-reviewer`, coordenados pelo `orchestrator`. Cada agent carrega as skills da sua tarefa antes de agir.
 
 ```
@@ -69,7 +69,7 @@ Os passos acima instalam o **plugin completo** no Claude Code. Para as outras fe
 
 | Ferramenta | Como instalar | O que chega |
 |---|---|---|
-| Gemini CLI | `gemini extensions install https://github.com/edimilsonldutra/agents-skills-java-spring` | 93 skills descobertas automaticamente e os 7 agents como `/squads:<agent>` |
+| Gemini CLI | `gemini extensions install https://github.com/edimilsonldutra/agents-skills-java-spring` | 94 skills descobertas automaticamente e os 7 agents como `/squads:<agent>` |
 | Codex | `python scripts/portable.py install --tool codex --project <projeto>` (repositório clonado) | `.agents/skills/`, `.codex/agents/*.toml` e a seção do squads no `AGENTS.md` |
 | GitHub Copilot | `python scripts/portable.py install --tool copilot --project <projeto>` | `.agents/skills/`, `.github/agents/*.agent.md` e a seção no `.github/copilot-instructions.md` |
 | Qualquer LLM | `python scripts/portable.py install --tool generic --project <projeto>` | `.agents/skills/`, `agents/*.md` como system prompts e `AGENTS.md` |
@@ -86,7 +86,7 @@ Na pasta do projeto onde as skills vão ficar, rode:
 npx skills add edimilsonldutra/agents-skills-java-spring --skill '*'
 ```
 
-O `'*'` instala **as 93 skills de uma vez** — e é o recomendado, porque as skills se referenciam umas às outras (a `design-docs` aponta para `prd-writing` e `threat-modeling`, por exemplo) e esses links só funcionam quando todas estão instaladas lado a lado. O CLI pergunta para quais ferramentas instalar.
+O `'*'` instala **as 94 skills de uma vez** — e é o recomendado, porque as skills se referenciam umas às outras (a `design-docs` aponta para `prd-writing` e `threat-modeling`, por exemplo) e esses links só funcionam quando todas estão instaladas lado a lado. O CLI pergunta para quais ferramentas instalar.
 
 | Quero… | Comando |
 |---|---|
@@ -224,9 +224,9 @@ O orquestrador usa sempre **o menor pipeline que resolve**:
 
 Skills que os agents carregam e que também podem ser usadas diretamente (pedido em linguagem natural ou `/squads:<skill>`). Cada grupo diz quais agents o usam.
 
-**Fundação (13 skills)**
+**Fundação (14 skills)**
 
-*Usadas por:* todos os agents leem `code-organization`; `developer` e `code-reviewer` leem também `code-style` e a skill da área (CRUD, migration, validation, erros, Swagger); `tech-lead` as atribui às tarefas; `qa` usa `spring-data-jpa`, `bean-validation` e `exception-handling` para testar o contrato.
+*Usadas por:* todos os agents leem `code-organization`; `architect` usa `data-modeling` ao definir modelo de dados e consistência; `developer` e `code-reviewer` leem também `code-style` e a skill da área (modelagem, CRUD, migration, validation, erros, Swagger); `tech-lead` as atribui às tarefas; `qa` usa `data-modeling`, `spring-data-jpa`, `bean-validation` e `exception-handling` para testar concorrência e contrato.
 
 | Skill | Comando | Descrição | Exemplo de prompt |
 |---|---|---|---|
@@ -236,6 +236,7 @@ Skills que os agents carregam e que também podem ser usadas diretamente (pedido
 | `code-style` | `/squads:code-style` | As regras exatas de formatação Java usadas em todo o pacote (sem Lombok, como escrever `equals()`/`hashCode()`, estilo de logger, etc.). Também é usada automaticamente, na maior parte, pelas outras skills. | "Revise esta classe e corrija seu estilo para seguir a convenção do projeto." |
 | `maven-config` | `/squads:maven-config` | Configura o `pom.xml` do seu projeto — dependencies, plugins, o setup de testes e como consultar as versões mais recentes. | "Configure o pom.xml para um novo projeto Spring Boot com as dependencies do padrão." |
 | `library-docs` | `/squads:library-docs` | Confirma como uma biblioteca funciona **na versão que o projeto resolveu**, em vez de responder de memória: classe, package, starter, property e linha de versão. Consulta o jar resolvido (`javap`, metadata de properties do Spring Boot), o Context7 (MCP na sessão principal; API REST por `curl` nos agents), o Maven Central e a documentação oficial, e declara a fonte de cada fato. | "Qual é o import do `@WebMvcTest` na versão do Boot deste projeto? Confirme antes de escrever o teste." |
+| `data-modeling` | `/squads:data-modeling` | Modelagem de dados e arquitetura de persistência: escolha de banco e consistência com **Teorema CAP, PACELC, ACID e BASE**, níveis de isolamento SQL e anomalias (lost update, write skew, MVCC, locking), modelagem conceitual/lógica/física (`erDiagram`), normalização (1FN–3FN/BCNF) × desnormalização controlada, chaves (`BIGINT`, `UUIDv7`), estados e soft delete (UNIQUE e LGPD), JSONB, índices compostos/parciais, particionamento × sharding e read replicas. | "Modele os dados de empréstimo garantindo limite de 3 ativos sem write skew e explique o trade-off no PACELC." |
 | `spring-data-jpa` | `/squads:spring-data-jpa` | Cria entities (sem Lombok), relationships, repositories com queries custom e DTOs com mapper Dozer ou MapStruct — o núcleo de qualquer feature de CRUD. Também resolve N+1 e `LazyInitializationException` e testa os repositories contra um banco real. | "Crie um CRUD completo para uma entity `Book`: title, author, price, launch date." |
 | `exception-handling` | `/squads:exception-handling` | Configura como sua API responde quando algo dá errado (404s, 400s, erros customizados), em um único lugar central. | "Adicione um exception handling adequado para quando um Book não for encontrado." |
 | `flyway-migrations` | `/squads:flyway-migrations` | Escreve os arquivos de SQL migration que criam/alteram as tabelas do seu database, na sintaxe do database que você escolheu. | "Crie a Flyway migration para a tabela books." |
@@ -417,7 +418,7 @@ Complementam a skill `testing` (unit e slice). *Usadas por:* `qa` (o dono do tem
 | `refactoring` | `/squads:refactoring` | Refatoração segura: rede de segurança (characterization tests), passos pequenos e verdes, catálogo de smells → refatoração, Parallel Change/Strangler/expand → contract e como revisar o PR. | "Refatore o `LoanService` sem mudar o comportamento." |
 | `backlog-refinement` | `/squads:backlog-refinement` | Sessão de refinamento de backlog: preparação, roteiro de 60 min, DoR estendida (privacidade, NFRs, contrato, migration, rollout, métricas), Example Mapping, fatiamento, estimativa e card refinado. Também usada pelo agent `product-manager`. | "Refine estes 5 itens do topo do backlog." |
 
-**Total: 93 skills, todas neste plugin.** Na dúvida sobre qual usar, pergunte à skill `guide` — ela lê o que está realmente instalado e indica a skill certa para cada necessidade.
+**Total: 94 skills, todas neste plugin.** Na dúvida sobre qual usar, pergunte à skill `guide` — ela lê o que está realmente instalado e indica a skill certa para cada necessidade.
 
 ---
 

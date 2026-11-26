@@ -219,7 +219,7 @@ Nunca declare "pronto" se há ⚠️/❌ em aberto.
 |---|---|
 | Produto: problema, PRD, histórias, prioridade, roadmap, métricas, lançamento, LGPD | `product-discovery`, `prd-writing`, `user-stories`, `prioritization`, `product-roadmap`, `product-metrics`, `release-management`, `privacy-lgpd`, `stakeholder-communication`, `product-strategy`, `agile-delivery`, `backlog-refinement`, `technical-product-management` |
 | Estrutura, estilo e design do código | `code-organization`, `code-style`, `scaffold`, `maven-config`, `library-docs`, `java-modern-features`, `solid`, `cognitive-complexity`, `design-patterns` |
-| Dados | `spring-data-jpa`, `flyway-migrations`, `aws-dynamodb`, `aws-keyspaces`, `caching`, `redis` |
+| Dados | `data-modeling`, `spring-data-jpa`, `flyway-migrations`, `aws-dynamodb`, `aws-keyspaces`, `caching`, `redis` |
 | API | `exception-handling`, `bean-validation`, `swagger`, `swagger-advanced`, `web-config`, `pagination`, `hateoas`, `api-versioning`, `idempotency` |
 | Arquivos e e-mail | `file-upload-download`, `file-import-export`, `pdf-reports`, `email` (na AWS, `aws-ses`) |
 | Segurança | `authentication`, `aws-cognito`, `application-security`, `threat-modeling` |

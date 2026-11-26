@@ -3,7 +3,7 @@ name: flyway-migrations
 description: Migrations Flyway no Spring Boot 4 — dependencies (starter e módulo do banco), naming V{N}__Descricao.sql, DDL/DML e tipos do MySQL, diferenças para MariaDB, PostgreSQL, SQL Server e Oracle, seeds não determinísticos, sequenciamento e mudanças sem downtime (expand → contract). Use quando criar ou alterar tabelas, colunas, índices ou seed data.
 ---
 
-Antes de aplicar este pattern, leia também [`../code-organization/SKILL.md`](../code-organization/SKILL.md) e [`../code-style/SKILL.md`](../code-style/SKILL.md) para as preferências do projeto (database), o package layout base e as convenções de code style.
+Antes de aplicar este pattern, leia também [`../code-organization/SKILL.md`](../code-organization/SKILL.md) e [`../code-style/SKILL.md`](../code-style/SKILL.md) para as preferências do projeto (database), o package layout base e as convenções de code style. Para decisões de modelagem de dados, normalização, chaves, índices, particionamento e consistência (CAP, PACELC, ACID/BASE), leia [`../data-modeling/SKILL.md`](../data-modeling/SKILL.md).
 
 # Flyway Migrations
 

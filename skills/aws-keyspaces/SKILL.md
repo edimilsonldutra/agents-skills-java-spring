@@ -3,7 +3,7 @@ name: aws-keyspaces
 description: Amazon Keyspaces (Cassandra gerenciado) com Spring Data Cassandra — conexão TLS na porta 9142, autenticação SigV4, LOCAL_QUORUM, modelagem por consulta, schema por IaC, limitações frente ao Cassandra, IAM e testes. Use quando migrar um modelo Cassandra para a AWS ou compará-lo com DynamoDB.
 ---
 
-Antes de aplicar este pattern, leia também [`../code-organization/SKILL.md`](../code-organization/SKILL.md), [`../code-style/SKILL.md`](../code-style/SKILL.md) e [`../aws-sdk-java/SKILL.md`](../aws-sdk-java/SKILL.md) (credenciais e IRSA). Compare com [`../aws-dynamodb/SKILL.md`](../aws-dynamodb/SKILL.md) antes de decidir.
+Antes de aplicar este pattern, leia também [`../code-organization/SKILL.md`](../code-organization/SKILL.md), [`../code-style/SKILL.md`](../code-style/SKILL.md), [`../data-modeling/SKILL.md`](../data-modeling/SKILL.md) (CAP, PACELC, ACID × BASE e escolha relacional × NoSQL) e [`../aws-sdk-java/SKILL.md`](../aws-sdk-java/SKILL.md) (credenciais e IRSA). Compare com [`../aws-dynamodb/SKILL.md`](../aws-dynamodb/SKILL.md) antes de decidir.
 
 # Amazon Keyspaces (for Apache Cassandra)
 
