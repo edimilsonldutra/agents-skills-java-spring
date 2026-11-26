@@ -143,4 +143,3 @@ Registre o resultado (**mesmo o negativo**): "não funcionou" é **aprendizado v
 - **Tracking plan antes de codar**: nomes consistentes, propriedades segmentáveis, **ID pseudonimizado e sem PII**, **consentimento**, eventos de negócio **do backend**, **testados** e **idempotentes**; eventos por **outbox**; métricas Micrometer de **baixa cardinalidade**.
 - **A/B test**: hipótese + métrica primária + **MDE + amostra calculada** (`n ≈ 16·p(1−p)/δ²`) + duração fixa (ciclos semanais) + randomização por usuário; **sem peeking**, **checar SRM**, **significância ≠ relevância**, registrar também os negativos; com pouco volume, outras técnicas.
 - **Uma fonte da verdade e um dicionário de métricas**; dashboards por pergunta; revisão em cadência com **decisões**, e **medir o resultado pós-lançamento** contra a meta.
-- **Sem Lombok** — deliberado (skill de produto, sem código).

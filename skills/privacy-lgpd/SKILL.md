@@ -182,4 +182,3 @@ O `qa` verifica (`testing`): **nenhum PII em log/evento**, **fluxo de eliminaç�
 - **Operadores com contrato**; **região da nuvem/SaaS é decisão de privacidade** (transferência internacional) — valide **antes**.
 - **Incidente com dado pessoal**: plano **pré-definido**, **jurídico/DPO imediatamente**, comunicação a ANPD/titulares conforme a regulamentação vigente; **não improvise nem minimize**.
 - **Cole o checklist de privacidade no PRD**; transforme em **requisitos testáveis** (QA verifica).
-- **Sem Lombok** — deliberado (skill de produto, sem código).

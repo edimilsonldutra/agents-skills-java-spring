@@ -62,7 +62,7 @@ As seções marcadas com ★ são obrigatórias mesmo na versão curta.
 ## 3. Critérios de aceite ★
 | # | Critério (Given/When/Then) | Origem |
 |---|---|---|
-| CA-1 | Dado um empréstimo ativo do sócio, quando ele chama POST /api/loan/v1/{id}/renew, então 200 e a data de devolução avança 14 dias | PRD R2 |
+| CA-1 | Dado um empréstimo ativo do sócio, quando ele chama POST /api/loan/v1/{id}/renew, então 200 e a data de devolução avança 14 dias | PRD RF-2 |
 | CA-2 | Dado o empréstimo de outro sócio, quando chamo renew com o id dele, então 404 e nada muda | Threat model T1 |
 | CA-3 | Renovação responde em p95 < 300 ms com 50 req/s | PRD NFR-1 |
 
@@ -115,8 +115,8 @@ como desfazer — release-management>
 ## 13. Rastreabilidade e prova (preenchida no plano, na implementação e na verificação)
 | Critério | Tarefa(s) | Prova (comando) | Asserção que decide | Status |
 |---|---|---|---|---|
-| CA-1 | T2, T3 | `./mvnw test -Dtest=LoanRenewalIT#renewsAnActiveLoan` | LoanRenewalIT.java:48 | ✅ |
-| CA-2 | T3 | `./mvnw test -Dtest=LoanRenewalIT#renewOfAnotherMembersLoanReturns404` | LoanRenewalIT.java:71 | ⚠️ não provado |
+| CA-1 | T2, T3 | `./mvnw test -Dtest=LoanRenewalIntegrationTest#renewsAnActiveLoan` | LoanRenewalIntegrationTest.java:48 | ✅ |
+| CA-2 | T3 | `./mvnw test -Dtest=LoanRenewalIntegrationTest#renewOfAnotherMembersLoanReturns404` | LoanRenewalIntegrationTest.java:71 | ⚠️ não provado |
 
 ## Histórico de mudanças
 | Data | Mudança | Aprovado por |
@@ -167,7 +167,7 @@ A seção 13 fecha o ciclo: **todo critério tem pelo menos uma tarefa e uma pro
 
 ### Verificação independente (antes de declarar implementado)
 Quem escreveu o código ou os testes não verifica o próprio trabalho. Depois da última mudança da feature e antes do commit, o `code-reviewer` (somente leitura, nunca autor) faz a **verificação da spec** sobre tudo o que mudou desde a base (commits e working tree):
-1. **Re-executa cada prova** da seção 13 nesse estado e registra o resultado real (não o que o relatório do `developer` ou do `qa` disse).
+1. **Re-executa cada prova** da seção 13 (ou do relatório do `qa` recebido no brief, antes de o `architect` gravar a versão final no doc) nesse estado e registra o resultado real (não o que o relatório do `developer` ou do `qa` disse).
 2. **Lê a asserção** citada em cada linha: ela afirma o critério? Falharia com a implementação errada (o 404 do CA-2 com o empréstimo de outro sócio, não com um id inexistente)?
 3. **Recalcula a cobertura dos conjuntos** a partir do diff: rota, status, papel ou estado que o código introduziu e não está na tabela também é lacuna.
 
@@ -199,12 +199,12 @@ Revise **no PR do documento** (comentários por linha, histórico). Uma reunião
 | Agent | Papel no design doc |
 |---|---|
 | `product-manager` | Entrega o PRD aprovado; revisa os critérios de produto; responde perguntas de escopo |
-| `architect` | **Escreve** o design doc (e ADRs/threat model linkados) em `docs/design/`, com confirmação |
-| `orchestrator` | Põe a **aprovação do design doc** como gate antes do plano; passa o caminho do doc em todos os briefs seguintes |
+| `architect` | **Escreve** o design doc (e ADRs/threat model linkados) em `docs/design/`, com confirmação; ao encerrar a feature, registra no doc a matriz final (seção 13), o resultado da verificação e o status `implementado` |
+| `orchestrator` | Põe a **aprovação do design doc** como gate antes do plano; passa o caminho do doc e o relatório de provas do `qa` nos briefs seguintes; aciona o `architect` no fechamento para atualizar o doc |
 | `tech-lead` | Gera o plano **a partir dos critérios** — cada tarefa cita os `CA-n` que cobre — e entrega a matriz de rastreabilidade no plano (ele é somente leitura; o `architect` a registra no doc) |
 | `developer` | Implementa seguindo o doc; desvio relevante → para e devolve a pergunta (não decide sozinho) |
-| `qa` | Um teste por critério (positivo e negativo) e, para cada um, a prova (comando) e a asserção (`arquivo:linha`) da seção 13; marca o que ficou sem prova |
-| `code-reviewer` | Confere o diff contra o doc (critério sem implementação, contrato diferente do especificado, desvio sem registro) e faz a **verificação da spec**: re-executa as provas, lê as asserções e recalcula a cobertura dos conjuntos |
+| `qa` | Um teste por critério (positivo e negativo) e entrega no relatório a matriz preenchida (comando + asserção `arquivo:linha` de cada critério, marcando o que ficou sem prova); o `qa` só escreve código de teste |
+| `code-reviewer` | Confere o diff contra o doc (critério sem implementação, contrato diferente do especificado, desvio sem registro) e faz a **verificação da spec** (aceitando as provas da seção 13 ou do relatório do `qa`): re-executa as provas, lê as asserções e recalcula a cobertura dos conjuntos |
 
 ---
 

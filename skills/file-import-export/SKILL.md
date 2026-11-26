@@ -82,10 +82,26 @@ public class FileExporterFactory {
     @Autowired
     private ApplicationContext context;
 
-    public FileExporter getExporter(String acceptHeader) {
-        if (MediaTypes.APPLICATION_XLSX_VALUE.equalsIgnoreCase(acceptHeader)) return context.getBean(XlsxExporter.class);
-        if (MediaTypes.APPLICATION_CSV_VALUE.equalsIgnoreCase(acceptHeader)) return context.getBean(CsvExporter.class);
-        if (MediaTypes.APPLICATION_PDF_VALUE.equalsIgnoreCase(acceptHeader)) return context.getBean(PdfExporter.class);
+    public MediaType resolveMediaType(String acceptHeader) {
+        if (acceptHeader == null || acceptHeader.isBlank()) return MediaType.parseMediaType(MediaTypes.APPLICATION_CSV_VALUE);
+        var accepted = MediaType.parseMediaTypes(acceptHeader);
+        var supported = List.of(
+            MediaType.parseMediaType(MediaTypes.APPLICATION_XLSX_VALUE),
+            MediaType.parseMediaType(MediaTypes.APPLICATION_CSV_VALUE),
+            MediaType.parseMediaType(MediaTypes.APPLICATION_PDF_VALUE));
+        for (var candidate : accepted) {
+            for (var mediaType : supported) {
+                if (candidate.isCompatibleWith(mediaType)) return mediaType;
+            }
+        }
+        throw new BadRequestException("Invalid export format!");
+    }
+
+    public FileExporter getExporter(MediaType mediaType) {
+        var value = mediaType.toString();
+        if (MediaTypes.APPLICATION_XLSX_VALUE.equalsIgnoreCase(value)) return context.getBean(XlsxExporter.class);
+        if (MediaTypes.APPLICATION_CSV_VALUE.equalsIgnoreCase(value)) return context.getBean(CsvExporter.class);
+        if (MediaTypes.APPLICATION_PDF_VALUE.equalsIgnoreCase(value)) return context.getBean(PdfExporter.class);
         throw new BadRequestException("Invalid export format!");
     }
 }
@@ -113,6 +129,7 @@ public class CsvImporter implements FileImporter {
              var parser = format.parse(reader)) {
             var books = new ArrayList<BookDTO>();
             for (var record : parser) {
+                if (books.size() >= MAX_ROWS) throw new BadRequestException("The file exceeds " + MAX_ROWS + " rows!");
                 books.add(toDto(record.get("title"), record.get("author"), record.get("launch_date"), record.get("price")));
             }
             return books;
@@ -134,6 +151,7 @@ public class XlsxImporter implements FileImporter {
             var books = new ArrayList<BookDTO>();
             for (var row : sheet) {
                 if (row.getRowNum() == 0 || isEmpty(row)) continue;
+                if (books.size() >= MAX_ROWS) throw new BadRequestException("The file exceeds " + MAX_ROWS + " rows!");
                 books.add(toDto(
                     formatter.formatCellValue(row.getCell(0)),
                     formatter.formatCellValue(row.getCell(1)),
@@ -161,14 +179,17 @@ private Validator validator;
 @Transactional
 public List<BookDTO> massCreation(MultipartFile file) {
     if (file == null || file.isEmpty()) throw new BadRequestException("Please set a valid file!");
+    var originalName = file.getOriginalFilename();
+    if (originalName == null || originalName.isBlank()) throw new BadRequestException("Filename is required!");
     try (var input = file.getInputStream()) {
-        var books = importerFactory.getImporter(Objects.requireNonNull(file.getOriginalFilename())).importFile(input);
-        if (books.size() > MAX_ROWS) throw new BadRequestException("The file exceeds " + MAX_ROWS + " rows!");
+        var books = importerFactory.getImporter(originalName).importFile(input);
         validateRows(books);
         var entities = books.stream().map(dto -> parseObject(dto, Book.class)).toList();
         return parseListObjects(repository.saveAll(entities), BookDTO.class);
     } catch (BadRequestException e) {
         throw e;
+    } catch (IllegalArgumentException e) {
+        throw new BadRequestException("Invalid file content: " + e.getMessage());
     } catch (Exception e) {
         throw new FileStorageException("Error processing the file!", e);
     }
@@ -222,11 +243,11 @@ public class XlsxExporter implements FileExporter {
             var rowIndex = 1;
             for (var book : books) {
                 var row = sheet.createRow(rowIndex++);
-                row.createCell(0).setCellValue(book.getId());
-                row.createCell(1).setCellValue(book.getTitle());
-                row.createCell(2).setCellValue(book.getAuthor());
-                row.createCell(3).setCellValue(book.getLaunchDate());
-                row.createCell(4).setCellValue(book.getPrice().doubleValue());
+                if (book.getId() != null) row.createCell(0).setCellValue(book.getId());
+                row.createCell(1).setCellValue(safe(book.getTitle()));
+                row.createCell(2).setCellValue(safe(book.getAuthor()));
+                if (book.getLaunchDate() != null) row.createCell(3).setCellValue(book.getLaunchDate());
+                if (book.getPrice() != null) row.createCell(4).setCellValue(book.getPrice().doubleValue());
             }
             workbook.write(output);
             return new ByteArrayResource(output.toByteArray());
@@ -268,11 +289,11 @@ public class CsvExporter implements FileExporter {
 ### Service e controller
 ```java
 @Transactional(readOnly = true)
-public Resource exportPage(Pageable pageable, String acceptHeader) {
+public Resource exportPage(Pageable pageable, MediaType mediaType) {
     logger.info("Exporting a Book page!");
     var books = repository.findAll(pageable).map(entity -> parseObject(entity, BookDTO.class)).getContent();
     try {
-        return exporterFactory.getExporter(acceptHeader).exportFile(books);
+        return exporterFactory.getExporter(mediaType).exportFile(books);
     } catch (BadRequestException e) {
         throw e;
     } catch (Exception e) {
@@ -293,15 +314,15 @@ public ResponseEntity<Resource> exportPage(
     HttpServletRequest request) {
 
     var pageable = toPageable(page, size, direction);
-    var acceptHeader = request.getHeader(HttpHeaders.ACCEPT);
-    var file = service.exportPage(pageable, acceptHeader);
-    var extension = switch (acceptHeader) {
+    var mediaType = exporterFactory.resolveMediaType(request.getHeader(HttpHeaders.ACCEPT));
+    var file = service.exportPage(pageable, mediaType);
+    var extension = switch (mediaType.toString()) {
         case MediaTypes.APPLICATION_XLSX_VALUE -> ".xlsx";
         case MediaTypes.APPLICATION_PDF_VALUE -> ".pdf";
         default -> ".csv";
     };
     return ResponseEntity.ok()
-        .contentType(MediaType.parseMediaType(acceptHeader))
+        .contentType(mediaType)
         .header(HttpHeaders.CONTENT_DISPOSITION,
             ContentDisposition.attachment().filename("books_exported" + extension).build().toString())
         .body(file);

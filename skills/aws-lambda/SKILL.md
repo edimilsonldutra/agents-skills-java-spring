@@ -68,6 +68,11 @@ Meça o cold start real (log `Init Duration` no relatório da invocação / mét
     <artifactId>aws-lambda-java-events</artifactId>
     <version>${aws-lambda-events.version}</version>
 </dependency>
+<dependency>
+    <groupId>tools.jackson.core</groupId>
+    <artifactId>jackson-databind</artifactId>
+    <version>${jackson.version}</version>
+</dependency>
 ```
 (`com.amazonaws:aws-lambda-java-*` são as **libs de runtime do Lambda**, não o SDK v1 — são as corretas; versões em `<properties>`, resolva as atuais.)
 ```java
@@ -166,14 +171,14 @@ Uma **role de execução por função**, **menor privilégio**: as ações e os 
 
 ## Empacotamento e deploy (SAM)
 
-Empacote como **ZIP** (`maven-shade-plugin`, jar único com dependências, ou `lib/` com jars) ou como **imagem de container** (ECR, até 10 GB — para dependências nativas grandes). Prefira ZIP para cold start. **AWS SAM** (`template.yaml`) descreve função, eventos e permissões:
+Empacote como **ZIP** (`maven-shade-plugin`, jar único com dependências, ou `lib/` com jars) ou como **imagem de container** (ECR, até 10 GB — para dependências nativas grandes). Prefira **ZIP** para cold start — **SnapStart só funciona em pacotes ZIP** (não em imagens de container). **AWS SAM** (`template.yaml`) descreve função, eventos e permissões:
 ```yaml
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 
 Globals:
   Function:
-    Runtime: java21
+    Runtime: java25
     Architectures:
       - arm64
     MemorySize: 1024
@@ -185,7 +190,7 @@ Resources:
   BookEventFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: target/book-events.jar
+      CodeUri: .
       Handler: br.com.edimilsonldutra.lambda.BookEventHandler::handleRequest
       AutoPublishAlias: live
       Policies:
@@ -213,7 +218,7 @@ Resources:
     Properties:
       MessageRetentionPeriod: 1209600
 ```
-(`java21` é exemplo: use o **runtime LTS que o Lambda suporta** na data — confirme na documentação se há runtime para a LTS do projeto; `Timeout: 30` × 6 = 180 de visibility timeout.) Comandos: `sam build`, `sam local invoke -e event.json`, `sam deploy --guided`. O deploy em CI usa **OIDC** (`github-actions-aws`): `sam deploy` na role de deploy. Para infraestrutura maior, **Terraform** (`aws-terraform`) ou CDK em Java.
+(`java25` — use o **runtime LTS que o Lambda suporta** na data e confirme o suporte de SnapStart na documentação; `CodeUri: .` aponta para o diretório com `pom.xml` para o `sam build` — se empacotar o JAR antes com `maven-shade-plugin`, aponte `CodeUri` para `target/book-events.jar` e pule o `sam build`; `Timeout: 30` × 6 = 180 de visibility timeout.) Comandos: `sam build`, `sam local invoke -e event.json`, `sam deploy --guided`. O deploy em CI usa **OIDC** (`github-actions-aws`): `sam deploy` na role de deploy. Para infraestrutura maior, **Terraform** (`aws-terraform`) ou CDK em Java.
 
 ## Observabilidade
 
@@ -223,7 +228,7 @@ Logs no **CloudWatch Logs** (grupo `/aws/lambda/<função>` — defina **retenç
 
 - **Unit test do handler** como qualquer classe Java (instancie o handler, passe um `SQSEvent` montado em memória, assert na `SQSBatchResponse`) — sem Lambda, sem Docker (`testing`). Cubra: lote com uma mensagem ruim devolve **só aquela** em `batchItemFailures`; mensagem duplicada não duplica o efeito.
 - **`sam local invoke`/`sam local start-api`** (Docker) para executar com o runtime real.
-- **Integration** com LocalStack (Lambda, SQS) via Testcontainers quando precisar do wiring (`aws-sdk-java`); valide **o cold start e SnapStart na conta de dev**, não no emulador.
+- **Integration** com LocalStack (Lambda, SQS) via Testcontainers quando precisar do wiring (`localstack`, `aws-sdk-java`); valide **o cold start e SnapStart na conta de dev**, não no emulador.
 
 ---
 

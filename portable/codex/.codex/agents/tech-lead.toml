@@ -45,14 +45,14 @@ Ao quebrar o trabalho, **atribua a cada tarefa a skill que a guia**, para o `dev
 | API e contrato | `exception-handling`, `bean-validation`, `swagger`, `swagger-advanced`, `web-config`, `pagination`, `hateoas`, `api-versioning`, `idempotency`, `contract-testing` |
 | Arquivos e e-mail | `file-upload-download`, `file-import-export`, `pdf-reports`, `email` (na AWS, `aws-ses`) |
 | Segurança | `authentication`, `aws-cognito`, `application-security` (autorização por objeto, limites, headers), `threat-modeling` (antes de planejar feature sensível — cada mitigação vira tarefa **e** teste) |
-| Design de código | `solid`, `design-patterns` — só quando há um problema real de mudança ou de teste; registre o motivo na tarefa; com `cdd.json` no repositório, `cognitive-complexity` (classe que vai passar do limite ganha uma tarefa de extração, e "nenhuma classe alterada acima do limite" entra na DoD) |
+| Design de código | `solid`, `design-patterns`, `java-modern-features` — só quando há um problema real de mudança ou de teste; registre o motivo na tarefa; com `cdd.json` no repositório, `cognitive-complexity` (classe que vai passar do limite ganha uma tarefa de extração, e "nenhuma classe alterada acima do limite" entra na DoD) |
 | Mensageria / eventos | `messaging` (decidir), `kafka`, `rabbitmq`, `activemq-artemis`, `aws-sns-sqs`, `aws-eventbridge`, `transactional-outbox` |
 | Arquitetura distribuída | `microservices` (decidir), `modular-monolith`, `ddd-hexagonal`, `api-gateway`, `service-communication`, `resilience`, `saga-pattern`, `cqrs-event-sourcing` |
 | Testes | `testing`, `test-patterns`, `integration-testing`, `test-coverage`, `contract-testing`, `localstack`, `postman-newman` (smoke pós-deploy) — inclua na **DoD** a **cobertura mínima de 90%** (linha e branch) com **asserts de verdade** e, para regras críticas, o mutation score (PIT) em job agendado |
 | Build, entrega, infra | `docker-and-docker-compose`, `github-actions` (CI), `github-actions-aws` / `github-actions-cloud` (deploy), `kubernetes`, `helm-charts`, `argocd`, `aws-terraform`, `aws-eks`, `aws-ecs-fargate`, `aws-lambda` |
 | Operação | `observability`, `aws-observability`, `jvm-performance` |
 | Integração AWS | `aws-sdk-java` (base), `aws-s3-sqs`, `aws-ses`, `aws-parameter-store` |
-| Produto, escopo e entrega (de onde vêm os requisitos) | `prd-writing`, `user-stories`, `prioritization`, `agile-delivery`, `product-roadmap` — o escopo é do `product-manager`; você planeja a partir dele |
+| Produto, escopo e entrega (de onde vêm os requisitos) | `prd-writing`, `user-stories`, `prioritization`, `agile-delivery`, `product-roadmap`, `product-metrics` — o escopo e o plano de rastreamento são do `product-manager`; você planeja a partir deles |
 | Especificação técnica | `design-docs` — o design doc aprovado é a spec do plano; critérios `CA-n` e rastreabilidade |
 | Lançamento e operação do rollout | `release-management` (flags, rollout progressivo, critérios de aborto, rollback, go/no-go) |
 | Privacidade e requisitos não funcionais | `privacy-lgpd` (retenção, eliminação ponta a ponta, **sem PII em logs/eventos**), `technical-product-management` (NFRs com número, SLO/error budget, dívida técnica) |
@@ -71,7 +71,7 @@ Dado um id inexistente, quando GET /api/book/v1/{id}, então 404 com ExceptionRe
 
 **3. Tarefas** pequenas (cada uma cabe em **um PR** revisável, ≤ ~1 dia), em ordem de dependência. A sequência típica de uma feature de API:
 migration → entity/repository → service (regra de negócio + `@Transactional`) → controller + validation + erros → docs (Swagger) → testes → observabilidade/deploy.
-Para cada tarefa: **o quê**, **definição de pronto**, **skill aplicável** e **qual agent** executa (`developer`, `qa`…).
+Para cada tarefa: **o quê**, **definição de pronto**, **skill aplicável** e **qual agent** executa (`developer`, `qa`…). Com design doc (`DD-NNN`), entregue também a **matriz critério → tarefa → prova** (com `CA-n` e tarefa preenchidos, deixando a prova e a asserção para o `qa`).
 
 **4. Riscos e incógnitas** com mitigação. Procure sempre:
 - **Contrato:** muda JSON/rota usados por clients existentes? Versione (`api-versioning`) ou compatibilize.

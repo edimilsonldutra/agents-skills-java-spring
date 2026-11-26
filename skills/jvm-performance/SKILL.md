@@ -43,7 +43,7 @@ spring:
 
 ## 3. Memória e GC da JVM em container
 
-- **`-XX:MaxRAMPercentage=75`** (veja `docker-and-docker-compose`/`kubernetes`): o heap é calculado a partir do **limite do container**; deixe ~25% para metaspace, stacks de thread, buffers diretos e código nativo. `OOMKilled` (exit 137) com heap "folgado" = memória *não-heap* estourou o limite.
+- **`-XX:MaxRAMPercentage=75`** (veja `docker-and-docker-compose`/`kubernetes`): o heap é calculado a partir do **limite do container**; deixe ~25% para metaspace, stacks de thread, buffers diretos e código nativo. `OOMKilled` (exit 137) com heap "folgado" = memória *não-heap* estourou o limite. No **Java 25**, **`-XX:+UseCompactObjectHeaders`** (JEP 519, produção) reduz o cabeçalho de objetos de 128 para 64 bits (~10–20% menos heap em containers; meça antes/depois).
 - **GC:** o **G1** (default na maioria dos casos) é uma boa escolha geral. Em containers com **menos de 2 CPUs ou ~1,8 GB**, a JVM escolhe o **SerialGC** automaticamente — funciona bem para pods pequenos. **ZGC geracional** (`-XX:+UseZGC`) para heaps grandes e latência de pausa muito baixa (exige CPU e memória folgadas). Não troque de GC sem medir pausas (`jvm.gc.pause`).
 - **Não copie dezenas de flags** de blog. O ergonomics da JVM moderna acerta quase tudo; cada flag extra é dívida. Comece só com `MaxRAMPercentage`.
 - Tamanho inicial do pod: comece com `512Mi–1Gi` de memória e `requests.cpu` 250–500m; ajuste com os gráficos de `jvm.memory.used`/`jvm.gc.*` e `process.cpu.usage`. Heap que sobe e **nunca desce** entre GCs completos = vazamento (use heap dump).
@@ -54,7 +54,7 @@ spring:
 
 Importante para autoscaling e rollouts rápidos.
 - **Lazy initialization** (`spring.main.lazy-initialization=true`) acelera o start, mas **esconde erros de configuração até a primeira request** e piora a latência da primeira chamada — evite em produção com probes; ok em dev/teste.
-- **AppCDS / cache AOT** (Class Data Sharing): reduz bastante o tempo de start e a memória. Em JDK recentes, `-XX:+AutoCreateSharedArchive -XX:SharedArchiveFile=/tmp/app.jsa` cria/atualiza o arquivo automaticamente na primeira execução; o Spring Boot também documenta suporte a CDS/AOT cache (JEP 483/514/515) — confirme a receita atual para a versão do projeto.
+- **Cache AOT (Java 25, JEPs 483/514/515):** reduz drasticamente o tempo de start e o warm-up. **Gere o cache no build da imagem** (não em `/tmp` em runtime, que some a cada restart do pod): execute um *training run* no `Dockerfile` (`java -XX:AOTCacheOutput=app.aot -Dspring.context.exit=onRefresh -jar app.jar`) e consuma-o em produção (`java -XX:AOTCache=app.aot -XX:MaxRAMPercentage=75 -jar app.jar`). Confirme os pré-requisitos do Spring Boot AOT/CDS na versão resolvida (`library-docs`).
 - **Menos beans, menos autoconfiguration**: exclua o que não usa; `spring-boot-starter-*` demais carrega classes inúteis.
 - **Flyway** com muitas migrations aumenta o start — Job separado (`kubernetes`) se for grande.
 - **GraalVM native image** reduz drasticamente start e memória (ordem de dezenas de ms), ao custo de build lento, menos dinâmica (reflection/proxies precisam de hints), e pior throughput de pico que a JIT. Só vale para cenários específicos (serverless/scale-to-zero); não é o default do pack.
@@ -62,7 +62,7 @@ Importante para autoscaling e rollouts rápidos.
 
 ## 5. Concorrência
 
-- **Virtual threads** (`java-modern-features`) elevam a concorrência em APIs I/O-bound, mas o gargalo vira o pool/database. Meça.
+- **Virtual threads** (`java-modern-features`) elevam a concorrência em APIs I/O-bound, mas o gargalo vira o pool/database. Meça. No **Java 24+/25 (JEP 491)**, blocos `synchronized` **não causam mais pinning** (restam frames nativos/JNI — acompanhe pelo evento JFR `jdk.VirtualThreadPinned`).
 - Tomcat: `server.tomcat.threads.max` (default 200) com platform threads; com virtual threads o limite é indireto. Limite requests em voo para proteger dependências frágeis (`Semaphore`/bulkhead).
 - **Timeouts em tudo que sai da aplicação** (HTTP client, database, SQS): `RestClient` com connect/read timeout. Chamada externa sem timeout é uma *thread presa para sempre* → esgotamento do pool → cascata.
 - `@Async`/executors com fila **limitada** e política de rejeição explícita; fila ilimitada esconde a lentidão até virar `OOM`.
@@ -73,7 +73,7 @@ Importante para autoscaling e rollouts rápidos.
 |---|---|
 | Qual endpoint é lento | métrica `http.server.requests` por `uri` (p95/p99), tracing (`observability`) |
 | Onde o tempo/CPU da JVM vai | **JFR** (Java Flight Recorder): `jcmd <pid> JFR.start duration=60s filename=/tmp/rec.jfr` e abra no JDK Mission Control; baixo overhead, seguro em produção |
-| Threads travadas/deadlock | `jcmd <pid> Thread.print` (thread dump) — ou `kubectl exec ... -- jcmd 1 Thread.print`; várias amostras espaçadas |
+| Threads travadas/deadlock | `jcmd <pid> Thread.print` para platform threads; com **Virtual Threads**, use `jcmd <pid> Thread.dump_to_file -format=json /tmp/threads.json` (`Thread.print` omite virtual threads) |
 | Vazamento de memória | heap dump (`jcmd <pid> GC.heap_dump /tmp/h.hprof`) analisado no Eclipse MAT; compare dois dumps |
 | Pausas de GC | `jvm.gc.pause`, logs `-Xlog:gc*`; |
 | Pool saturado | `hikaricp.connections.pending/active`, thread dump mostrando threads esperando `HikariPool.getConnection` |

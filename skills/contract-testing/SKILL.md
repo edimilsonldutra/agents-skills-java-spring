@@ -145,7 +145,8 @@ class CatalogProviderPactTest {
 
     @State("book 42 exists and is available")
     void bookExists() {
-        repository.save(Books.available(42L, "Clean Code"));
+        jdbc.sql("INSERT INTO books (id, title, author, launch_date, price) VALUES (42, 'Clean Code', 'Robert C. Martin', '2009-01-10', 77.00)")
+                .update();
     }
 
     @State("book 99 does not exist")
@@ -155,7 +156,7 @@ class CatalogProviderPactTest {
 }
 ```
 (Configure o broker por properties/variáveis de ambiente — `pactbroker.url`, token — **o token vem do Secret do CI**, nunca do código.)
-- Cada **`@State`** **monta a pré-condição** no banco (dados de teste). Mantenha-os **pequenos e determinísticos**.
+- Cada **`@State`** **monta a pré-condição** no banco (dados de teste). Mantenha-os **pequenos e determinísticos** (com `@GeneratedValue(strategy = IDENTITY)`, use SQL via `JdbcClient`/`@Sql` ou *provider state injected values* quando precisar de um ID fixo como `42`, pois `repository.save` com ID preenchido dispara `merge` e não grava o ID fixo).
 - A verificação roda **no pipeline do provedor, a cada build** — se alguém renomeia `available` para `isAvailable`, **o build do `catalog` quebra** com a mensagem "o consumidor `library-lending` espera `available`", **antes** de chegar a produção.
 - **Segurança nos contratos:** como o provedor exige token, use um **filtro de teste** ou perfil que **aceite um token de teste** (`@MockitoBean JwtDecoder` ou configuração de teste) — não desligue a segurança em produção; não coloque tokens reais no contrato.
 
@@ -200,7 +201,7 @@ response:
 O **plugin do SCC** (Maven/Gradle) **gera testes** do provedor a partir dos contratos (você implementa uma **base class** que monta o estado, equivalente ao `@State`) e **publica um stubs JAR** com os WireMock stubs. O **consumidor** usa o **Stub Runner** para subir os stubs reais:
 ```java
 @SpringBootTest
-@AutoConfigureStubRunner(ids = "br.com.edimilsonldutra:library-catalog:+:stubs:8090", stubsMode = StubRunnerProperties.StubsMode.LOCAL)
+@AutoConfigureStubRunner(ids = "br.com.edimilsonldutra:library-catalog:1.2.0:stubs:8090", stubsMode = StubRunnerProperties.StubsMode.LOCAL)
 class CatalogGatewayContractTest {
     // o client aponta para http://localhost:8090 e fala com os stubs gerados do contrato REAL do provedor
 }

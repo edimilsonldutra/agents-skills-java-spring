@@ -383,7 +383,7 @@ Sem 6.1, o Swagger UI ainda sobe — com uma superfície de API vazia, o que é 
 
 ### 6.6 Bean Validation
 
-Se escolhido, aplique [`../bean-validation/SKILL.md`](../bean-validation/SKILL.md) para a dependency `spring-boot-starter-validation` e o handler de `MethodArgumentNotValidException`. Se 6.1 também está presente, adicione constraints ao `BookDTO` (`@NotBlank` em `author`/`title`, `@NotNull @PastOrPresent` em `launchDate`, `@NotNull @Positive` em `price`) e `@Valid` no endpoint create do controller.
+Se escolhido, aplique [`../bean-validation/SKILL.md`](../bean-validation/SKILL.md) para a dependency `spring-boot-starter-validation` e os handlers de `MethodArgumentNotValidException` e `HandlerMethodValidationException`. Se 6.1 também está presente, adicione constraints ao `BookDTO` (`@NotBlank` em `author`/`title`, `@NotNull @PastOrPresent` em `launchDate`, `@NotNull @Positive` em `price`) e `@Valid` nos endpoints `create` e `update` — **atenção:** se 6.5 escolheu a interface `*ControllerDocs` (default), coloque `@Valid` e constraints de parâmetro **na interface `BookControllerDocs`**, nunca no override do `BookController`, senão o Hibernate Validator falha o controller inteiro com HTTP 500 (`HV000151`).
 
 ---
 

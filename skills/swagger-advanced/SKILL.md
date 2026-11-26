@@ -56,6 +56,7 @@ O conjunto padrão da `swagger` (400, 403, 404, 500) repete as mesmas linhas em 
 @Bean
 OpenApiCustomizer commonErrorResponses() {
     return openApi -> {
+        if (openApi.getComponents() == null) openApi.setComponents(new Components());
         var components = openApi.getComponents();
         components.addSchemas("ExceptionResponse", new Schema<>()
             .type("object")
@@ -66,9 +67,12 @@ OpenApiCustomizer commonErrorResponses() {
         var errorContent = new Content().addMediaType(MediaType.APPLICATION_JSON_VALUE,
             new io.swagger.v3.oas.models.media.MediaType().schema(new Schema<>().$ref("#/components/schemas/ExceptionResponse")));
 
-        openApi.getPaths().values().forEach(path -> path.readOperations().forEach(operation -> {
+        if (openApi.getPaths() == null) return;
+        openApi.getPaths().forEach((pathKey, path) -> path.readOperations().forEach(operation -> {
             var responses = operation.getResponses();
-            responses.putIfAbsent("403", new ApiResponse().description("Forbidden"));
+            if (!pathKey.startsWith("/auth/")) {
+                responses.putIfAbsent("403", new ApiResponse().description("Forbidden"));
+            }
             responses.putIfAbsent("500", new ApiResponse().description("Internal Server Error").content(errorContent));
         }));
     };

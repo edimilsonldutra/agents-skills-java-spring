@@ -190,7 +190,7 @@ Domínio com **SPF, DKIM e DMARC** configurados no DNS, remetente verificado no 
 
 ## 7. Testes
 
-- **GreenMail** (`com.icegreen:greenmail`, escopo `test`, com a exclusão de `org.eclipse.angus:jakarta.mail` — `maven-config`) sobe um SMTP em memória:
+- **GreenMail** (`com.icegreen:greenmail-junit5`, escopo `test`, com a exclusão de `org.eclipse.angus:jakarta.mail` — `maven-config`; `GreenMailExtension` vive no artefato `greenmail-junit5`, não no `greenmail` puro) sobe um SMTP em memória:
 ```java
 @RegisterExtension
 static GreenMailExtension greenMail = new GreenMailExtension(ServerSetupTest.SMTP)

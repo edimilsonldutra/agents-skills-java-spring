@@ -25,7 +25,7 @@ Toda chamada de um serviço a outro é uma **chamada de rede**: pode **demorar, 
 
 ## 2. REST: `RestClient` e HTTP interfaces
 
-O **`RestClient`** (Spring 6.1+; substitui o `RestTemplate` para código novo) é síncrono, fluente e funciona com **virtual threads** (`java-modern-features`). Para um client **declarativo**, use uma **interface HTTP** (`@HttpExchange`) — o Spring gera a implementação.
+No Spring Boot 4 (modular), adicione **`spring-boot-starter-restclient`** para a auto-configuration do `RestClient.Builder` (e **`spring-boot-starter-security-oauth2-client`** para `client_credentials` na seção 3 — confirme com `library-docs`). O **`RestClient`** (Spring 6.1+; substitui o `RestTemplate` para código novo) é síncrono, fluente e funciona com **virtual threads** (`java-modern-features`). Para um client **declarativo**, use uma **interface HTTP** (`@HttpExchange`) — no Spring Framework 7 / Boot 4 você pode registrá-las declarativamente com **`@ImportHttpServices(group = "catalog", types = CatalogClient.class)`** + `spring.http.serviceclient.catalog.*` (ou via `HttpServiceProxyFactory` quando precisar montar a factory na mão, abaixo).
 
 ```java
 @HttpExchange("/api/book/v1")

@@ -145,4 +145,3 @@ O difícil da priorização é **social**, não matemático:
 - **Seja transparente**: critério e pontuação públicos; **"sim, e o que sai?"**; diga "não" com contexto e trade-off; defina **quem decide** (DACI) e **registre**.
 - Combata os **vieses** (HiPPO, recência, sunk cost, otimismo, falsa precisão) com dados, calibração em grupo e trade-offs explícitos.
 - **Reveja a priorização** em cadência e **meça o resultado** das apostas; **descarte** o backlog que nunca será feito.
-- **Sem Lombok** — deliberado (skill de produto, sem código).

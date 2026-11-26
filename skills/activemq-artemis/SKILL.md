@@ -86,10 +86,11 @@ Contrato público no package `messaging/event`; mudança só compatível (`messa
 Sem um conversor, o `JmsTemplate` usa **serialização Java** (`ObjectMessage`): insegura, acoplada a classes e **desencorajada**. Configure JSON:
 ```java
 @Bean
-MessageConverter jacksonJmsMessageConverter() {
-    var converter = new JacksonJsonMessageConverter();
+MessageConverter jacksonJmsMessageConverter(JsonMapper jsonMapper) {
+    var converter = new JacksonJsonMessageConverter(jsonMapper);
     converter.setTargetType(MessageType.TEXT);
     converter.setTypeIdPropertyName("_type");
+    converter.setTypeIdMappings(Map.of("BookCreated", BookCreatedEvent.class));
     return converter;
 }
 ```
@@ -173,7 +174,7 @@ Em JMS o tratamento de falha vive **no broker**, não na aplicação. Em `broker
 ```yaml
 services:
   artemis:
-    image: apache/activemq-artemis:latest-alpine
+    image: apache/activemq-artemis:2.40.0-alpine
     ports:
       - "61616:61616"
       - "8161:8161"
@@ -200,14 +201,16 @@ Fixe uma **tag de versão**. A console web (`8161`) **nunca** pública.
 
 ```java
 @SpringBootTest
-@Testcontainers
 class BookEventIntegrationTest {
 
-    @Container
-    static GenericContainer<?> artemis = new GenericContainer<>("apache/activemq-artemis:2.40.0-alpine")
+    static final GenericContainer<?> artemis = new GenericContainer<>("apache/activemq-artemis:2.40.0-alpine")
             .withExposedPorts(61616)
             .withEnv("ARTEMIS_USER", "app")
             .withEnv("ARTEMIS_PASSWORD", "app123");
+
+    static {
+        artemis.start();
+    }
 
     @DynamicPropertySource
     static void artemisProperties(DynamicPropertyRegistry registry) {

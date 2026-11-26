@@ -45,7 +45,10 @@ Antes de aplicar este pattern, leia também [`../code-organization/SKILL.md`](..
       "name": "app",
       "image": "123456789012.dkr.ecr.us-east-1.amazonaws.com/library-api:1.4.2",
       "essential": true,
-      "portMappings": [{ "containerPort": 8080, "protocol": "tcp" }],
+      "portMappings": [
+        { "containerPort": 8080, "protocol": "tcp" },
+        { "containerPort": 9090, "protocol": "tcp" }
+      ],
       "environment": [
         { "name": "SPRING_PROFILES_ACTIVE", "value": "prod" },
         { "name": "JAVA_TOOL_OPTIONS", "value": "-XX:MaxRAMPercentage=75" }
@@ -114,20 +117,20 @@ Registro: `aws ecs register-task-definition --cli-input-json file://taskdef.json
     "maximumPercent": 200,
     "deploymentCircuitBreaker": { "enable": true, "rollback": true }
   },
-  "enableExecuteCommand": true
+  "enableExecuteCommand": false
 }
 ```
 - **Subnets privadas + `assignPublicIp: DISABLED`**: as tasks não têm IP público; só o **ALB** (em subnets públicas) recebe tráfego. Para puxar do ECR e falar com serviços AWS sem NAT, use **VPC endpoints** (ECR api/dkr, S3 gateway, CloudWatch Logs, Secrets Manager) — `aws-eks`, seção 6.
-- **Security group da task** aceita a porta 8080 **somente do security group do ALB**; o SG do **RDS** aceita só o SG da task (`aws-rds-secrets-manager`).
-- **Target group `ip`** (obrigatório com `awsvpc`), health check em **`/actuator/health/readiness`** (`observability`) — se o Actuator está em porta separada (9090), defina a **porta do health check** do target group para ela. Ajuste `deregistration_delay` do target group para ~30 s (o padrão de 300 s alonga os deploys).
+- **Security group da task** aceita a porta 8080 (e a 9090 para o health check do Actuator, se configurado em porta separada) **somente do security group do ALB**; o SG do **RDS** aceita só o SG da task (`aws-rds-secrets-manager`).
+- **Target group `ip`** (obrigatório com `awsvpc`), health check em **`/actuator/health/readiness`** (`observability`) — se o Actuator está em porta separada (9090), declare `containerPort: 9090` em `portMappings`, libere a 9090 do SG do ALB para a task e defina a **porta do health check** do target group para 9090. Ajuste `deregistration_delay` do target group para ~30 s (o padrão de 300 s alonga os deploys).
 - **`healthCheckGracePeriodSeconds`**: o ECS **ignora** as falhas de health check do ALB por esse tempo após a task iniciar. Spring Boot demora a subir (JVM + Flyway): defina **maior que o startup real**, ou o ECS mata a task antes de ela ficar pronta (loop de reinício).
 - **Deploy rolling** com `minimumHealthyPercent: 100` / `maximumPercent: 200`: sobe tasks novas **antes** de remover as antigas (zero downtime) — as duas versões convivem (`flyway-migrations`: expand → contract).
 - **`deploymentCircuitBreaker` com `rollback`**: se as tasks novas não estabilizam (falham ao subir/health check), o ECS **reverte automaticamente** para a revisão anterior. **Ligue sempre.** Alternativa mais sofisticada: **blue/green** (CodeDeploy / blue-green nativo do ECS) com tráfego de teste e *bake time*.
-- **`enableExecuteCommand`**: **ECS Exec** abre um shell na task (via SSM, sem SSH nem porta aberta) para depurar: `aws ecs execute-command --cluster library --task <id> --container app --interactive --command "/bin/sh"`. Exige permissões SSM na **task role** e o agente na imagem; ligue em dev/staging e **avalie** em produção (auditável por CloudTrail).
+- **`enableExecuteCommand`**: **ECS Exec** abre um shell na task (via SSM, sem SSH nem porta aberta) para depurar: `aws ecs execute-command --cluster library --task <id> --container app --interactive --command "/bin/sh"`. No Fargate a AWS injeta o agente SSM gerenciado automaticamente (não precisa instalar na imagem); exige apenas permissões `ssmmessages:*` na **task role**. Ligue em dev/staging e mantenha `false` por padrão em produção (ative só se a política exigir, com auditoria no CloudTrail/KMS).
 
 ## Spring Boot em ECS: graceful shutdown
 
-Em um deploy/scale-in o ECS manda `SIGTERM`, espera `stopTimeout` e então `SIGKILL`; ao mesmo tempo o ALB **drena** a task (deregistration delay). Para não perder requests em voo:
+Em um deploy/scale-in o ECS primeiro desregistra a task do target group e aguarda o **dreno do ALB (`deregistration_delay`)** terminar **antes** de enviar `SIGTERM` ao container; após o `SIGTERM`, espera `stopTimeout` e então envia `SIGKILL`. Para não perder requests em voo:
 ```yaml
 server:
   shutdown: graceful
@@ -236,4 +239,3 @@ aws logs tail /ecs/library-api --follow
 - CI com OIDC: render → deploy → `wait-for-service-stability`.
 - Logs com **retenção**, Container Insights, alarmes em tasks/5xx/latência/rollbacks; ECS Exec para depurar.
 - Fargate Spot + ARM64 + Savings Plans para reduzir custo.
-- **Sem Lombok** — deliberado.

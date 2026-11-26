@@ -147,4 +147,3 @@ O motor da melhoria. Formato simples (60 min): **o que foi bem · o que não foi
 - **Dependências**: mapear cedo, reduzir por design (contratos, fatias verticais), combinar contrato antes de codar, escalar cedo.
 - **Retrospectiva** com 1–3 ações (dono e prazo) **acompanhadas**; segurança psicológica; foco no sistema.
 - **Parceria PM ↔ tech lead**: o PM define **o quê/por quê**, o tech lead **como/viabilidade e saúde técnica**; acordos explícitos de prioridade, DoR/DoD, capacidade para dívida e estimativa.
-- **Sem Lombok** — deliberado (skill de produto, sem código).

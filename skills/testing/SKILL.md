@@ -13,7 +13,7 @@ Pirâmide: **muitos unit tests** (milissegundos, sem Spring, sem database) → *
 
 ## Dependencies
 
-Já vêm com `spring-boot-starter-test` (JUnit 5, Mockito, AssertJ, Hamcrest, JSONassert, JsonPath). O argLine do surefire com o agent do Mockito está em `maven-config` — sem ele o JDK 21+ avisa em todo teste.
+Já vêm com `spring-boot-starter-test` (JUnit Jupiter — **JUnit 6** no Spring Boot 4, mantendo as anotações `org.junit.jupiter` — Mockito, AssertJ, Hamcrest, JSONassert, JsonPath). O argLine do surefire com o agent do Mockito está em `maven-config` — sem ele o JDK 21+ avisa em todo teste.
 
 Para slice tests da web layer, o Boot 4 tem um módulo de teste próprio:
 ```xml
@@ -164,7 +164,7 @@ class BookControllerTest {
 
 Regras de qualidade:
 - **Determinístico:** nada de `LocalDate.now()`, `Random` ou ordem de `HashMap` no resultado esperado — injete um `Clock` ou fixe os valores.
-- **Independente:** cada teste monta o próprio estado; sem ordem entre testes de unit/slice (os integration tests do pack podem ter ordem — veja `integration-testing`).
+- **Independente:** cada teste monta o próprio estado e roda isolado em qualquer ordem (também nos testes de integração — veja `integration-testing`, que proíbe `@TestMethodOrder` em código novo).
 - **Rápido:** unit test que demora mais de 100 ms provavelmente não é unit test.
 - **Um motivo para falhar** por teste.
 - Dados de teste repetitivos ganham um helper estático (`BookMocks.validBook()`), em `src/test`.

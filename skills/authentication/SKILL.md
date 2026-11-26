@@ -26,7 +26,7 @@ Package layout (de `code-organization`): `security/jwt/` (`JwtTokenProvider`, `J
     <version>${java-jwt.version}</version>
 </dependency>
 ```
-`java-jwt` não é gerenciada pelo BOM (veja `maven-config`). Para testar com security, `spring-security-test` (test scope).
+`java-jwt` não é gerenciada pelo BOM (veja `maven-config`). Para testar com security no Boot 4, use `spring-boot-starter-security-test` (test scope).
 
 ## application.yml
 
@@ -184,23 +184,36 @@ public class JwtTokenProvider {
         var accessExpiration = now.plusMillis(accessValidity);
         var accessToken = JWT.create()
                 .withSubject(username)
+                .withClaim("token_type", "access")
                 .withClaim("roles", roles)
                 .withIssuedAt(now)
                 .withExpiresAt(accessExpiration)
                 .sign(algorithm);
         var refreshToken = JWT.create()
                 .withSubject(username)
-                .withClaim("roles", roles)
+                .withClaim("token_type", "refresh")
                 .withIssuedAt(now)
                 .withExpiresAt(now.plusMillis(refreshValidity))
                 .sign(algorithm);
-        return new TokenDTO(username, true, Date.from(now), Date.from(accessExpiration), accessToken, refreshToken);
+        return new TokenDTO(username, true, now, accessExpiration, accessToken, refreshToken);
     }
 
-    public Authentication getAuthentication(String token) {
-        var decoded = JWT.require(algorithm).build().verify(token);
-        var userDetails = userDetailsService.loadUserByUsername(decoded.getSubject());
-        return new UsernamePasswordAuthenticationToken(userDetails, "", userDetails.getAuthorities());
+    public Optional<Authentication> authenticateAccessToken(String token) {
+        try {
+            var decoded = JWT.require(algorithm)
+                    .withClaim("token_type", "access")
+                    .build()
+                    .verify(token);
+            var userDetails = userDetailsService.loadUserByUsername(decoded.getSubject());
+            if (!userDetails.isEnabled() || !userDetails.isAccountNonLocked()
+                    || !userDetails.isAccountNonExpired() || !userDetails.isCredentialsNonExpired()) {
+                return Optional.empty();
+            }
+            return Optional.of(new UsernamePasswordAuthenticationToken(userDetails, "", userDetails.getAuthorities()));
+        } catch (JWTVerificationException | UsernameNotFoundException e) {
+            logger.debug("Invalid JWT: {}", e.getMessage());
+            return Optional.empty();
+        }
     }
 
     public String resolveToken(HttpServletRequest request) {
@@ -208,22 +221,13 @@ public class JwtTokenProvider {
         if (header != null && header.startsWith("Bearer ")) return header.substring(7);
         return null;
     }
-
-    public boolean validateToken(String token) {
-        try {
-            JWT.require(algorithm).build().verify(token);
-            return true;
-        } catch (JWTVerificationException e) {
-            logger.debug("Invalid JWT: {}", e.getMessage());
-            return false;
-        }
-    }
 }
 ```
-- O `verify` checa **assinatura e expiração**. Nunca use `JWT.decode(token)` para autorizar — ele só lê, não valida.
+- O `verify` checa **assinatura, expiração e o claim `token_type = "access"`** em uma única passagem: um `refreshToken` nunca é aceito para autenticar endpoints de API (e o endpoint `/auth/refresh` exige `token_type = "refresh"`). Nunca use `JWT.decode(token)` para autorizar — ele só lê, não valida.
+- `authenticateAccessToken` também confirma que a conta continua habilitada/desbloqueada e captura `UsernameNotFoundException` — assim um usuário removido após a emissão do token não dispara 500 dentro do filter.
 - Nunca logue o token nem o segredo. O log de debug acima registra só o motivo.
 - O JWT **não é criptografado**, só assinado: não coloque nada sensível nos claims.
-- O refresh endpoint deve validar o refresh token e confirmar que o usuário ainda existe/está ativo antes de emitir um novo par. Para revogação real (logout, troca de senha), é preciso estado no servidor (lista de tokens/`jti` revogados em Redis — veja `caching`); JWT puro não se revoga antes de expirar, por isso o access token é curto.
+- O refresh endpoint deve validar `token_type = "refresh"` e confirmar que o usuário ainda existe/está ativo antes de emitir um novo par. Para revogação real (logout, troca de senha), é preciso estado no servidor (lista de tokens/`jti` revogados em Redis — veja `caching`); JWT puro não se revoga antes de expirar, por isso o access token é curto.
 
 ---
 
@@ -244,8 +248,9 @@ public class JwtTokenFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
         var token = tokenProvider.resolveToken(request);
-        if (token != null && tokenProvider.validateToken(token)) {
-            SecurityContextHolder.getContext().setAuthentication(tokenProvider.getAuthentication(token));
+        if (token != null) {
+            tokenProvider.authenticateAccessToken(token)
+                    .ifPresent(auth -> SecurityContextHolder.getContext().setAuthentication(auth));
         }
         chain.doFilter(request, response);
     }
@@ -334,13 +339,12 @@ public class AuthService {
     private UserRepository repository;
 
     public TokenDTO signIn(AccountCredentialsDTO credentials) {
-        authenticationManager.authenticate(
+        var authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         credentials.getUsername(),
                         credentials.getPassword()));
-        var user = repository.findByUserName(credentials.getUsername())
-                .orElseThrow(() -> new UsernameNotFoundException("Username " + credentials.getUsername() + " not found!"));
-        return tokenProvider.createTokens(credentials.getUsername(), user.getRoles());
+        var user = (User) authentication.getPrincipal();
+        return tokenProvider.createTokens(user.getUsername(), user.getRoles());
     }
 }
 ```
@@ -354,15 +358,15 @@ public class AuthController {
     private AuthService service;
 
     @PostMapping("/signin")
-    public ResponseEntity<?> signIn(@RequestBody AccountCredentialsDTO credentials) {
-        if (credentialsIsInvalid(credentials)) return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Invalid client request!");
+    public ResponseEntity<TokenDTO> signIn(@RequestBody AccountCredentialsDTO credentials) {
+        if (credentialsIsInvalid(credentials)) throw new BadRequestException("Invalid client request!");
         return ResponseEntity.ok(service.signIn(credentials));
     }
 
     private static boolean credentialsIsInvalid(AccountCredentialsDTO credentials) {
         return credentials == null ||
-                StringUtils.isBlank(credentials.getPassword()) ||
-                StringUtils.isBlank(credentials.getUsername());
+                credentials.getPassword() == null || credentials.getPassword().isBlank() ||
+                credentials.getUsername() == null || credentials.getUsername().isBlank();
     }
 }
 ```

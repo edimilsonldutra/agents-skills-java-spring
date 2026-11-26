@@ -172,7 +172,7 @@ O Jackson 2 ainda pode aparecer transitivamente (java-jwt, Dozer). Somente os pa
 ```xml
 <dependency>
     <groupId>com.icegreen</groupId>
-    <artifactId>greenmail</artifactId>
+    <artifactId>greenmail-junit5</artifactId>
     <version>${greenmail.version}</version>
     <scope>test</scope>
     <exclusions>
@@ -395,7 +395,7 @@ dependencies {
     implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${springdocVersion}"
     implementation 'tools.jackson.dataformat:jackson-dataformat-yaml'
     testImplementation "io.rest-assured:rest-assured:${restAssuredVersion}"
-    testImplementation("com.icegreen:greenmail:${greenmailVersion}") {
+    testImplementation("com.icegreen:greenmail-junit5:${greenmailVersion}") {
         exclude group: 'org.eclipse.angus', module: 'jakarta.mail'
     }
 }
@@ -409,7 +409,7 @@ dependencies {
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:$springdocVersion")
     implementation("tools.jackson.dataformat:jackson-dataformat-yaml")
     testImplementation("io.rest-assured:rest-assured:$restAssuredVersion")
-    testImplementation("com.icegreen:greenmail:$greenmailVersion") {
+    testImplementation("com.icegreen:greenmail-junit5:$greenmailVersion") {
         exclude(group = "org.eclipse.angus", module = "jakarta.mail")
     }
 }

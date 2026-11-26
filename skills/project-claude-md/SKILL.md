@@ -105,12 +105,14 @@ Quando existirem: namespace e cluster Kubernetes, como o deploy é feito (kubect
 Deployment usa.>
 
 ## Project preferences
+- Base package: br.com.edimilsonldutra
 - Comments in generated code: no
 - Database: MySQL
 - Swagger annotations: *ControllerDocs interface
 - Build tool: Maven
 - Java version: 25 (LTS)
 - Configuration file: YAML
+- User-facing text language: English
 - Entity/DTO mapping: Dozer
 - Dependency injection: field
 - Model profile: auto

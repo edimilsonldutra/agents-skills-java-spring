@@ -232,30 +232,40 @@ public class LoanService implements StartLoanUseCase, ReturnBookUseCase {
     private final LoanRepository loans;
     private final BookCatalog catalog;
     private final DomainEventPublisher events;
+    private final TransactionTemplate transactions;
     private final LoanPolicy policy;
     private final Clock clock;
 
-    public LoanService(LoanRepository loans, BookCatalog catalog, DomainEventPublisher events, LoanPolicy policy, Clock clock) {
+    public LoanService(
+            LoanRepository loans,
+            BookCatalog catalog,
+            DomainEventPublisher events,
+            TransactionTemplate transactions,
+            LoanPolicy policy,
+            Clock clock) {
         this.loans = loans;
         this.catalog = catalog;
         this.events = events;
+        this.transactions = transactions;
         this.policy = policy;
         this.clock = clock;
     }
 
     @Override
-    @Transactional
     public LoanId start(StartLoanCommand command) {
         var bookId = new BookId(command.bookId());
         if (!catalog.isAvailable(bookId)) throw new BookNotAvailableException(bookId);
-        var loan = Loan.start(new MemberId(command.memberId()), bookId, policy, clock);
-        loans.save(loan);
-        events.publishAll(loan.pullEvents());
-        return loan.id();
+        return transactions.execute(status -> {
+            var loan = Loan.start(new MemberId(command.memberId()), bookId, policy, clock);
+            loans.save(loan);
+            events.publishAll(loan.pullEvents());
+            return loan.id();
+        });
     }
 }
 ```
 - **Constructor injection** aqui (campos `final`): o núcleo precisa ser **instanciado em teste sem Spring** (`new LoanService(fakeRepo, ...)`). **Isto é uma exceção justificada** à preferência "field `@Autowired`" do pack para este estilo arquitetural — registre-a no `CLAUDE.md` (`project-claude-md`).
+- **Chamada externa fora da transaction:** `catalog.isAvailable(bookId)` (HTTP) roda **antes** do `TransactionTemplate` (ou em um coordenador não transacional), nunca dentro de `@Transactional` — segurar conexão do banco esperando rede esgota o pool (`service-communication`, `jvm-performance`). Quando o use case só toca o banco local, `@Transactional` direto no método basta.
 - O **use case** orquestra: carrega o aggregate, chama o método de **negócio**, persiste, publica eventos. **A regra mora no domínio**, não aqui; o service fica **fino**.
 - **`@Transactional` no use case** (fronteira de transaction — `spring-data-jpa`), nunca no controller nem no domínio. Uma transaction = um aggregate.
 - Lança **exceptions de domínio** (`BookNotAvailableException`); o adapter web as traduz em HTTP (`exception-handling`).
@@ -323,11 +333,12 @@ Regra de dependência que só existe na cabeça de quem a desenhou **é violada 
 ```xml
 <dependency>
     <groupId>com.tngtech.archunit</groupId>
-    <artifactId>archunit-junit5</artifactId>
+    <artifactId>archunit-junit6</artifactId>
     <version>${archunit.version}</version>
     <scope>test</scope>
 </dependency>
 ```
+(No Boot 4 com JUnit 6 use `archunit-junit6`; em projetos com JUnit 5 use `archunit-junit5` — confirme com `library-docs`.)
 ```java
 @AnalyzeClasses(packages = "br.com.edimilsonldutra.lending", importOptions = ImportOption.DoNotIncludeTests.class)
 class ArchitectureTest {

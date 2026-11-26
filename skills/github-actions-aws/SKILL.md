@@ -26,14 +26,16 @@ Antes de aplicar este pattern, leia também [`../code-organization/SKILL.md`](..
       "Principal": { "Federated": "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com" },
       "Action": "sts:AssumeRoleWithWebIdentity",
       "Condition": {
-        "StringEquals": { "token.actions.githubusercontent.com:aud": "sts.amazonaws.com" },
-        "StringLike": { "token.actions.githubusercontent.com:sub": "repo:minha-org/library-api:environment:production" }
+        "StringEquals": {
+          "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
+          "token.actions.githubusercontent.com:sub": "repo:minha-org/library-api:environment:production"
+        }
       }
     }
   ]
 }
 ```
-O `sub` pode ser `repo:org/repo:ref:refs/heads/main` (por branch) ou `...:environment:<nome>` (por *environment* do GitHub — o melhor para produção, porque junta a aprovação manual).
+Use `StringEquals` quando não houver curinga (`StringLike` só quando precisar de `*` explícito). Separe as roles e seus `sub`: `github-actions-ecr-push` aceita `repo:minha-org/library-api:ref:refs/heads/main` (para o job `image`), enquanto `github-actions-eks-deploy-prod` exige `repo:minha-org/library-api:environment:production` (juntando a aprovação manual do environment).
 3. **Permissões da role (menor privilégio):** push no **seu** repositório ECR (`ecr:GetAuthorizationToken` em `*` — é obrigatório —, e `ecr:BatchCheckLayerAvailability`, `PutImage`, `InitiateLayerUpload`, `UploadLayerPart`, `CompleteLayerUpload` no ARN do repositório) e `eks:DescribeCluster` no cluster. Dentro do cluster, conceda à role um **EKS access entry** com policy restrita ao namespace (`aws eks create-access-entry` + `associate-access-policy`, veja `aws-eks`). Uma role por ambiente (staging/prod).
 
 ---
@@ -56,7 +58,7 @@ permissions:
 
 concurrency:
   group: ci-cd-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   AWS_REGION: us-east-1
@@ -121,13 +123,13 @@ jobs:
       - name: Set image and apply
         run: |
           cd k8s/overlays/prod
-          kustomize edit set image library-api=${{ needs.image.outputs.image }}
+          kustomize edit set image 123456789012.dkr.ecr.us-east-1.amazonaws.com/library-api=${{ needs.image.outputs.image }}
           kubectl apply -k .
       - name: Wait for rollout
-        run: kubectl -n library rollout status deployment/library-api --timeout=300s
+        run: kubectl -n library-prod rollout status deployment/library-api --timeout=300s
       - name: Roll back on failure
         if: failure()
-        run: kubectl -n library rollout undo deployment/library-api
+        run: kubectl -n library-prod rollout undo deployment/library-api
 ```
 
 Pontos que importam:

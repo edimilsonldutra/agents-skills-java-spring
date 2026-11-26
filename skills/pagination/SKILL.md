@@ -53,7 +53,7 @@ private Pageable toPageable(Integer page, Integer size, String direction) {
     if (page < 0) throw new BadRequestException("Page must not be negative!");
     if (size < 1 || size > MAX_PAGE_SIZE) throw new BadRequestException("Size must be between 1 and " + MAX_PAGE_SIZE + "!");
     var sortDirection = "desc".equalsIgnoreCase(direction) ? Direction.DESC : Direction.ASC;
-    return PageRequest.of(page, size, Sort.by(sortDirection, "title"));
+    return PageRequest.of(page, size, Sort.by(sortDirection, "title").and(Sort.by("id")));
 }
 ```
 com `private static final int MAX_PAGE_SIZE = 100;` na classe. O `produces` segue os formatos escolhidos em `web-config` (somente JSON quando for o caso).
@@ -92,8 +92,12 @@ public PagedModel<EntityModel<BookDTO>> findAll(Pageable pageable) {
         addHateoasLinks(dto);
         return dto;
     });
+    var direction = pageable.getSort().stream()
+        .findFirst()
+        .map(order -> order.getDirection().name().toLowerCase(Locale.ROOT))
+        .orElse("asc");
     var findAllLink = linkTo(methodOn(BookController.class)
-        .findAll(pageable.getPageNumber(), pageable.getPageSize(), String.valueOf(pageable.getSort())))
+        .findAll(pageable.getPageNumber(), pageable.getPageSize(), direction))
         .withSelfRel();
     return assembler.toModel(books, findAllLink);
 }

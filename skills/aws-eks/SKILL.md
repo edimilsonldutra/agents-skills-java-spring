@@ -59,7 +59,7 @@ kind: ClusterConfig
 metadata:
   name: library
   region: us-east-1
-  version: "1.33"
+  version: "1.34"
 iam:
   withOIDC: true
 vpc:
@@ -78,8 +78,10 @@ addons:
   - name: coredns
   - name: kube-proxy
   - name: aws-ebs-csi-driver
+    wellKnownPolicies:
+      ebsCSIController: true
 ```
-`eksctl create cluster -f cluster.yaml` (leva ~15–20 min). **Escolha a versão do Kubernetes suportada pelo EKS naquele momento**; o `1.33` acima é só exemplo.
+`eksctl create cluster -f cluster.yaml` (leva ~15–20 min). **Escolha uma versão em Standard Support do EKS na data atual** (`1.34` acima é exemplo; versões antigas como `1.33` entram em Extended Support com custo adicional). Note que o add-on `aws-ebs-csi-driver` exige IAM role própria (`wellKnownPolicies.ebsCSIController` no `eksctl`, ou Pod Identity/IRSA no Terraform) para provisionar volumes EBS.
 
 - **`privateNetworking: true`**: os nodes ficam em subnets **privadas** (sem IP público); só o ALB está nas públicas.
 - **Multi-AZ**: o `HighlyAvailable` NAT e os nodes espalhados em 3 zonas — combine com `topologySpreadConstraints` (veja `kubernetes`).
@@ -134,7 +136,7 @@ No Deployment: `spec.template.spec.serviceAccountName: library-api`. Sem isso, o
     },
     {
       "Effect": "Allow",
-      "Action": ["sqs:SendMessage", "sqs:ReceiveMessage", "sqs:DeleteMessage", "sqs:GetQueueAttributes", "sqs:GetQueueUrl"],
+      "Action": ["sqs:SendMessage", "sqs:ReceiveMessage", "sqs:DeleteMessage", "sqs:ChangeMessageVisibility", "sqs:GetQueueAttributes", "sqs:GetQueueUrl"],
       "Resource": "arn:aws:sqs:us-east-1:123456789012:library-events"
     }
   ]
@@ -157,7 +159,7 @@ metadata:
   annotations:
     alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/target-type: ip
-    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
     alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:123456789012:certificate/xxxx
     alb.ingress.kubernetes.io/ssl-policy: ELBSecurityPolicy-TLS13-1-2-2021-06
     alb.ingress.kubernetes.io/healthcheck-path: /actuator/health/readiness
@@ -178,7 +180,7 @@ spec:
                   name: http
 ```
 - **`target-type: ip`**: o ALB envia direto ao IP do pod (sem hop pelo NodePort).
-- **Health check do ALB** na readiness do Actuator (que está na porta de management, 9090): o ALB só envia tráfego a pods *ready*. Se o Service não expõe a 9090, ajuste `healthcheck-port` para a porta que expõe a readiness, ou exponha só essa porta no Service.
+- **Health check do ALB** na readiness do Actuator (porta de management, 9090): o ALB só envia tráfego a pods *ready*. Com `target-type: ip`, o ALB alcança o IP do pod diretamente na porta 9090 — **não** exponha a 9090 no `Service` (mantém a porta de management fora do Service/Ingress, alinhado a `kubernetes`); garanta apenas que o security group dos pods permita entrada na 9090 vinda do SG do ALB.
 - **TLS** com certificado do **ACM** (gratuito, renovação automática); redirecione HTTP→HTTPS. O DNS (`api.example.com`) é um registro Route 53 apontando para o ALB — automatize com o **ExternalDNS**.
 - **WAF** (AWS WAF associado ao ALB) para proteção contra OWASP Top 10 e rate limiting.
 - Para um ALB **interno** (APIs privadas entre serviços), `scheme: internal`.
@@ -187,6 +189,8 @@ spec:
 ---
 
 ## 5. Logs, métricas e traces
+
+Veja a referência completa (retenção, Logs Insights, métricas, ADOT/X-Ray e alarmes) em `aws-observability`. Resumo para EKS:
 
 - **Logs:** a aplicação escreve JSON no stdout (`observability`); um agente (**Fluent Bit** DaemonSet, ou o add-on **Amazon CloudWatch Observability**) envia para o **CloudWatch Logs**. Defina **retenção** no log group (por exemplo 30 dias) — o default é "nunca expirar" e vira custo.
 - **Métricas:** Prometheus (self-managed ou **Amazon Managed Service for Prometheus**) raspando `/actuator/prometheus` na 9090 + **Amazon Managed Grafana**; ou Container Insights do CloudWatch.

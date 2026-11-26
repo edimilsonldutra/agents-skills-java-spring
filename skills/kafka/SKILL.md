@@ -19,8 +19,13 @@ Kafka é um **log distribuído e particionado**: mensagens ficam retidas por tem
     <artifactId>spring-boot-starter-kafka</artifactId>
 </dependency>
 <dependency>
-    <groupId>org.springframework.kafka</groupId>
-    <artifactId>spring-kafka-test</artifactId>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-kafka-test</artifactId>
+    <scope>test</scope>
+</dependency>
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-testcontainers</artifactId>
     <scope>test</scope>
 </dependency>
 <dependency>
@@ -29,7 +34,7 @@ Kafka é um **log distribuído e particionado**: mensagens ficam retidas por tem
     <scope>test</scope>
 </dependency>
 ```
-Versões vêm do BOM do Boot. (No Boot 3 o artifact era `org.springframework.kafka:spring-kafka`; confirme o starter do Boot 4.)
+Versões vêm do BOM do Boot. (No Boot 3 os artifacts eram `spring-kafka` e `spring-kafka-test`; confirme na versão resolvida com `library-docs`.)
 
 ---
 
@@ -51,7 +56,7 @@ spring:
     producer:
       acks: all
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
       properties:
         enable.idempotence: true
         delivery.timeout.ms: 120000
@@ -64,7 +69,7 @@ spring:
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
       properties:
-        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
+        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JacksonJsonDeserializer
         spring.json.trusted.packages: br.com.edimilsonldutra.messaging.event
         spring.json.value.default.type: br.com.edimilsonldutra.messaging.event.BookCreatedEvent
         spring.json.use.type.headers: false
@@ -191,7 +196,7 @@ DefaultErrorHandler errorHandler(KafkaTemplate<Object, Object> template) {
 - **Retry bloqueante** (acima): enquanto retenta, a **partição inteira espera** (a ordem é preservada, mas uma mensagem ruim atrasa todas as seguintes daquela partição). Mantenha o backoff **curto**.
 - **Retry não bloqueante** — `@RetryableTopic`: a mensagem falha vai para tópicos de retry com atraso crescente e o consumer principal **não para**; ao esgotar, vai para a DLT. Perde a ordem estrita (aceite apenas se o consumer tolera desordem):
 ```java
-@RetryableTopic(attempts = "4", backoff = @Backoff(delay = 2000, multiplier = 2.0), dltStrategy = DltStrategy.FAIL_ON_ERROR)
+@RetryableTopic(attempts = "4", backOff = @BackOff(delay = 2000, multiplier = 2.0), dltStrategy = DltStrategy.FAIL_ON_ERROR)
 @KafkaListener(topics = "${app.kafka.topics.book-created}")
 public void onBookCreated(BookCreatedEvent event) { ... }
 
@@ -232,7 +237,7 @@ JSON "solto" funciona para um time pequeno. Com vários times/consumers, use **S
 ```yaml
 services:
   kafka:
-    image: apache/kafka:latest
+    image: apache/kafka:3.9.0
     ports:
       - "9092:9092"
 ```
@@ -255,12 +260,14 @@ Em qualquer um: a aplicação lê `KAFKA_BOOTSTRAP_SERVERS` do ambiente; ACLs po
 Use o **broker real em container** (nada de mock do `KafkaTemplate` para provar integração):
 ```java
 @SpringBootTest
-@Testcontainers
 class BookEventIntegrationTest {
 
-    @Container
     @ServiceConnection
-    static KafkaContainer kafka = new KafkaContainer("apache/kafka:3.9.0");
+    static final KafkaContainer kafka = new KafkaContainer("apache/kafka:3.9.0");
+
+    static {
+        kafka.start();
+    }
 
     @Autowired
     private BookEventPublisher publisher;

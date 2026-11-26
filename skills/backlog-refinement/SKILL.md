@@ -215,4 +215,3 @@ O resultado é um conjunto de cards Ready (e ações para o resto), **não códi
 - **Higiene**: um backlog ordenado, **poda** de itens velhos, rótulos, quadro com WIP de "Ready", "precisa de informação" com dono e data.
 - **Meça** prontidão (~100% Ready no planejamento), estoque de Ready, surpresas na sprint, retrabalho por entendimento; melhore o processo na retro.
 - **Com os agents**: `product-manager` prepara e consolida; `tech-lead`, `qa` (e `architect` se preciso) analisam em paralelo, **somente leitura**; o humano aprova; **nada é implementado**.
-- **Sem Lombok** — deliberado (skill de processo, sem código).

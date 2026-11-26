@@ -169,4 +169,3 @@ Escalar **não é denunciar**; é **pedir ajuda para destravar**, quando algo **
 - **Diga não com contexto e trade-off** ("e o que sai?"), ofereça alternativas, registre o gatilho de revisão; **data fixa → escopo variável**.
 - Reuniões com **propósito, agenda, tempo curto, decisões e ações registradas no mesmo dia**; escale **com fatos, avisando, sobre o problema (não a pessoa)**.
 - **Incidentes**: comunicação frequente, em canal oficial, sem especulação, **post-mortem sem culpa**; **lançamento**: avise suporte/vendas/CS **antes**; incidente com **dado pessoal** → jurídico/DPO **imediatamente**.
-- **Sem Lombok** — deliberado (skill de produto, sem código).

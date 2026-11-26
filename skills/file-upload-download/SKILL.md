@@ -65,10 +65,15 @@ public class FileStorageConfig {
 public class FileStorageService {
 
     private static final Logger logger = LoggerFactory.getLogger(FileStorageService.class);
-    private static final Set<String> ALLOWED_TYPES = Set.of("image/png", "image/jpeg", "application/pdf");
+    private static final Map<String, String> ALLOWED_TYPES = Map.of(
+            "image/png", ".png",
+            "image/jpeg", ".jpg",
+            "application/pdf", ".pdf");
 
     private final Path fileStorageLocation;
     private final Tika tika = new Tika();
+
+    public record StoredFile(String storedName, String contentType, long size) {}
 
     @Autowired
     public FileStorageService(FileStorageConfig fileStorageConfig) {
@@ -80,23 +85,25 @@ public class FileStorageService {
         }
     }
 
-    public String storeFile(MultipartFile file) {
+    public StoredFile storeFile(MultipartFile file) {
         if (file == null || file.isEmpty()) throw new BadRequestException("File must not be empty!");
         var originalName = StringUtils.cleanPath(Objects.requireNonNullElse(file.getOriginalFilename(), ""));
         if (originalName.contains("..")) throw new BadRequestException("Filename contains an invalid path sequence!");
 
-        if (!ALLOWED_TYPES.contains(detectType(file))) throw new BadRequestException("File type not allowed!");
+        var detectedType = detectType(file);
+        var extension = ALLOWED_TYPES.get(detectedType);
+        if (extension == null) throw new BadRequestException("File type not allowed!");
 
-        var storedName = UUID.randomUUID() + extensionOf(originalName);
+        var storedName = UUID.randomUUID() + extension;
         var target = fileStorageLocation.resolve(storedName).normalize();
         if (!target.startsWith(fileStorageLocation)) throw new BadRequestException("Invalid file location!");
 
         try (var input = file.getInputStream()) {
             Files.copy(input, target, StandardCopyOption.REPLACE_EXISTING);
-            logger.info("Stored file {} as {}", originalName, storedName);
-            return storedName;
+            logger.info("Stored file as {} ({})", storedName, detectedType);
+            return new StoredFile(storedName, detectedType, file.getSize());
         } catch (IOException e) {
-            throw new FileStorageException("Could not store file " + originalName + ". Please try again!", e);
+            throw new FileStorageException("Could not store file. Please try again!", e);
         }
     }
 
@@ -115,15 +122,10 @@ public class FileStorageService {
             throw new FileStorageException("Could not read the file!", e);
         }
     }
-
-    private String extensionOf(String name) {
-        var dot = name.lastIndexOf('.');
-        return dot < 0 ? "" : name.substring(dot).toLowerCase(Locale.ROOT);
-    }
 }
 ```
 Por que cada linha existe:
-- **O nome gravado é um UUID**, nunca o nome do client: elimina path traversal, colisão e sobrescrita do arquivo de outro usuário. O nome original vira **metadado** (seção 5).
+- **O nome e a extensão gravados vêm de UUID + mapa fixo do MIME detectado pelo Tika**, nunca do nome enviado pelo client: elimina path traversal, colisão, `NoSuchFileException` por barras no nome e *Content-Type spoofing* (ex.: um PNG renomeado para `evil.html` ser gravado como `.html` e servido como `text/html`). O nome original vira **metadado** (seção 5).
 - **`normalize()` + `startsWith(root)`** na gravação **e** na leitura: a última barreira contra `..`, links e nomes codificados.
 - **Tipo pela assinatura, não pela extensão nem pelo `Content-Type`** do client (ambos são declarados pelo client e mentem). `org.apache.tika:tika-core` (fora do BOM — property de versão, `maven-config`) lê os *magic bytes*; chame `tika.detect(InputStream)` **sem** o nome do arquivo, para que a extensão do client não influencie o resultado. Use uma **lista permitida** do que o caso de uso aceita; nunca uma lista de proibidos.
 - **Stream, nunca `file.getBytes()`**: `getBytes()` carrega o arquivo inteiro na memória (10 réplicas × 10 uploads de 200 MB = OOM).
@@ -150,12 +152,12 @@ public class FileController implements FileControllerDocs {
     @PostMapping("/uploadFile")
     @Override
     public UploadFileResponseDTO uploadFile(@RequestParam("file") MultipartFile file) {
-        var storedName = service.storeFile(file);
+        var stored = service.storeFile(file);
         var downloadUri = ServletUriComponentsBuilder.fromCurrentContextPath()
             .path("/api/file/v1/downloadFile/")
-            .path(storedName)
+            .path(stored.storedName())
             .toUriString();
-        return new UploadFileResponseDTO(storedName, downloadUri, file.getContentType(), file.getSize());
+        return new UploadFileResponseDTO(stored.storedName(), downloadUri, stored.contentType(), stored.size());
     }
 
     @PostMapping("/uploadMultipleFiles")
@@ -164,7 +166,7 @@ public class FileController implements FileControllerDocs {
         return Arrays.stream(files).map(this::uploadFile).toList();
     }
 
-    @GetMapping("/downloadFile/{fileName:.+}")
+    @GetMapping("/downloadFile/{fileName}")
     @Override
     public ResponseEntity<Resource> downloadFile(@PathVariable("fileName") String fileName, HttpServletRequest request) {
         var resource = service.loadFileAsResource(fileName);
@@ -188,8 +190,8 @@ public class FileController implements FileControllerDocs {
     }
 }
 ```
-- `UploadFileResponseDTO` é um DTO comum em `data/dto` (fileName, fileDownloadUri, fileType, size) — sem Lombok.
-- **`{fileName:.+}`**: sem o regex, o Spring trataria o `.pdf` como extensão de path e cortaria o nome.
+- `UploadFileResponseDTO` é um DTO comum em `data/dto` (fileName, fileDownloadUri, fileType, size) — sem Lombok. Devolva `stored.contentType()` (detectado pelo Tika), nunca `file.getContentType()` do client.
+- No Spring Framework 7 / Boot 4 (`PathPatternParser`), `{fileName}` já captura nomes com pontos (`.pdf`, `.png`) sem truncar — não é necessário o regex legado `{fileName:.+}`. Para status 413 no Spring 7, prefira `HttpStatus.CONTENT_TOO_LARGE` (RFC 9110; substitui o deprecated `PAYLOAD_TOO_LARGE`).
 - **`ContentDisposition.attachment().filename(nome, UTF_8)`** monta o header com escape correto (aspas, acentos, `filename*`); concatenar `"attachment; filename=\"" + nome + "\""` abre **injeção de header** com nomes maliciosos.
 - **`attachment` + `nosniff`**: o browser baixa em vez de renderizar — um HTML/SVG enviado por um usuário não executa no domínio da API. Use `inline` só para tipos seguros que você validou (PNG/JPEG/PDF).
 - `Resource` no `ResponseEntity` é escrito em **stream** pelo Spring (sem carregar na memória). Para arquivos muito grandes, suporte a `Range` (download retomável) já vem com `ResourceHttpMessageConverter`/`ResourceRegionHttpMessageConverter`.

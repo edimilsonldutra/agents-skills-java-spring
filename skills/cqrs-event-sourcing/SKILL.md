@@ -89,12 +89,12 @@ public class BookSearchProjector {
     public void on(BookUpdated event) {
         jdbc.sql("""
                 INSERT INTO book_search_view (book_id, title, author, price, version)
-                VALUES (:id, :title, :author, :price, :version)
+                VALUES (:id, :title, :author, :price, :version) AS incoming
                 ON DUPLICATE KEY UPDATE
-                    title = IF(VALUES(version) > version, VALUES(title), title),
-                    author = IF(VALUES(version) > version, VALUES(author), author),
-                    price = IF(VALUES(version) > version, VALUES(price), price),
-                    version = GREATEST(version, VALUES(version))
+                    title = IF(incoming.version > book_search_view.version, incoming.title, book_search_view.title),
+                    author = IF(incoming.version > book_search_view.version, incoming.author, book_search_view.author),
+                    price = IF(incoming.version > book_search_view.version, incoming.price, book_search_view.price),
+                    version = GREATEST(book_search_view.version, incoming.version)
                 """)
                 .param("id", event.id()).param("title", event.title())
                 .param("author", event.author()).param("price", event.price())
@@ -170,10 +170,10 @@ public class Account {
         return account;
     }
 
-    public static Account rehydrate(List<AccountEvent> history) {
+    public static Account rehydrate(long baseVersion, List<AccountEvent> history) {
         var account = new Account();
         history.forEach(account::mutate);
-        account.version = history.size();
+        account.version = baseVersion + history.size();
         return account;
     }
 
@@ -228,7 +228,7 @@ public class AccountEventStore {
                 .query((rs, n) -> deserialize(rs.getString("event_type"), rs.getString("payload")))
                 .list();
         if (history.isEmpty()) throw new AccountNotFoundException(accountId);
-        return Account.rehydrate(history);
+        return Account.rehydrate(0, history);
     }
 
     @Transactional
@@ -245,7 +245,7 @@ public class AccountEventStore {
                         .update();
             }
         } catch (DuplicateKeyException concurrent) {
-            throw new ConcurrentModificationException("Account " + accountId + " was modified concurrently");
+            throw new OptimisticLockingFailureException("Account " + accountId + " was modified concurrently", concurrent);
         }
     }
 }

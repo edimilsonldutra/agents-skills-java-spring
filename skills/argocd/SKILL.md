@@ -173,11 +173,8 @@ spec:
     - list:
         elements:
           - env: dev
-            auto: "true"
           - env: staging
-            auto: "true"
           - env: prod
-            auto: "false"
   template:
     metadata:
       name: 'library-api-{{ .env }}'
@@ -220,13 +217,35 @@ spec:
   template:
     spec:
       restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: migrate
           image: 123456789012.dkr.ecr.us-east-1.amazonaws.com/library-api:1.4.2
+          args:
+            - "--spring.main.web-application-type=none"
+            - "--spring.flyway.enabled=true"
           envFrom:
+            - configMapRef:
+                name: library-api-config
             - secretRef:
                 name: library-api-secret
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
 ```
+- **Encerre o processo após migrar:** sem `web-application-type=none` (ou um entrypoint dedicado / Flyway CLI), o Spring Boot subiria o servidor HTTP e o Job `PreSync` ficaria rodando para sempre, travando o sync. O `securityContext` atende *Pod Security Standards "restricted"* (`kubernetes`).
 - **`BeforeHookCreation`**: apaga o Job da execução anterior antes de criar o novo — como o nome do Job é fixo, não colide. (`HookSucceeded` apaga ao terminar; deixe `BeforeHookCreation` para conseguir **ler os logs** da última execução.)
 - A **imagem do Job é a mesma tag** do Deployment: o `images:` do Kustomize (`kustomize edit set image`) atualiza **os dois** de uma vez (`kubernetes`, seção Kustomize).
 - A migration continua precisando ser **compatível com a versão anterior** (expand → contract): durante o rolling update as duas versões convivem (`flyway-migrations`). **Um rollback do Git não desfaz a migration.**
@@ -236,9 +255,9 @@ spec:
 ```yaml
 metadata:
   annotations:
-    argocd.argoproj.io/sync-wave: "-1"   # ex.: ExternalSecret/ConfigMap antes do Deployment
+    argocd.argoproj.io/sync-wave: "-1"   # ex.: ConfigMap antes do Deployment na fase Sync
 ```
-Uma ordem típica: **`-2`** namespace/ExternalSecret → **hook PreSync** (migration) → **`0`** Deployment/Service/HPA → **`1`** Ingress. O Argo CD **espera cada onda ficar *Healthy*** antes de passar à próxima.
+Uma ordem típica: **PreSync** (bootstrap/`ExternalSecret` em wave `-1` ou em Application anterior → Job de migration em wave `0`) → **Sync** wave `-1` (ConfigMap) → wave `0` (Deployment/Service/HPA) → wave `1` (Ingress). O Argo CD **espera cada onda ficar *Healthy*** antes de passar à próxima.
 
 ---
 
@@ -258,13 +277,16 @@ Substitua o job de deploy "`kubectl apply`" do `github-actions-aws` por um job q
       - name: Set the image tag
         run: |
           cd apps/library-api/overlays/dev
-          kustomize edit set image library-api=${{ needs.image.outputs.image }}
+          kustomize edit set image 123456789012.dkr.ecr.us-east-1.amazonaws.com/library-api=${{ needs.image.outputs.image }}
       - name: Commit and push
         run: |
           git config user.name "ci-bot"
           git config user.email "ci-bot@example.com"
-          git commit -am "deploy(dev): library-api ${{ github.sha }}"
-          git push
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "deploy(dev): library-api ${{ github.sha }}"
+            git push
+          fi
 ```
 - A tag é o **`github.sha`** (imutável, rastreável — `aws-eks`). O **token** para escrever no repo GitOps é um **GitHub App** ou fine-grained token **restrito àquele repositório** (escrita só no que precisa), guardado em *secrets* — **o CI não tem acesso ao cluster**.
 - **Promoção entre ambientes:** **dev** — o CI commita direto (deploy automático). **staging** — job seguinte, depois dos testes de fumaça passarem. **prod** — o CI **abre um pull request** no repo GitOps (`gh pr create` / action de PR) alterando o overlay `prod`; **o merge, com revisão obrigatória, é o gate de produção** (branch protection + reviewers/CODEOWNERS no repositório GitOps). Assim a mesma imagem testada em dev/staging é a que vai para prod.
@@ -382,4 +404,3 @@ kubectl -n argocd logs statefulset/argocd-application-controller
 - **Segredos nunca no Git**: External Secrets (referências no Git) / Sealed Secrets / SOPS.
 - **Proteja o Argo CD**: SSO, `admin` desativado, RBAC mínimo, Ingress TLS, versão fixa e atualizada, **branch protection + CODEOWNERS** no repo GitOps (quem escreve lá controla o cluster).
 - Valide o repo GitOps no CI (`kubeconform`, Trivy, políticas); notificações em sync falho/Degraded; Argo Rollouts só com necessidade clara.
-- **Sem Lombok** — deliberado.

@@ -9,6 +9,7 @@
 ```text
 Crie ou atualize o CLAUDE.md deste projeto com as preferências abaixo, lendo o projeto para preencher o resto (comandos, arquitetura, versões).
 
+- Base package: <br.com.edimilsonldutra | ...>
 - Comments in generated code: <yes | no>
 - Database: <MySQL | PostgreSQL | SQL Server | Oracle | MariaDB>
 - Swagger annotations: <*ControllerDocs interface | directly on the controller>
@@ -17,6 +18,7 @@ Crie ou atualize o CLAUDE.md deste projeto com as preferências abaixo, lendo o 
 - Configuration file: <YAML | properties>
 - Entity/DTO mapping: <Dozer | MapStruct>
 - Dependency injection: <constructor | field>
+- User-facing text language: <English | Portuguese>
 - Model profile: <auto | economico | equilibrado | qualidade-maxima>
 
 Mostre o arquivo antes de gravar.
@@ -27,6 +29,7 @@ Mostre o arquivo antes de gravar.
 ```text
 Crie ou atualize o CLAUDE.md deste projeto com as preferências abaixo, lendo o projeto para preencher o resto (comandos, arquitetura, versões).
 
+- Base package: br.com.edimilsonldutra
 - Comments in generated code: no
 - Database: PostgreSQL
 - Swagger annotations: *ControllerDocs interface
@@ -35,6 +38,7 @@ Crie ou atualize o CLAUDE.md deste projeto com as preferências abaixo, lendo o 
 - Configuration file: YAML
 - Entity/DTO mapping: MapStruct
 - Dependency injection: constructor
+- User-facing text language: Portuguese
 - Model profile: equilibrado
 
 Mostre o arquivo antes de gravar.

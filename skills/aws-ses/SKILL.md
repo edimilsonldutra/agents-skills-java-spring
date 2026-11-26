@@ -3,7 +3,7 @@ name: aws-ses
 description: E-mail transacional com Amazon SES — domínio verificado (DKIM, SPF, DMARC), saída do sandbox, envio pela API com Spring Cloud AWS, templates Thymeleaf, envio assíncrono por fila, bounces e complaints com supressão, IAM por remetente e testes. Use quando enviar e-mail pela AWS ou investigar entregabilidade.
 ---
 
-Antes de aplicar este pattern, leia também [`../code-organization/SKILL.md`](../code-organization/SKILL.md), [`../code-style/SKILL.md`](../code-style/SKILL.md), [`../aws-sdk-java/SKILL.md`](../aws-sdk-java/SKILL.md) e [`../aws-sns-sqs/SKILL.md`](../aws-sns-sqs/SKILL.md) (filas e SNS para envio assíncrono e eventos de entrega).
+Antes de aplicar este pattern, leia também [`../code-organization/SKILL.md`](../code-organization/SKILL.md), [`../code-style/SKILL.md`](../code-style/SKILL.md), [`../email/SKILL.md`](../email/SKILL.md) (templates, SMTP, LGPD em logs), [`../aws-sdk-java/SKILL.md`](../aws-sdk-java/SKILL.md), [`../aws-sns-sqs/SKILL.md`](../aws-sns-sqs/SKILL.md) (filas e SNS para envio assíncrono e eventos de entrega) e [`../localstack/SKILL.md`](../localstack/SKILL.md).
 
 # Amazon SES
 
@@ -63,19 +63,24 @@ public class EmailService {
     @Value("${app.mail.from}")
     private String from;
 
-    public void sendWelcome(String to, String name) {
+    @Value("${app.mail.configuration-set}")
+    private String configurationSet;
+
+    public void sendWelcome(Long userId, String to, String name) {
         var context = new Context();
         context.setVariable("name", name);
         var html = templateEngine.process("welcome", context);
+        var plain = "Welcome to Library, " + name + "!";
         try {
             var message = mailSender.createMimeMessage();
+            message.setHeader("X-SES-CONFIGURATION-SET", configurationSet);
             var helper = new MimeMessageHelper(message, true, "UTF-8");
             helper.setFrom(from);
             helper.setTo(to);
             helper.setSubject("Welcome to Library");
-            helper.setText(html, true);
+            helper.setText(plain, html);
             mailSender.send(message);
-            logger.info("Welcome email sent to {}", mask(to));
+            logger.info("Welcome email dispatched for userId={}", userId);
         } catch (MessagingException e) {
             throw new MailPreparationException("Error preparing the email!", e);
         }
@@ -83,8 +88,8 @@ public class EmailService {
 }
 ```
 - Template em `src/main/resources/templates/welcome.html` (Thymeleaf escapa variáveis — **evita injeção de HTML**; **nunca** concatene input do usuário no HTML do e-mail).
-- **Sempre** envie **versão HTML + texto alternativo** (`helper.setText(plain, html)`) — melhora entregabilidade; `UTF-8`; assunto sem CAPS/palavras de spam; link de descadastro em e-mail de marketing (para transacional, não exigido, mas bom).
-- **Logue com o destinatário mascarado** (`j***@example.com`) — e-mail é dado pessoal (LGPD, `observability`). Nunca logue o corpo (pode ter token de reset).
+- **Sempre** envie **versão texto alternativo + HTML** (`helper.setText(plain, html)`) — melhora entregabilidade; `UTF-8`; assunto sem CAPS/palavras de spam; link de descadastro em e-mail de marketing (para transacional, não exigido, mas bom).
+- **LGPD em logs (`email`, `observability`):** **não** logue o endereço de e-mail em `INFO` (registre apenas um identificador interno, como `userId`/`eventId`). Nunca logue o corpo (pode ter token de reset).
 - **E-mail de recuperação de senha**: token **de uso único e curto**, link sobre HTTPS, sem revelar se o e-mail existe (`authentication`).
 - **Anexos** (raw MIME): limite de tamanho do SES (40 MB por mensagem, incl. codificação); prefira **link para o S3 com presigned URL** (`aws-s3-sqs`) a anexos grandes.
 
@@ -114,16 +119,19 @@ O SES **monitora a sua reputação**: taxa alta de **bounce** (endereço inexist
 {
   "Effect": "Allow",
   "Action": ["ses:SendEmail", "ses:SendRawEmail"],
-  "Resource": "arn:aws:ses:us-east-1:123456789012:identity/example.com",
+  "Resource": [
+    "arn:aws:ses:us-east-1:123456789012:identity/example.com",
+    "arn:aws:ses:us-east-1:123456789012:configuration-set/library-default"
+  ],
   "Condition": { "StringEquals": { "ses:FromAddress": "no-reply@example.com" } }
 }
 ```
-A condição **`ses:FromAddress`** impede a aplicação (ou um atacante com a role) de enviar **como outro remetente**. Via IRSA/task role — **nunca access keys**. O processamento de bounces precisa só de `sqs:*` na fila de eventos.
+A condição **`ses:FromAddress`** impede a aplicação (ou um atacante com a role) de enviar **como outro remetente**; inclua também o ARN do `configuration-set` quando enviá-lo no header/API. Via IRSA/task role — **nunca access keys**. O processamento de bounces precisa só das ações mínimas na fila de eventos (`sqs:ReceiveMessage`, `sqs:DeleteMessage`, `sqs:ChangeMessageVisibility`, `sqs:GetQueueAttributes`, `sqs:GetQueueUrl` — nunca `sqs:*`).
 
 ## 6. Testes
 
 - **Unit** do `EmailService` com o `JavaMailSender` mockado: o `MimeMessage` tem `from`, `to`, assunto e o HTML esperado (`testing`).
-- **GreenMail** (SMTP falso, já usado no pack — `maven-config`) para provar o envio e o conteúdo de ponta a ponta quando se usa a rota SMTP; ou **LocalStack** (`.withServices("ses")`) para a API do SES (cobertura limitada; confirme). Credenciais **falsas** só no teste.
+- **GreenMail** (`email`, `maven-config`) para provar o envio e o conteúdo de ponta a ponta quando se usa a rota SMTP; ou **LocalStack** (`localstack`, `.withServices("ses")`) para a API do SES (cobertura limitada; confirme). Credenciais **falsas** só no teste.
 - Teste o **consumer de bounces** (mensagem de `Bounce` → endereço suprimido) e a **idempotência** (mesmo `messageId` duas vezes → um e-mail).
 - O **sandbox** real e a entregabilidade só se validam na conta AWS (envie para os verificadores de spam/inbox tests de dev).
 
@@ -133,7 +141,7 @@ A condição **`ses:FromAddress`** impede a aplicação (ou um atacante com a ro
 
 - Verifique o **domínio** com **DKIM + SPF (custom MAIL FROM) + DMARC**; saia do **sandbox** com solicitação de produção bem descrita.
 - **API do SES via IAM** (Spring Cloud AWS) de preferência; SMTP só com credenciais SMTP próprias no Secrets Manager.
-- Templates Thymeleaf (escape automático), **HTML + texto**, UTF-8; **nunca** concatene input no HTML; logue destinatário **mascarado** e **nunca** o corpo.
+- Templates Thymeleaf (escape automático), **HTML + texto**, UTF-8; **nunca** concatene input no HTML; nunca logue e-mail em `INFO` nem o corpo (`email`, LGPD).
 - **Envio assíncrono** por fila (com outbox quando preciso), **idempotente** por `messageId`, com retry limitado, **DLQ** e rate limit pela cota do SES.
 - **Bounces/complaints**: configuration set → SNS → SQS → **suprimir endereços**; alarmes de reputação; sem listas sem consentimento.
 - IAM mínimo com **`ses:FromAddress`** e ARN da identidade; nunca access keys.

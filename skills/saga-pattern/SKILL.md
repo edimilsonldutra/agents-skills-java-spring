@@ -77,6 +77,7 @@ public record ChargePayment(String sagaId, long orderId, BigDecimal amount) {}
 public record PaymentCompleted(String sagaId, long orderId) {}
 public record PaymentFailed(String sagaId, long orderId, String reason) {}
 public record ReleaseStock(String sagaId, long orderId) {}
+public record StockReleased(String sagaId, long orderId) {}
 ```
 
 ### 3.1 Coreografia (sem coordenador)
@@ -213,6 +214,14 @@ public class OrderSagaOrchestrator {
         saga.moveTo(SagaStep.COMPENSATING_STOCK, reply.reason());
         outbox.command("library.inventory.commands.v1", saga.getId(),
                 new ReleaseStock(saga.getId(), saga.getOrderId()));
+    }
+
+    @Transactional
+    public void on(StockReleased reply) {
+        var saga = sagas.findById(reply.sagaId()).orElseThrow();
+        if (saga.getStep() != SagaStep.COMPENSATING_STOCK) return;
+        saga.markCompensated();
+        orders.reject(saga.getOrderId());
     }
 
     @Transactional

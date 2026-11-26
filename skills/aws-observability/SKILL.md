@@ -39,11 +39,11 @@ filter @message like /Exception/
 
 ## 2. Métricas
 
-**Opção A — Micrometer → CloudWatch** (a aplicação publica diretamente):
+**Opção A — Micrometer → CloudWatch** (via Spring Cloud AWS, que fornece a auto-configuration — o Spring Boot não traz auto-configuration nativa para `micrometer-registry-cloudwatch2`):
 ```xml
 <dependency>
-    <groupId>io.micrometer</groupId>
-    <artifactId>micrometer-registry-cloudwatch2</artifactId>
+    <groupId>io.awspring.cloud</groupId>
+    <artifactId>spring-cloud-aws-starter-metrics</artifactId>
 </dependency>
 ```
 ```yaml
@@ -55,7 +55,7 @@ management:
         step: 1m
         batch-size: 20
 ```
-(O BOM do Boot gerencia a versão; o Boot 4 modularizou a auto-configuration — confirme o artifact/propriedades na versão resolvida, `maven-config`.) **Atenção a custo:** o CloudWatch cobra **por métrica customizada (cada combinação única nome + dimensões)** por mês e por chamada de API. **Cardinalidade alta (userId, orderId, URL com parâmetro) explode a fatura** — a regra de tags de `observability` vale **em dobro** aqui. Exporte só o que alarma/dashboard usa (filtros de meter: `management.metrics.enable.*`/`MeterFilter`), com `step` de 1 min.
+(Versão gerenciada pelo BOM `io.awspring.cloud:spring-cloud-aws-dependencies` na linha compatível com o Boot 4; confirme o artifact e as chaves exatas com `library-docs`.) **Atenção a custo:** o CloudWatch cobra **por métrica customizada (cada combinação única nome + dimensões)** por mês e por chamada de API. **Cardinalidade alta (userId, orderId, URL com parâmetro) explode a fatura** — a regra de tags de `observability` vale **em dobro** aqui. Exporte só o que alarma/dashboard usa (filtros de meter: `management.metrics.enable.*`/`MeterFilter`), com `step` de 1 min.
 - A role precisa de **`cloudwatch:PutMetricData`** (com `Condition` `cloudwatch:namespace` = `Library/Api`) — IRSA/task role, **nunca access keys**.
 
 **Opção B — Embedded Metric Format (EMF):** a aplicação (ou o **Powertools Metrics** no Lambda) escreve um **log JSON em formato EMF** e o CloudWatch **extrai as métricas do log** — sem chamadas de API, baixa latência, ideal para **Lambda** (`aws-lambda`) e containers com o agente. As métricas custom continuam sendo cobradas por série.
@@ -72,11 +72,13 @@ management:
   tracing:
     sampling:
       probability: 0.1
-  otlp:
+  opentelemetry:
     tracing:
-      endpoint: http://localhost:4318/v1/traces
+      export:
+        otlp:
+          endpoint: http://localhost:4318/v1/traces
 ```
-(Confirme o starter/propriedades de OpenTelemetry do Boot 4 em `observability`.)
+(No Boot 4 com `spring-boot-starter-opentelemetry`; confirme as propriedades na versão resolvida em `observability` e com `library-docs`.)
 - **Onde roda o collector:** **ECS** → **sidecar** ADOT na task (`aws-ecs-fargate`); **EKS** → **DaemonSet** ou Deployment ADOT (add-on); **Lambda** → **Lambda layer** do ADOT ou `Tracing: Active` (X-Ray nativo) — `aws-lambda`.
 - **Amostragem em produção** (5–20%); 100% só em dev. X-Ray também suporta **regras de amostragem** (por serviço/URL — sempre amostrar erros).
 - **Propagação:** use os **builders do Spring** (`RestClient.Builder`) para propagar o contexto; o **ALB** injeta o header `X-Amzn-Trace-Id` (X-Ray o reconhece); **SQS/SNS/EventBridge** propagam via atributos/headers quando instrumentados.
@@ -126,4 +128,3 @@ management:
 - Alarmes **acionáveis**, de **sintoma primeiro** (5xx%, p99, idade da fila, DLQ, tasks/hosts), com percentis, `DatapointsToAlarm`, composite quando preciso; notificação por SNS/Chatbot com **runbook** e severidade.
 - **Tudo como código** (alarmes, dashboards, log groups, retenção) em Terraform; SLO e burn rate; canaries para o fluxo crítico.
 - IAM mínimo, via IRSA/task role — **nunca access keys**; Budgets e alarme de ingestão para custo.
-- **Sem Lombok** — deliberado.

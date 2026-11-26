@@ -140,4 +140,3 @@ Em times maduros, **descoberta e entrega acontecem em paralelo**: enquanto a eng
 - Use o **experimento mais barato** que responde à dúvida (entrevista → fake door → protótipo → concierge → MVP com flag → A/B); **não mude a meta depois do resultado**.
 - Decisão registrada: **seguir, ajustar ou parar** (parar é sucesso); leve **evidência**, não opinião de cargo.
 - **Nunca invente dado**: sem fonte, escreva "hipótese/a medir". Pesquisa com pessoas exige **consentimento, anonimização e retenção limitada**.
-- **Sem Lombok** — deliberado (e sem código aqui: esta é uma skill de produto).

@@ -156,4 +156,3 @@ Estratégia (diagnóstico → política → ações)  → escolhas e abdicaçõe
 - **Business case** com benefícios mensuráveis, custos (do tech lead, **incluindo operação**), **cenários**, riscos, alternativas (inclusive **não fazer/comprar**), **métrica de sucesso e critério de parada**.
 - **Construa o diferencial, compre a commodity**; parcerias com consciência da dependência.
 - **Estratégia → OKR → roadmap → descoberta/PRD → priorização → entrega/lançamento → medição**, e a medição **revisa a estratégia**; revise em cadência e quando o contexto mudar; **comunique** de modo que qualquer pessoa a explique em 1 minuto.
-- **Sem Lombok** — deliberado (skill de produto, sem código).

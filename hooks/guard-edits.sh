@@ -25,6 +25,22 @@ json_string() {
   printf '%s' "$value"
 }
 
+# Extrai todas as ocorrências string de uma chave do JSON (necessário para MultiEdit,
+# que envia vários pares old_string/new_string em tool_input.edits).
+json_all_strings() {
+  local re='"'"$1"'"[[:space:]]*:[[:space:]]*"((\\.|[^"\\])*)"' rest=$input value out=""
+  while [[ $rest =~ $re ]]; do
+    value=${BASH_REMATCH[1]}
+    rest=${rest#*"${BASH_REMATCH[0]}"}
+    value=${value//\\\"/\"}
+    value=${value//\\n/ }
+    value=${value//\\t/ }
+    value=${value//\\\\/\\}
+    out+="${value} "
+  done
+  printf '%s' "$out"
+}
+
 ask() {
   printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"ask","permissionDecisionReason":"squads guardrail: %s — confirme antes de alterar."}}\n' "$1"
   exit 0
@@ -33,48 +49,68 @@ ask() {
 path=$(json_string file_path)
 [ -z "$path" ] && exit 0
 norm=${path//\\//}
+match_path="/${norm#/}"
 
-# O orchestrator só grava o ledger da entrega (docs/delivery/*.md). Vale quando o Claude Code
-# informa o agent no campo agent_type (subagent ou sessão aberta com --agent).
+# Escopo de gravação por papel. Vale quando o Claude Code informa agent_type
+# (subagent ou sessão aberta com --agent).
 case "$(json_string agent_type)" in
   orchestrator|*:orchestrator)
-    case "$norm" in
-      docs/delivery/*.md|*/docs/delivery/*.md) ;;
+    case "$match_path" in
+      */docs/delivery/*.md) ;;
       *) ask "o orchestrator só grava o ledger em docs/delivery/*.md; o resto é trabalho dos especialistas" ;;
+    esac
+    ;;
+  qa|*:qa)
+    case "$match_path" in
+      */src/test/*|*/postman/*|*Test.java|*Tests.java|*IT.java|*Spec.groovy|*Test.kt) ;;
+      *) ask "o qa altera somente código de teste (src/test/**, fixtures, collections); correção de produção é do developer" ;;
+    esac
+    ;;
+  product-manager|*:product-manager)
+    case "$match_path" in
+      */docs/product/*.md) ;;
+      *) ask "o product-manager grava somente documentos em docs/product/*.md" ;;
+    esac
+    ;;
+  architect|*:architect)
+    case "$match_path" in
+      */docs/design/*.md|*/docs/adr/*.md|*/docs/security/*.md|*/docs/architecture/*.md|*/docs/architecture/*.drawio|*/docs/architecture/*.png|*/docs/architecture.md) ;;
+      *) ask "o architect grava somente documentos de arquitetura, design, ADR e threat model em docs/" ;;
     esac
     ;;
 esac
 
 # Exemplos e modelos de .env não são segredo.
-case "$norm" in
+case "$match_path" in
   *.env.example|*.env.sample|*.env.template|*.env.dist) ;;
-  *.env|*/.env.*)                                        ask "arquivo .env (segredos)" ;;
+  */.env|*/.env.*)                                      ask "arquivo .env (segredos)" ;;
 esac
 
-case "$norm" in
-  */.github/workflows/*|.github/workflows/*)            ask "workflow de CI/CD (permissões, segredos e deploy passam por aqui)" ;;
+case "$match_path" in
+  */.github/workflows/*)                                ask "workflow de CI/CD (permissões, segredos e deploy passam por aqui)" ;;
   *.pem|*.p12|*.jks|*.pfx|*.keystore|*/id_rsa|*/id_ed25519|*.key) ask "chave, certificado ou keystore" ;;
   */.aws/credentials|*/.aws/config|*/.ssh/*|*/.kube/config|*/.docker/config.json) ask "credenciais do usuário" ;;
-  */.claude/settings.json|*/.claude/settings.local.json|*/hooks/hooks.json) ask "configuração do Claude Code ou do plugin (permissões e hooks)" ;;
+  */.claude/settings.json|*/.claude/settings.local.json|*/hooks/hooks.json|*/hooks/*.sh) ask "configuração do Claude Code ou do plugin (permissões e hooks)" ;;
 esac
 
 # Migration Flyway já versionada no Git: editar quebra o checksum em todo ambiente onde ela rodou.
-case "$norm" in
+case "$match_path" in
   */db/migration/*|*/db/migrations/*|*/V[0-9]*__*.sql|*/R__*.sql)
     dir=${norm%/*}
+    file=${norm##*/}
     [ "$dir" = "$norm" ] && dir=.
-    if git -C "$dir" ls-files --error-unmatch -- "$norm" >/dev/null 2>&1; then
+    if git -C "$dir" ls-files --error-unmatch -- "$file" >/dev/null 2>&1; then
       ask "migration Flyway já versionada no Git (edite só a que você criou e ainda não commitou; para mudar o schema, crie uma nova)"
     fi
     ;;
 esac
 
 # Conteúdo que esconde problema em vez de resolver.
-new=$(json_string new_string)
+new=$(json_all_strings new_string)
 [ -z "$new" ] && new=$(json_string content)
 [ -z "$new" ] && exit 0
 
-case "$norm" in
+case "$match_path" in
   */src/test/*|*Test.java|*Tests.java|*IT.java|*Spec.groovy|*Test.kt)
     re='@Disabled|@Ignore([^[:alnum:]_]|$)|assumeTrue\(false|@EnabledIf\("false"'
     if [[ $new =~ $re ]]; then
