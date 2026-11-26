@@ -3,7 +3,7 @@ name: caching
 description: Cache no Spring Boot — @Cacheable/@CachePut/@CacheEvict, Caffeine local × Redis/ElastiCache distribuído, TTL e tamanho máximo, desenho de chaves, cachear DTOs (nunca entities), invalidação, stampede, tolerância a falha do cache, hit ratio e testes. Use quando uma leitura medida como cara precisar de cache ou ao revisar um cache existente.
 ---
 
-Antes de aplicar este pattern, leia também [`../code-organization/SKILL.md`](../code-organization/SKILL.md), [`../code-style/SKILL.md`](../code-style/SKILL.md) e [`../spring-data-jpa/SKILL.md`](../spring-data-jpa/SKILL.md).
+Antes de aplicar este pattern, leia também [`../code-organization/SKILL.md`](../code-organization/SKILL.md), [`../code-style/SKILL.md`](../code-style/SKILL.md) e [`../spring-data-jpa/SKILL.md`](../spring-data-jpa/SKILL.md). Para usar Redis/Valkey diretamente além de `@Cacheable` (`RedisTemplate`, TTL por cache, estruturas de dados, Lua, locks distribuídos, rate limiting, Streams, `maxmemory-policy`, Cluster/ElastiCache), leia [`../redis/SKILL.md`](../redis/SKILL.md).
 
 # Caching
 
@@ -111,8 +111,8 @@ spring:
 - **Serialização JSON (nunca serialização Java nativa em Redis):** o default do Spring Data Redis (`JdkSerializationRedisSerializer`) usa `ObjectInputStream`, o que contraria `application-security` (risco de desserialização insegura) e quebra entradas antigas em cada mudança de classe. Configure `RedisCacheConfiguration.defaultCacheConfig().serializeValuesWith(SerializationPair.fromSerializer(RedisSerializer.json()))` (ou o serializador JSON de Jackson 3 da versão resolvida do Spring Data Redis 4 — confirme com `library-docs`).
 - **Atenção com HATEOAS:** se o DTO carrega links montados por request ou condicionais por permissão do usuário (`hateoas`), **não** o cacheie pronto sob chave global (`#id`) — cacheie os dados puros do DTO e monte os links após a leitura.
 - **Timeout curto e tolerância a falha:** o cache **não pode derrubar a API**. Com Redis fora, a requisição deve ir ao database, não falhar. Registre um `CacheErrorHandler` que loga e ignora erros de leitura/escrita do cache.
-- **ElastiCache:** em subnet privada, security group aceitando só o SG do cluster, TLS em trânsito (`ssl.enabled: true`), criptografia em repouso, e (para disponibilidade) **Multi-AZ com failover**; o endpoint vem por variável de ambiente (`aws-rds-secrets-manager` para o auth token no Secrets Manager).
-- Redis também serve para **revogar JWT** (guardar `jti` de tokens revogados até expirar — `authentication`) e para **rate limiting**.
+- **ElastiCache / Valkey:** em subnet privada, security group aceitando só o SG do cluster, TLS em trânsito (`ssl.enabled: true`), criptografia em repouso, e (para disponibilidade) **Multi-AZ com failover** ou Serverless; o endpoint vem por variável de ambiente (`aws-rds-secrets-manager` para o auth token no Secrets Manager).
+- **Além de `@Cacheable`:** para TTL diferente por cache (`RedisCacheManagerBuilderCustomizer`), `StringRedisTemplate`/estruturas, scripts Lua, locks distribuídos, revogação de JWT, rate limiting, Streams/Pub-Sub, política de `maxmemory` e topologia Cluster/Sentinel, veja [`../redis/SKILL.md`](../redis/SKILL.md).
 
 ---
 

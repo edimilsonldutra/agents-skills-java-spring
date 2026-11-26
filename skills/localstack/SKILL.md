@@ -299,7 +299,7 @@ Para **um único serviço**, uma ferramenta dedicada pode ser mais leve e fiel:
 | DynamoDB | **DynamoDB Local** (`amazon/dynamodb-local`, oficial da AWS) |
 | SES | **GreenMail** (SMTP falso — já usado no pack, `aws-ses`) |
 | RDS | **Testcontainers** com o banco real (`integration-testing`) |
-| Redis/ElastiCache | **Testcontainers `redis`** (`caching`) |
+| Redis/ElastiCache | **Testcontainers `valkey`/`redis`** (`caching`, `redis`) |
 | Kafka/MSK | **Testcontainers Kafka** (`kafka`) |
 
 Prefira **LocalStack quando o fluxo envolve vários serviços AWS juntos** (SNS→SQS→Lambda→DynamoDB); a ferramenta dedicada quando é **um** serviço e você quer fidelidade máxima.
