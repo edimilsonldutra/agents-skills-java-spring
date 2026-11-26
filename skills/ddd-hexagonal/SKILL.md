@@ -1,6 +1,6 @@
 ---
 name: ddd-hexagonal
-description: DDD tático e arquitetura hexagonal no Spring Boot — bounded contexts e context map, intensidade de DDD por subdomínio (Core, Supporting, Generic), entities, value objects como records, aggregates e invariantes, domain events, ports e adapters, mapeamento domínio ↔ JPA, ArchUnit, diagnóstico e refatoração de modelo anêmico e quando NÃO usar (CRUD). Use quando modelar um domínio rico ou avaliar sair do layout flat-by-layer. Não use para CRUD nem para decidir a divisão em serviços (microservices).
+description: DDD tático e arquitetura hexagonal no Spring Boot — bounded contexts e context map, intensidade de DDD por subdomínio (Core, Supporting, Generic), entities, value objects como records, aggregates e invariantes, domain events, ports e adapters (regra da dependência da Arquitetura Limpa, banco e framework como detalhes), limites parciais, mapeamento domínio ↔ JPA, ArchUnit, diagnóstico e refatoração de modelo anêmico e quando NÃO usar (CRUD). Use quando modelar um domínio rico ou avaliar sair do layout flat-by-layer. Não use para CRUD nem para decidir a divisão em serviços (microservices).
 ---
 
 Antes de aplicar este pattern, leia também [`../code-organization/SKILL.md`](../code-organization/SKILL.md), [`../code-style/SKILL.md`](../code-style/SKILL.md), [`../spring-data-jpa/SKILL.md`](../spring-data-jpa/SKILL.md) e [`../microservices/SKILL.md`](../microservices/SKILL.md) (onde os bounded contexts viram serviços). Esta skill **estende** `code-organization` para domínios complexos; ela **não** substitui o layout flat-by-layer para serviços simples.
@@ -19,6 +19,13 @@ Antes de aplicar este pattern, leia também [`../code-organization/SKILL.md`](..
 | Vários times/serviços exigem **fronteiras de contexto** claras | Você só quer "arquitetura bonita" |
 
 **O layout flat-by-layer do pack (`code-organization`) é o padrão e basta para a maioria dos serviços.** Hexagonal custa **mais código** (mapeamentos entre modelos, interfaces) — só vale quando a complexidade do **domínio** a justifica. Aplicar hexagonal a um CRUD é *over-engineering* (`code-reviewer`: abstração prematura).
+
+**Entre os dois existe o limite parcial**, quando a fronteira completa ainda não se paga mas você quer deixá-la preparada:
+- **Pular o último passo**: portas e adaptadores separados por interfaces, mas no **mesmo** módulo/artefato. É o que este pacote faz por padrão (a seção 3 vive num projeto só).
+- **Limite unidimensional**: só a porta de **saída** que importa (`BookCatalog` para o serviço externo, `Clock`), sem portas de entrada nem modelo separado. Boa opção num flat-by-layer com uma integração instável.
+- **Fachada**: uma classe que concentra o acesso a um subsistema, sem inverter a dependência. A mais barata, e a mais fácil de erodir.
+
+Todo limite parcial tende a se degradar sem verificação: registre a escolha em ADR e proteja-a com ArchUnit (seção 4).
 
 ---
 
@@ -186,7 +193,11 @@ Só carrega/salva **aggregates inteiros pelo root**. Consultas de leitura sofist
         │ ADAPTERS DE SAÍDA: JPA · outbox/Kafka · REST│
         └─────────────────────────────────────────────┘
 ```
-**A regra de dependência:** tudo aponta **para dentro**. `domain` não depende de nada (nem Spring, nem JPA, nem Jackson). `application` depende de `domain`. `adapter` depende de `application`/`domain`. **Nunca** o contrário.
+**A regra de dependência:** tudo aponta **para dentro**. É a mesma regra da *Arquitetura Limpa*, com outros nomes: o círculo de **Entities** corresponde a `domain`, o de **Use Cases** a `application`, o de **Interface Adapters** aos `adapter`s e o de **Frameworks and Drivers** ao Spring, ao JPA, ao Kafka e ao banco. Neste pacote usamos os nomes do hexagonal. `domain` não depende de nada (nem Spring, nem JPA, nem Jackson). `application` depende de `domain`. `adapter` depende de `application`/`domain`. **Nunca** o contrário.
+
+**Banco, web e framework são detalhes.** O que o sistema **é** (as regras de empréstimo) não deveria mudar porque o banco virou DynamoDB, a entrada virou um listener SQS ou o Spring subiu de versão. Por isso o domínio não importa `jakarta.persistence`, `org.springframework` nem Jackson na variante pura: o casamento com um framework é **assimétrico** (você se compromete com ele, ele não se compromete com você), e o custo aparece na próxima versão major. Na prática do pacote, o Spring é aceito em `application` e nos adapters; o domínio fica limpo, ou aceita só JPA na variante pragmática (abaixo).
+
+**Os dados que cruzam a fronteira** são estruturas simples (records de comando e de resultado, eventos), nunca a entity JPA nem o DTO HTTP: o use case recebe um `StartLoanCommand` e devolve um `LoanStarted`, e o adapter web os traduz de e para o JSON.
 
 | Porta | Direção | Exemplo |
 |---|---|---|
@@ -420,6 +431,8 @@ Pedido de **revisão** ("está bom?") → só diagnostique e pergunte antes de r
 - **Use case "caixa de ferramentas"** com regra de negócio (em vez de delegar ao aggregate).
 - **Vazar o modelo de outro contexto** (usar o DTO do `catalog` dentro do `lending`) — falta de ACL.
 - Misturar **evento de domínio** com **evento de integração** público.
+- **Use case recebendo ou devolvendo entity JPA ou DTO HTTP**: o detalhe atravessou a fronteira.
+- **Limite parcial sem verificação**: a fachada ou a interface única que todos contornam "só desta vez".
 
 ---
 
@@ -435,5 +448,10 @@ Pedido de **revisão** ("está bom?") → só diagnostique e pergunte antes de r
 - **Regra de dependência para dentro**: `domain` puro → `application` (use cases, `@Transactional`) → `adapters`; repository é **port** do domínio.
 - Controller fino; **DTO de borda** (aggregate/entity nunca exposta); exceptions de domínio traduzidas no adapter web.
 - Constructor injection **justificada** neste estilo (núcleo testável sem Spring) — registre no `CLAUDE.md`; decida **pura × pragmática** (JPA no domínio) em ADR.
+- **Limite parcial** (pular o último passo, limite unidimensional, fachada) quando a fronteira completa ainda não se paga, registrado em ADR.
 - **ArchUnit** impõe a regra de dependência no build; domínio testado sem Spring, use cases com fakes.
 - **Sem Lombok** — deliberado.
+
+## Referências
+
+- Robert C. Martin, *Arquitetura Limpa* (Alta Books, 2019), caps. 17 a 24 e 30 a 32: fronteiras, regra da dependência, modelos de requisição e resposta, limites parciais e banco, web e frameworks como detalhes. As ideias foram mapeadas para o vocabulário hexagonal do pacote.

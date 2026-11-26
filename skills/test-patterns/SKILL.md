@@ -320,7 +320,7 @@ class MoneyProperties {
 | **Slow test** | Unit test que sobe Spring/banco | Rebaixe para unit; mova o que é de integração |
 | **Conditional / ignored test** | `@Disabled`, `assumeTrue` "permanente" | Conserte ou **apague** (teste desabilitado é dívida invisível) |
 | **Duplicação de setup** | Mesmo setup em 30 testes | Builders/`@BeforeEach` enxuto/helpers |
-| **Testar a implementação** | O teste espelha o código linha a linha | Teste **comportamento público** |
+| **Testar a implementação** | O teste espelha o código linha a linha; renomear uma classe interna quebra 30 testes | Teste **comportamento público**; quando muitos testes dependem da mesma estrutura, crie uma **API de teste** (builders e helpers que isolam os testes da estrutura interna). O teste é parte do sistema e obedece à mesma regra da dependência: depende do que é estável |
 | **Teste que nunca falha** | Sem assert; `assertTrue(true)`; `catch` engolindo | **Mutation check** (quebre o código de propósito e veja o teste falhar — `test-coverage`, PIT) |
 | **Sleepy test** | `Thread.sleep` para esperar | Awaitility/latch |
 | **Excessive setup** | 40 linhas de Given | A classe faz demais; builders; revisar o design |
@@ -385,6 +385,7 @@ Código difícil de testar costuma ser código mal desenhado; o teste só denunc
 - **Domínio separado da infraestrutura**: a regra (calcular multa, decidir renovação) não chama repository, HTTP nem `LocalDate.now()` no meio do cálculo. O service busca os dados, o domínio decide, o service persiste. Assim a regra se testa com unit test puro e a infraestrutura com integração (`ddd-hexagonal`, `testing`).
 - **Controlabilidade**: tudo que o teste precisa fixar entra por **injeção** (`Clock`, gerador de id, cliente HTTP), nunca `new` ou chamada estática dentro da regra. **Valor como parâmetro** quando é dado do cálculo (`canRenew(LocalDate today)`), **dependência no construtor** quando é colaborador com comportamento (`Clock`, repository).
 - **Observabilidade**: o teste precisa **ver** o resultado. Método `void` que só altera estado interno ou chama um colaborador se observa pelo estado público resultante, pelo retorno de outro método de consulta, ou pelo efeito na fronteira (`ArgumentCaptor` no `save`/`publish` — `testing`). Acrescentar um método de consulta **com sentido de domínio** (`loan.isOverdue(today)`) para facilitar o assert é legítimo; expor campo interno só para o teste, não.
+- **Objeto humilde (Humble Object)**: na fronteira difícil de testar (controller, listener, job agendado, adapter de e-mail ou de arquivo), separe a parte **humilde**, fina demais para ter bug (receber, converter, chamar), da parte com **lógica**, que vai para uma classe testável com unit test. O listener SQS só desserializa e chama o service; o job só chama `processOverdueLoans(clock)`; o exporter de PDF recebe um modelo já calculado.
 - **Método privado**: teste pelo público. Se um privado é complexo o bastante para pedir teste próprio, ele quer ser **outra classe** (extraia e teste a classe).
 - **Estáticos e singletons com estado** (`Instant.now()`, cache estático, `ThreadLocal` de contexto): envolva em um bean injetável. **Classe com muitas dependências** ou **setup de 40 linhas** é sinal de baixa coesão (seção 11, *excessive setup*): divida a classe, não o teste.
 
@@ -428,4 +429,5 @@ Código difícil de testar costuma ser código mal desenhado; o teste só denunc
 ## Referências
 
 - Mauricio Aniche, *Effective Software Testing: A developer's guide* (Manning, 2022): teste por especificação em 7 passos, pontos on/off/in/out, critério de fronteira de laço, MC/DC, design by contract, testabilidade e qualidade do código de teste. As técnicas foram reescritas com os exemplos do pacote (`Book`, `Loan`).
+- Robert C. Martin, *Arquitetura Limpa* (Alta Books, 2019), caps. 23 (Humble Object) e 28 (o limite do teste e a API de teste).
 - Gerard Meszaros, *xUnit Test Patterns* (Addison-Wesley, 2007): vocabulário de test doubles e test smells.

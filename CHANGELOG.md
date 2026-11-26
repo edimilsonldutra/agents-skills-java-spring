@@ -2,6 +2,16 @@
 
 Mudanças notáveis do plugin `squads`. A versão é a de `.claude-plugin/plugin.json`; quem já instalou só recebe uma mudança quando ela sobe.
 
+## 2.15.0 — 2026-11-26
+
+### Arquitetura Limpa (Robert C. Martin)
+- `code-organization`: trade-off do flat-by-layer frente a empacotar por recurso, por portas e adaptadores ou por componente (arquitetura que "grita" o domínio, tudo `public`, regra das camadas só por revisão ou ArchUnit), sinais para migrar para módulos e `Startup`/`config/` como componente Main.
+- `modular-monolith`: nova seção 8, coesão e acoplamento entre módulos (fechamento comum, reúso comum, reúso e versão, sem ciclos, dependências na direção da estabilidade, módulo estável expõe abstração, instabilidade como diagnóstico).
+- `ddd-hexagonal`: limites parciais (pular o último passo, limite unidimensional, fachada), mapeamento dos círculos da Arquitetura Limpa para `domain`/`application`/adapters, banco, web e framework como detalhes, dados simples cruzando a fronteira e dois anti-patterns novos.
+- `test-patterns`: Humble Object e API de teste. `microservices`: serviços não são arquitetura (a feature transversal). `prioritization`: os dois valores do software e a matriz de Eisenhower. `solid`: referências.
+- `architect` e `code-reviewer`: estabilidade das dependências entre módulos, limite parcial, detalhe cruzando a fronteira do use case e regra de negócio em `@Configuration`. `guide` e `docs/guide.md` atualizados.
+- Ideias reescritas com os exemplos e o vocabulário do pacote; nenhum trecho do livro copiado.
+
 ## 2.14.0 — 2026-11-26
 
 ### Desenho de casos de teste (Aniche, *Effective Software Testing*)

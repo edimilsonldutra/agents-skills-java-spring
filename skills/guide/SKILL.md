@@ -125,8 +125,8 @@ Antes de descrever a lista de skills, verifique o que realmente está presente e
 | LGPD: base legal, direitos do titular, retenção, eliminação, incidente | `privacy-lgpd` |
 | Status, resumo executivo, decision log, release notes, dizer não | `stakeholder-communication` |
 | Decidir entre monolito e microsserviços; como dividir | `microservices` |
-| Começar sem pagar o custo distribuído (módulos com fronteiras verificadas) | `modular-monolith` |
-| Domínio rico: aggregates, value objects, ports and adapters; quanto DDD cada subdomínio merece; modelo anêmico | `ddd-hexagonal` |
+| Começar sem pagar o custo distribuído (módulos com fronteiras verificadas; o que fica junto e quem depende de quem) | `modular-monolith` |
+| Domínio rico: aggregates, value objects, ports and adapters (regra da dependência, limites parciais); quanto DDD cada subdomínio merece; modelo anêmico | `ddd-hexagonal` |
 | Entrada única para clientes, BFF, rate limit na borda | `api-gateway` |
 | Chamar outro serviço com segurança e timeouts; gRPC; service mesh | `service-communication` |
 | Falha parcial, timeout, retry sem retry storm, circuit breaker | `resilience` |

@@ -80,6 +80,8 @@ Se 100% da capacidade vai para features, a **dívida técnica e a confiabilidade
 | **Aprendizado/experimentos** | Descoberta, spikes, testes (`product-discovery`) | Evita apostas cegas |
 | **Imprevistos/suporte/incidentes** | Buffer | **Sempre existe** — planeje-o em vez de fingir que não |
 
+**Os dois valores do software.** Todo sistema entrega **comportamento** (o que faz hoje) e **estrutura** (o quanto é fácil mudar amanhã). O stakeholder enxerga só o primeiro, e por isso ele sempre parece mais urgente. Na matriz urgente × importante (Eisenhower), a arquitetura costuma ser **importante e não urgente**, e a feature do mês, **urgente e às vezes pouco importante**: quem prioriza só pela urgência troca a estrutura pela feature até o custo de cada mudança disparar. Um sistema que funciona mas não se deixa mudar perde valor a cada requisito; um que ainda não funciona mas se muda com facilidade se corrige. Cabe ao `tech-lead` defender a estrutura com o mesmo peso, usando dados (tempo de ciclo, taxa de bugs por mudança — `agile-delivery`, `technical-product-management`).
+
 Uma divisão **ilustrativa** (ajuste ao seu contexto, **não é regra**): ~60–70% valor, ~20% dívida/confiabilidade, ~10% aprendizado, ~10% buffer. O importante é **ter a conversa** e **medir** (tempo de ciclo piorando = sinal de dívida demais — `agile-delivery`).
 
 ## 4. Dependências, riscos e sequenciamento

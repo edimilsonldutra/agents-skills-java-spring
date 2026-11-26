@@ -1,6 +1,6 @@
 ---
 name: code-organization
-description: Fundação do pacote — faz uma única vez o questionário de preferências do projeto (comentários, database, Swagger, build tool, mapper, injection) e define o layout flat-by-layer sob br.com.edimilsonldutra, naming, Startup, patterns de entity/DTO/controller/service/exception e o application.yml. Use antes de gerar código em qualquer projeto Spring Boot deste padrão ou quando perguntarem onde algo deve ficar.
+description: Fundação do pacote — faz uma única vez o questionário de preferências do projeto (comentários, database, Swagger, build tool, mapper, injection) e define o layout flat-by-layer sob br.com.edimilsonldutra (com o trade-off e quando migrar para módulos), naming, Startup, patterns de entity/DTO/controller/service/exception e o application.yml. Use antes de gerar código em qualquer projeto Spring Boot deste padrão ou quando perguntarem onde algo deve ficar.
 ---
 
 # Estrutura de Aplicação Spring Boot
@@ -106,6 +106,15 @@ br.com.edimilsonldutra/
 
 Crie somente os packages de que uma feature precisa; um primeiro CRUD tem `controllers`, `services`, `repository`, `model`, `data/dto`, `exception`, `config`, `mapper`.
 
+### Por que flat-by-layer, e quando deixar de ser
+
+Há quatro formas clássicas de empacotar: **por camada** (este layout), **por recurso** (`book/` com controller, service e repository juntos), **portas e adaptadores** (`ddd-hexagonal`) e **por componente** (um package por capacidade, com a API pública no topo e os internos escondidos — `modular-monolith`). O flat-by-layer é a escolha do pacote para **um serviço com um domínio e pouca regra**: é o layout que todo dev Spring reconhece e o mais barato de gerar. O preço é conhecido:
+- **A estrutura não "grita" o domínio**: olhando os packages se vê `controllers/services/repository`, não `lending/catalog/billing`. Com um domínio, tudo bem; com vários, o `services/` vira um saco de 40 classes de 6 assuntos.
+- **Tudo é `public`**, porque uma camada precisa enxergar a outra em outro package. Nada impede o controller de chamar o repository direto, pulando o service: a regra "controller → service → repository" só se mantém por revisão (`code-reviewer`) ou por um teste de **ArchUnit** (`ddd-hexagonal`, seção 4).
+- **Uma feature espalha-se por 5 a 7 packages**, e um PR pequeno toca todos.
+
+Sinais de que é hora de mudar: **mais de um domínio** no mesmo serviço, times diferentes mexendo em partes diferentes, ou o mesmo service crescendo por motivos de negócio distintos. A migração recomendada é para **módulos por capacidade** (`modular-monolith`), com o flat-by-layer reduzido **dentro** de cada módulo; hexagonal só onde o domínio for rico (`ddd-hexagonal`). Registre a mudança em ADR.
+
 ---
 
 ## Naming Conventions
@@ -137,6 +146,7 @@ public class Startup {
     }
 }
 ```
+A `Startup` e as classes de `config/` são o **componente Main** da aplicação: o lugar mais "sujo", que conhece todas as implementações concretas e as liga (beans, properties, perfis). Nenhuma regra de negócio depende dele, e é por isso que ele pode depender de tudo. Regra de negócio dentro de `@Configuration` ou de um `@Bean` é achado de revisão.
 
 ### Entity
 Sem Lombok. Constructor sem argumentos explícito. `equals()`/`hashCode()` via `Objects`, usando getters, sobre todos os campos. Sempre `implements Serializable` com `serialVersionUID = 1L`. Constraints de coluna declaradas com `@Column`. Datas sem parte de horário usam `java.time.LocalDate` (nunca `java.util.Date` + `@Temporal`, que o Hibernate 7 depreca). Veja `spring-data-jpa` para relationships, fetch types e repositories.
@@ -404,3 +414,7 @@ Toda mudança posterior em uma setting compartilhada precisa ser feita nos dois 
 ## Onde vive o resto
 
 Cada tópico tem a sua skill (persistence, migrations, erros, web config, Swagger, validation, segurança, testes, mensageria, microsserviços, Docker/Kubernetes, AWS e produto). Para o mapa completo de "qual skill para qual necessidade", use a skill `guide` — não repita o mapa aqui. Toda skill desta família segue este layout e as preferências do Step 0.
+
+## Referências
+
+- Robert C. Martin, *Arquitetura Limpa: o guia do artesão para estrutura e design de software* (Alta Books, 2019), caps. 21 (arquitetura gritante), 26 (o componente Main) e 34 (pacote por camada, por recurso, portas e adaptadores e por componente). As ideias foram reescritas para o layout do pacote.
