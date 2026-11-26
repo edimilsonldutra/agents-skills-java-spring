@@ -11,7 +11,7 @@ Esta skill não gera nenhum código — ela apenas explica o pacote. Diferente d
 
 ## O que é este plugin
 
-Skills de backend Spring Boot 4.1 / Java 25, um tópico por skill, todas em um único padrão validado: packages flat-by-layer sob `br.com.edimilsonldutra`, sem Lombok em lugar nenhum, constructors/getters/setters explícitos, logging com SLF4J, auth JWT feita de um jeito específico, um único contrato de erro `ExceptionResponse`/`ProblemDetail`, Flyway dono do schema. Cada skill pode ser chamada diretamente (`/squads:<name>`) ou encontrada automaticamente a partir de uma descrição em linguagem natural da tarefa — as duas formas funcionam; este guide é para quando o desenvolvedor quer o mapa em vez de adivinhar um nome. A versão em Kotlin deste exato pacote é um plugin separado, `squads-kt` (todo nome de skill ganha um prefixo `kt-` lá); mencione-o somente se o desenvolvedor estiver trabalhando em Kotlin.
+Skills de backend Spring Boot 4 / Java 25, um tópico por skill, todas em um único padrão validado: packages flat-by-layer sob `br.com.edimilsonldutra`, sem Lombok em lugar nenhum, constructors/getters/setters explícitos, logging com SLF4J, auth JWT feita de um jeito específico, um único contrato de erro `ExceptionResponse`/`ProblemDetail`, Flyway dono do schema. Cada skill pode ser chamada diretamente (`/squads:<name>`) ou encontrada automaticamente a partir de uma descrição em linguagem natural da tarefa — as duas formas funcionam; este guide é para quando o desenvolvedor quer o mapa em vez de adivinhar um nome. A versão em Kotlin deste exato pacote é um plugin separado, `squads-kt` (todo nome de skill ganha um prefixo `kt-` lá); mencione-o somente se o desenvolvedor estiver trabalhando em Kotlin.
 
 ---
 
@@ -31,24 +31,22 @@ Antes de descrever a lista de skills, verifique o que realmente está presente e
 
 ## Como as skills se agrupam
 
-- **Fundação, lida por todas as outras:** `code-organization` (package layout, o questionário de preferências compartilhado), `code-style` (formatação, comentários, logging).
+- **Projeto novo e fundação (lida por todas as outras):** `scaffold` (criar projeto do zero), `code-organization` (package layout, o questionário de preferências compartilhado), `code-style` (formatação, comentários, logging).
 - **Construa a data layer:** `maven-config` (dependencies/build file), `library-docs` (confirmar classe, starter, property e versão na versão resolvida, com a fonte), `spring-data-jpa` (entities, repositories, DTOs), `flyway-migrations` (schema como SQL versionado).
 - **Deixe a API sólida:** `exception-handling` (um contrato de erro), `web-config` (CORS + JSON/XML/YAML), `bean-validation` (rejeitar input ruim com 400), `pagination` (listas paginadas com limite), `hateoas` (links HAL nas respostas), `api-versioning` (v1 → v2 sem quebrar clients; versionamento nativo do Spring 7).
 - **Documente:** `swagger` (springdoc/OpenAPI), `swagger-advanced` (grupos por versão, erros comuns, exemplos, OpenAPI como contrato no CI, geração de clients).
 - **Arquivos e e-mail:** `file-upload-download` (upload/download seguro), `file-import-export` (XLSX/CSV, criação em massa), `pdf-reports` (JasperReports 7, QR code), `email` (Spring Mail/SMTP, assíncrono depois do commit; na AWS, `aws-ses`).
 - **Finalize um projeto novo:** `project-claude-md` gera o `CLAUDE.md` do próprio projeto do desenvolvedor.
-- **Especificação:** `design-docs` (design doc / tech spec como spec do fluxo spec-driven: critérios `CA-n`, aprovação antes do plano, rastreabilidade critério → tarefa → teste).
+- **Especificação e entendimento de código:** `design-docs` (design doc / tech spec como spec do fluxo spec-driven: critérios `CA-n`, aprovação antes do plano, rastreabilidade critério → tarefa → teste), `repository-understanding` (mapa, hotspots, riscos, aderência de um repositório desconhecido), `monolith-decomposition` (acoplamento, donos das tabelas, o que extrair primeiro), `refactoring` (passos pequenos e verdes, smells, Strangler/expand → contract).
 - **Segurança e design de código:** `application-security` (OWASP API Security Top 10: IDOR, mass assignment, limites, injeção, SSRF, headers, segredos, SBOM), `threat-modeling` (STRIDE e casos de abuso antes de construir), `solid` (princípios, coesão e quando não aplicar), `cognitive-complexity` (CDD: pontos por classe e limite combinado no `cdd.json`), `design-patterns` (padrões no Spring, auto-invocação, anti-padrões).
 - **Segurança e Java:** `authentication` (JWT + Spring Security 7), `caching` (Caffeine/Redis), `java-modern-features` (Java 17–25, virtual threads), `jvm-performance` (JVM em container, pool, queries, diagnóstico).
 - **Testes:** `testing` (unit + slice), `test-patterns`, `integration-testing` (Testcontainers + REST Assured, banco real), `test-coverage` (JaCoCo, PIT), `postman-newman` (caixa-preta e smoke pós-deploy).
 - **Docker e Kubernetes:** `docker-and-docker-compose`, `observability` (Actuator, Micrometer, probes), `kubernetes`, `helm-charts`.
-- **CI/CD:** `github-actions` (CI genérico: build, testes, cobertura, imagem no GHCR, CodeQL, Dependabot), `github-actions-aws` (deploy na AWS com OIDC), `github-actions-cloud` (deploy no Google Cloud e no Azure com OIDC), `argocd` (GitOps).
+- **CI/CD e GitOps:** `github-actions` (CI genérico: build, testes, cobertura, imagem no GHCR, CodeQL, Dependabot), `github-actions-aws` (deploy na AWS com OIDC), `github-actions-cloud` (deploy no Google Cloud e no Azure com OIDC), `argocd` (GitOps: Application/AppProject/ApplicationSet, migration como PreSync hook, promoção por PR).
 - **Mensageria:** `messaging` (comece aqui: quando usar, qual broker, garantias, DLQ), `kafka`, `rabbitmq`, `activemq-artemis` (JMS), `aws-sns-sqs` (fan-out) e `transactional-outbox` (publicar sem dual write + consumer idempotente).
-- ➕ **Extras — Produto (perfil de PM):** `product-strategy` (visão, estratégia, business case), `product-discovery`, `prd-writing`, `user-stories`, `prioritization` (RICE/MoSCoW/WSJF), `product-roadmap` (Now/Next/Later + OKRs), `product-metrics` (North Star, tracking plan, A/B), `agile-delivery`, `release-management` (flags, rollout, go/no-go), `technical-product-management` (NFRs, SLO, API como produto), `privacy-lgpd` e `stakeholder-communication`. O agent `product-manager` as usa.
+- ➕ **Extras — Produto (perfil de PM):** `product-strategy` (visão, estratégia, business case), `product-discovery`, `prd-writing`, `user-stories`, `prioritization` (RICE/MoSCoW/WSJF), `product-roadmap` (Now/Next/Later + OKRs), `product-metrics` (North Star, tracking plan, A/B), `agile-delivery`, `backlog-refinement` (DoR, Example Mapping, card refinado), `release-management` (flags, rollout, go/no-go), `technical-product-management` (NFRs, SLO, API como produto), `privacy-lgpd` e `stakeholder-communication`. O agent `product-manager` as usa.
 - ➕ **Extras — Arquitetura de microsserviços:** `microservices` (**comece aqui**: quando dividir, decomposição, dados, migração), `modular-monolith` (Spring Modulith), `ddd-hexagonal` (domínio rico), `api-gateway` (gateway e BFF), `service-communication` (REST/gRPC, auth serviço-a-serviço), `resilience` (timeout, retry, circuit breaker), `saga-pattern`, `cqrs-event-sourcing`, `contract-testing` (Pact/SCC) e `idempotency`.
-- ➕ **Extras — GitOps:** `argocd` (Argo CD: repo GitOps, Application/AppProject/ApplicationSet, migration como PreSync hook, promoção por PR, secrets e segurança).
-- ➕ **Extras — AWS (serviços e integração):** `aws-sdk-java` (base: SDK v2, credenciais, clients, timeouts), `localstack` (emular a AWS local e em testes), `aws-dynamodb`, `aws-keyspaces`, `aws-lambda`, `aws-ecs-fargate`, `aws-cognito`, `aws-parameter-store` (+ AppConfig), `aws-ses`, `aws-eventbridge`, `aws-observability` (CloudWatch/X-Ray/alarmes), `aws-terraform` (infra como código) e `aws-architecture-diagram` (diagrama de infraestrutura AWS no draw.io).
-- ➕ **Extras — AWS:** `aws-eks` (ECR, EKS, IRSA, ALB), `aws-rds-secrets-manager`, `aws-s3-sqs`, `github-actions-aws` (CI/CD com OIDC).
+- ➕ **Extras — AWS:** `aws-sdk-java` (base: SDK v2, credenciais, clients, timeouts), `localstack` (emular a AWS local e em testes), `aws-eks` (ECR, EKS, IRSA, ALB), `aws-rds-secrets-manager`, `aws-s3-sqs`, `aws-dynamodb`, `aws-keyspaces`, `aws-lambda`, `aws-ecs-fargate`, `aws-cognito`, `aws-parameter-store` (+ AppConfig), `aws-ses`, `aws-eventbridge`, `aws-observability` (CloudWatch/X-Ray/alarmes), `aws-terraform` (infra como código) e `aws-architecture-diagram` (diagrama de infraestrutura AWS no draw.io).
 
 ---
 
@@ -57,6 +55,9 @@ Antes de descrever a lista de skills, verifique o que realmente está presente e
 | O desenvolvedor quer… | Skill |
 |---|---|
 | Um projeto novo | `scaffold` |
+| Organizar packages e salvar preferências do projeto | `code-organization` |
+| Convenções de estilo, formatação, comentários e logging | `code-style` |
+| Configurar dependencies, BOM, plugins Maven ou Gradle | `maven-config` |
 | CRUD para uma entity | `spring-data-jpa` |
 | Schema migrations | `flyway-migrations` |
 | Responses de erro limpas e consistentes | `exception-handling` |
@@ -79,11 +80,10 @@ Antes de descrever a lista de skills, verifique o que realmente está presente e
 | Upload/download de arquivos | `file-upload-download`; guardando no S3: `aws-s3-sqs` |
 | Dockerizar o projeto | `docker-and-docker-compose` |
 | Um pipeline de CI (build, testes, imagem, segurança) | `github-actions` |
-| Deploy por CI na AWS | `github-actions-aws` |
+| Deploy por CI na AWS (GitHub Actions → ECR → EKS com OIDC) | `github-actions-aws` |
 | Deploy por CI no Google Cloud ou no Azure | `github-actions-cloud` |
-| Deploy no Kubernetes | `kubernetes` |
+| Deploy no Kubernetes / empacotar com Helm | `kubernetes`, `helm-charts` |
 | Versionar a API (v1 → v2, versionamento nativo do Spring 7, deprecação) | `api-versioning` (deprecação também em `release-management`) |
-| Retries / resilience | `resilience` |
 | Metrics / health probes | `observability` |
 | Uma suíte Postman/Newman, smoke test pós-deploy | `postman-newman` |
 | Decidir se/qual mensageria usar | `messaging` |
@@ -95,11 +95,9 @@ Antes de descrever a lista de skills, verifique o que realmente está presente e
 | Cache (Caffeine/Redis/ElastiCache) | `caching` |
 | Java 17–25: records, sealed, virtual threads | `java-modern-features` |
 | API lenta, tuning de JVM/pool, OOMKilled | `jvm-performance` |
-| Rodar no Kubernetes / empacotar com Helm | `kubernetes`, `helm-charts` |
 | Imagem no ECR, cluster EKS, ALB, IRSA | `aws-eks` |
 | RDS e senhas no Secrets Manager | `aws-rds-secrets-manager` |
-| Filas SQS, LocalStack | `aws-s3-sqs`, `localstack` |
-| Pipeline GitHub Actions → ECR → EKS (OIDC) | `github-actions-aws` |
+| Armazenar arquivos no S3 e processar filas SQS | `aws-s3-sqs` |
 | Começar com a AWS em Java (SDK v2, credenciais, timeouts) | `aws-sdk-java` |
 | Rodar/testar a AWS localmente sem conta (LocalStack) | `localstack` |
 | Unit e slice tests (JUnit, Mockito, `@WebMvcTest`) | `testing` |
@@ -128,7 +126,7 @@ Antes de descrever a lista de skills, verifique o que realmente está presente e
 | Domínio rico: aggregates, value objects, ports and adapters; quanto DDD cada subdomínio merece; modelo anêmico | `ddd-hexagonal` |
 | Entrada única para clientes, BFF, rate limit na borda | `api-gateway` |
 | Chamar outro serviço com segurança e timeouts; gRPC; service mesh | `service-communication` |
-| Falha parcial, circuit breaker, retry sem retry storm | `resilience` |
+| Falha parcial, timeout, retry sem retry storm, circuit breaker | `resilience` |
 | Transação entre serviços com compensação | `saga-pattern` |
 | Leitura e escrita com modelos diferentes; histórico como fonte de verdade | `cqrs-event-sourcing` |
 | Mudar uma API sem quebrar consumidores (contratos, `can-i-deploy`) | `contract-testing` |

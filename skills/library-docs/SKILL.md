@@ -30,13 +30,16 @@ As skills mostram a **estrutura** que é estável. Nomes que mudam entre geraç�
 ./mvnw -q dependency:tree -Dincludes=org.springframework.kafka
 ./gradlew dependencyInsight --dependency spring-kafka --configuration runtimeClasspath
 ```
-Com a versão em mãos, o jar está no repositório local (`~/.m2/repository/<group com / no lugar de .>/<artifact>/<versão>/`):
+Com a versão em mãos, o jar está no cache local — Maven (`~/.m2/repository/<group com / no lugar de .>/<artifact>/<versão>/`) ou Gradle (`~/.gradle/caches/modules-2/files-2.1/<group>/<artifact>/<versão>/<hash>/`):
 ```bash
+# Maven:
 JAR="$HOME/.m2/repository/org/springframework/kafka/spring-kafka/<versão>/spring-kafka-<versão>.jar"
+# Gradle (o hash varia):
+# JAR=$(find "$HOME/.gradle/caches/modules-2/files-2.1/org.springframework.kafka/spring-kafka/<versão>" -name "spring-kafka-<versão>.jar" | head -n 1)
 unzip -l "$JAR" | grep -i JsonSerializer
 javap -cp "$JAR" <nome qualificado que o unzip mostrou>
 ```
-- **Aspas em todo caminho:** no Windows o home costuma ter espaço (`C:\Users\Meu Computador`), e um `$JAR` sem aspas quebra o comando.
+- **Aspas em todo caminho:** no Windows o home costuma ter espaço (`C:\Users\Nome Sobrenome`), e um `$JAR` sem aspas quebra o comando.
 - **`javap` fora do PATH** (comum no Windows, onde o PATH aponta só para o `java` do Oracle): use `"$JAVA_HOME/bin/javap"`. No Git Bash ele aceita o caminho Unix do jar.
 - **Package de uma classe de teste do Boot 4:** procure no jar do módulo de teste (`spring-boot-webmvc-test`, `spring-boot-data-jpa-test`) com `unzip -l ... | grep WebMvcTest`.
 - **Properties:** cada jar de auto-configuration traz `META-INF/spring-configuration-metadata.json`, com nome, tipo, default e se a property está deprecated (e qual a substitui):

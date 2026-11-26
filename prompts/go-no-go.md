@@ -17,6 +17,7 @@ Janela e responsáveis: <data, hora, quem acompanha>
 Critérios de aborto: <ex.: erro 5xx > 1% por 5 min | defina>
 Observabilidade: <dashboards e alarmes existentes | não sei>
 Rollback: <como desfazer | não sei>
+Perfil de modelo: <auto | economico | equilibrado | qualidade-maxima>
 ```
 
 ## Exemplo preenchido

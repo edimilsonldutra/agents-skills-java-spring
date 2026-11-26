@@ -148,4 +148,3 @@ Em arquiteturas distribuídas, **a estrutura dos times molda a dos sistemas** (e
 - **Alinhe fronteiras de produto, serviço e time** (Conway); contratos e donos claros; plataforma como **produto interno**.
 - **Post-mortem sem culpa com ações priorizadas**; comunicação de incidente honesta.
 - **Nunca invente números técnicos**; **o PM define o quê/por quê/quão bom, a engenharia define o como**.
-- **Sem Lombok** — deliberado (skill de produto, sem código).

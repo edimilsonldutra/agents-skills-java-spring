@@ -157,4 +157,3 @@ Mantenha **um** roadmap oficial, **versionado** e acessível (sem versões paral
 - **Inclua dívida técnica, confiabilidade e plataforma** no roadmap, com outcome e justificativa.
 - **Mesmo roadmap, detalhe por audiência**; nunca prometer data do que é exploração; **data fixa → escopo variável**.
 - **Documento vivo**, versionado, revisado em cadência e **quando o contexto muda**.
-- **Sem Lombok** — deliberado (skill de produto, sem código).

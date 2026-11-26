@@ -166,4 +166,3 @@ Cada uma entrega valor ou reduz risco, é demonstrável e cabe em poucos dias.
 - **DoR** evita surpresa (sem burocracia); **DoD** é acordo da equipe e significa **pronto para o usuário**.
 - **Three Amigos** (PM + eng + QA) refina cada história antes da iteração.
 - **PM** define o **quê/por quê**; **tech-lead** quebra em **tarefas e estima**; **QA** vira casos de teste.
-- **Sem Lombok** — deliberado (skill de produto, sem código).

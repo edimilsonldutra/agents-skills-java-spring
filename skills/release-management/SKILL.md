@@ -179,4 +179,3 @@ Algumas entregas têm **data externa** (campanha, evento, contrato, **prazo regu
 - **Migrações em ondas**, coexistência, verificação e reversão; dados pessoais com LGPD.
 - Data externa → **data fixa, escopo variável**, ensaio geral, flag para ligar no momento exato.
 - **Revisão pós-lançamento** (1 dia/1 semana/1 mês) contra a meta; **escalar, iterar ou descontinuar** com decisão registrada.
-- **Sem Lombok** — deliberado (skill de produto, sem código).

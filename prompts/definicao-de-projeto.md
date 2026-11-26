@@ -82,7 +82,7 @@ Números decidem arquitetura; "rápido" não decide.
 - Disponibilidade: <ex.: 99,9% | não sei>
 - RTO/RPO: <ex.: RTO 1 h, RPO 15 min | não sei>
 - Volume de dados: <ex.: 2 milhões de registros em 3 anos | não sei>
-- Cobertura de testes mínima: <ex.: 80% de linhas no JaCoCo | não sei>
+- Cobertura de testes mínima: <ex.: 90% de linha e branch no JaCoCo | não sei>
 
 ## 8. Integrações e infraestrutura
 - Sistemas externos: <sistema: como (REST, fila, arquivo), quem chama quem> | nenhum
@@ -179,7 +179,7 @@ Da primeira para a última. A primeira deve ser pequena e útil.
 - Disponibilidade: 99,5%
 - RTO/RPO: RTO 4 h, RPO 15 min
 - Volume de dados: 50 mil livros e 500 mil empréstimos em 3 anos
-- Cobertura de testes mínima: 80% de linhas no JaCoCo
+- Cobertura de testes mínima: 90% de linha e branch no JaCoCo
 
 ## 8. Integrações e infraestrutura
 - Sistemas externos: nenhum

@@ -68,13 +68,13 @@ CREATE TABLE IF NOT EXISTS `person` (
 ```sql
 CREATE TABLE IF NOT EXISTS `users` (
   `id`                      bigint       NOT NULL AUTO_INCREMENT,
-  `user_name`               varchar(255) DEFAULT NULL,
-  `full_name`               varchar(255) DEFAULT NULL,
-  `password`                varchar(255) DEFAULT NULL,
-  `account_non_expired`     bit(1)       DEFAULT NULL,
-  `account_non_locked`      bit(1)       DEFAULT NULL,
-  `credentials_non_expired` bit(1)       DEFAULT NULL,
-  `enabled`                 bit(1)       DEFAULT NULL,
+  `user_name`               varchar(255) NOT NULL,
+  `full_name`               varchar(255) NOT NULL,
+  `password`                varchar(255) NOT NULL,
+  `account_non_expired`     bit(1)       NOT NULL DEFAULT b'1',
+  `account_non_locked`      bit(1)       NOT NULL DEFAULT b'1',
+  `credentials_non_expired` bit(1)       NOT NULL DEFAULT b'1',
+  `enabled`                 bit(1)       NOT NULL DEFAULT b'1',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_user_name` (`user_name`)
 );
@@ -99,7 +99,7 @@ Foreign keys com `ON DELETE CASCADE` (quando os registros filhos devem morrer co
 ```sql
 CREATE TABLE IF NOT EXISTS `person_books` (
   `person_id` bigint NOT NULL,
-  `book_id`   int    NOT NULL,
+  `book_id`   bigint NOT NULL,
   PRIMARY KEY (`person_id`, `book_id`),
   FOREIGN KEY (`person_id`) REFERENCES `person`(`id`) ON DELETE CASCADE,
   FOREIGN KEY (`book_id`)   REFERENCES `books`(`id`)  ON DELETE CASCADE
@@ -148,8 +148,8 @@ Um campo `LocalDate` mapeia para uma coluna `DATE` **ou** `datetime`; o tipo da 
 ### INSERT — colunas explícitas, com backticks
 ```sql
 INSERT INTO `books` (`author`, `launch_date`, `price`, `title`) VALUES
-    ('Robert C. Martin', '2009-01-10 00:00:00.000000', 77.00, 'Clean Code'),
-    ('Eric Evans',       '2017-11-07 15:09:01.674000', 92.00, 'Domain Driven Design');
+    ('Robert C. Martin', '2009-01-10', 77.00, 'Clean Code'),
+    ('Eric Evans',       '2017-11-07', 92.00, 'Domain Driven Design');
 ```
 
 ### INSERT com valores BIT (users/flags)

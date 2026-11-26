@@ -142,11 +142,11 @@ private Status status;
 **Use `FetchType.LAZY` por default** em `@ManyToOne`, `@OneToMany` e `@ManyToMany` para evitar carregar grafos que ninguém pediu. Relationships com join table usam `@JoinTable`.
 ```java
 @ManyToOne(fetch = FetchType.LAZY)
-@JoinColumn(name = "user_id", nullable = false)
-private User user;
+@JoinColumn(name = "book_id", nullable = false)
+private Book book;
 
-@OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-private List<Permission> permissions = new ArrayList<>();
+@OneToMany(mappedBy = "book", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+private List<BookReview> reviews = new ArrayList<>();
 ```
 
 **LAZY tem um porém com `open-in-view: false`.** O service converte entities em DTOs depois que a chamada ao repository retorna; se o DTO (ou um relatório, ou um `UserDetails` do security) lê uma collection lazy fora de uma transaction, o Hibernate lança `LazyInitializationException`. Escolha uma opção por association:
@@ -186,7 +186,7 @@ Uma `RuntimeException` (todas as domain exceptions do pack são unchecked) faz r
 
 ## Repository
 
-Estenda `JpaRepository<Entity, Long>`. Queries custom usam `@Query` com JPQL. Deixe o service transformar uma linha ausente em uma domain exception (`findById(id).orElseThrow(...)`) — **não** adicione um `default getById(Long)` ao repository: `getById` já existe no `JpaRepository` (deprecated) e sobrescrevê-lo esconde um método de lazy reference atrás de um eager.
+Estenda `JpaRepository<Entity, Long>`. Queries custom usam `@Query` com JPQL. Deixe o service transformar uma linha ausente em uma domain exception (`findById(id).orElseThrow(...)`) — **não** adicione um `default getById(Long)` ao repository (no Spring Data JPA 4.0 `getById`/`getOne` foram removidos em favor de `getReferenceById(ID)` para lazy reference; misturar o nome `getById` com busca eager confunde quem lê).
 
 ```java
 public interface BookRepository extends JpaRepository<Book, Long> {
@@ -274,6 +274,7 @@ public class BookService {
     @Transactional
     public BookDTO update(BookDTO book) {
         if (book == null) throw new RequiredObjectIsNullException();
+        if (book.getId() == null) throw new BadRequestException("Book ID is required for update!");
         logger.info("Updating one book!");
         var entity = repository.findById(book.getId())
             .orElseThrow(() -> new ResourceNotFoundException("No records found for this ID!"));

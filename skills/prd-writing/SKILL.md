@@ -225,4 +225,3 @@ Misturar **o quê** e **como** faz o PRD envelhecer e tira da engenharia a chanc
 - **Escopo congelado** na entrega; mudança = **decisão registrada** (o que entra/sai, impacto no prazo).
 - Curto e vivo: **1–3 páginas**, versionado e atualizado.
 - **Handoff** claro ao `tech-lead`, `qa` e `architect`.
-- **Sem Lombok** — deliberado (skill de produto, sem código).

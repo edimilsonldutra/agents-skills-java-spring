@@ -25,7 +25,7 @@ docs/architecture/
 └── <sistema>-aws.png        ← exportado; é o que o README, o design doc e o PR mostram
 ```
 - O **`.drawio` é a fonte de verdade** depois que existe. O script de geração serve para a **primeira versão** e para mudanças grandes de layout. Se alguém editou o arquivo no draw.io, **não regenere por cima**: edite o `.drawio` (no draw.io ou no XML) e exporte de novo.
-- Linke o PNG no documento que o usa (`![Infraestrutura AWS](../architecture/renovacao-aws.png)`) e cite o `.drawio` ao lado, para quem for editar.
+- Linke o PNG no documento que o usa (`![Infraestrutura AWS](../architecture/renovacao-emprestimo-aws.png)`) e cite o `.drawio` ao lado, para quem for editar.
 - **Sem dados sensíveis:** nada de ID de conta, ARN completo, IP público, hostname interno, nome de bucket com dado pessoal ou segredo. CIDR de VPC e de subnet pode, porque é desenho de rede, não credencial.
 - Gravar em `docs/` é escrita de documento: o `architect` grava **com confirmação**, como o design doc.
 
@@ -36,15 +36,15 @@ docs/architecture/
 3. **Escreva um script curto** que importa a biblioteca e declara grupos, ícones e setas com coordenadas **absolutas**:
    ```python
    import sys
-   sys.path.insert(0, r"<pasta desta skill>/scripts")   # no plugin: ${CLAUDE_PLUGIN_ROOT}/skills/aws-architecture-diagram/scripts
+   sys.path.insert(0, r"<pasta desta skill>/scripts")   # plugin: ${CLAUDE_PLUGIN_ROOT}/skills/aws-architecture-diagram/scripts · portável: .agents/skills/aws-architecture-diagram/scripts
    from drawio_aws import Diagram, LABEL_RIGHT
 
    d = Diagram("Renovação de empréstimo - AWS")
-   d.group("cloud", "1", "AWS Cloud", 140, 20, 1440, 900, "cloud")
-   d.group("region", "cloud", "Region sa-east-1 (São Paulo)", 160, 60, 1400, 840, "region")
+   d.group("cloud", "1", "AWS Cloud", 140, 20, 1440, 910, "cloud")
+   d.group("region", "cloud", "Region sa-east-1 (São Paulo)", 160, 60, 1400, 850, "region")
    d.service("sqs", "region", "SQS loan-renewed", 1250, 320, "sqs")
    ...
-   d.save("docs/architecture/renovacao-aws.drawio", png=True)
+   d.save("docs/architecture/renovacao-emprestimo-aws.drawio", png=True)
    ```
    Rode o script **fora do repositório** (no scratchpad ou em `target/`) enquanto itera, e só grave em `docs/architecture/` a versão conferida. O exemplo completo está em [`scripts/example_renovacao.py`](scripts/example_renovacao.py).
 4. **`save()` valida** que todo pai, origem e destino existe e, com o draw.io desktop instalado, **exporta o PNG** ao lado.
@@ -91,7 +91,7 @@ Detalhes que a biblioteca já resolve:
 - Saída e entrada nos lados que **apontam para o destino** (`exit`/`entry`); alinhar o centro de origem e destino na mesma linha elimina dobras.
 - Não desenhe a seta de todo task para CloudWatch, ECR e Secrets Manager: uma nota ("as tasks acessam por VPC endpoints") vale mais que seis linhas cruzando o desenho.
 
-**Tamanho:** até **~25 ícones por página**. Passou disso, divida em páginas no mesmo arquivo (visão geral, rede, dados, deploy), cada uma com o seu `Diagram`, ou em arquivos distintos.
+**Tamanho:** até **~25 ícones por página**. Passou disso, divida em arquivos `.drawio` distintos por visão (ex.: `<sistema>-rede-aws.drawio`, `<sistema>-dados-aws.drawio`, `<sistema>-deploy-aws.drawio`), cada um gerado por seu `Diagram` (`drawio_aws.py` gera uma página por arquivo; se quiser várias abas no mesmo arquivo, combine-as no draw.io).
 
 ## 5. Catálogo de ícones verificados
 

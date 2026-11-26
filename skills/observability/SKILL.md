@@ -101,7 +101,7 @@ public class BookService {
     }
 }
 ```
-(Uma exceção justificada à field injection: o registry é necessário para construir os meters.) Alternativas sem código: `@Timed`/`@Observed` com `ObservedAspect` habilitado.
+(Uma exceção justificada à field injection: o registry é necessário para construir os meters.) Alternativas sem código: `@Timed`/`@Observed` com `ObservedAspect` habilitado — no Spring Boot 4 exige `spring-boot-starter-aspectj` (renomeado de `spring-boot-starter-aop`), senão as anotações são ignoradas em silêncio.
 
 Regras de ouro:
 - **Cardinalidade baixa nas tags.** Tag = valor de um conjunto pequeno e fixo (`status`, `method`, `result`). **Nunca** `userId`, `email`, `orderId`, URL com parâmetro: cada valor novo cria uma série e derruba o Prometheus.
@@ -149,22 +149,27 @@ logging:
 
 ## Tracing distribuído
 
-Para seguir uma request por vários serviços, o Boot usa Micrometer Tracing com OpenTelemetry (o Boot 4 traz um starter OpenTelemetry próprio — confirme o nome com `library-docs`). Configuração mínima:
+Para seguir uma request por vários serviços, o Boot 4 usa Micrometer Tracing com o starter oficial **`spring-boot-starter-opentelemetry`** (confirme com `library-docs`). Configuração mínima:
 ```yaml
 management:
   tracing:
     sampling:
       probability: 0.1
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          endpoint: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:http://localhost:4318/v1/traces}
 ```
 - Em produção amostre (`0.05`–`0.2`); `1.0` só em dev, ou o custo de armazenamento explode.
-- Exporte por OTLP para um collector (AWS Distro for OpenTelemetry / X-Ray, Tempo, Jaeger): `management.otlp.tracing.endpoint`. O collector roda como DaemonSet/sidecar — ver `aws-eks`.
+- Exporte por OTLP para um collector (AWS Distro for OpenTelemetry / X-Ray, Tempo, Jaeger) via `management.opentelemetry.tracing.export.otlp.endpoint` (no Boot 4 substituiu o antigo `management.otlp.tracing.endpoint`). O collector roda como DaemonSet/sidecar — ver `aws-eks`.
 - Propagação automática nos `RestClient`/`WebClient`/`RestTemplate` criados a partir dos **builders do Spring** (injete o `RestClient.Builder`; não use `new`).
 
 ---
 
 ## Testando
 
-Teste que o health responde e que a métrica existe, sem inventar mock: um `@SpringBootTest` com `@AutoConfigureObservability`/porta aleatória chamando `/actuator/health/readiness` e `/actuator/prometheus` (veja `integration-testing`). Para a readiness com database, o Testcontainers já sobe o database real.
+Teste que o health responde e que a métrica existe, sem inventar mock: um `@SpringBootTest` com `@AutoConfigureMetrics`/`@AutoConfigureTracing` (substituem o removido `@AutoConfigureObservability` no Boot 4) e porta aleatória chamando `/actuator/health/readiness` e `/actuator/prometheus` (veja `integration-testing`). Para a readiness com database, o Testcontainers já sobe o database real.
 
 ---
 

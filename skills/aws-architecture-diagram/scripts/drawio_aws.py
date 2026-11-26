@@ -13,7 +13,7 @@ exporta o PNG para conferência visual.
     d.group("cloud", "1", "AWS Cloud", 140, 20, 1440, 900, "cloud")
     d.service("sqs", "cloud", "SQS loan-renewed", 1250, 320, "sqs")
     d.edge("e1", "loan", "sqs", "publica LoanRenewed", points=[(885, 160), (1280, 160)])
-    d.save("docs/architecture/renovacao-aws.drawio", png=True)
+    d.save("docs/architecture/renovacao-emprestimo-aws.drawio", png=True)
 """
 from __future__ import annotations
 
@@ -94,8 +94,8 @@ GROUPS = {
 # Sem whiteSpace=wrap: o rótulo só quebra onde houver <br>, nunca na largura do ícone.
 _ICON = ("sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;dashed=0;verticalLabelPosition=bottom;"
          "verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;")
-LABEL_RIGHT = "verticalLabelPosition=middle;labelPosition=right;align=left;spacingLeft=6;"
-LABEL_LEFT = "verticalLabelPosition=middle;labelPosition=left;align=right;spacingRight=6;"
+LABEL_RIGHT = "verticalLabelPosition=middle;verticalAlign=middle;labelPosition=right;align=left;spacingLeft=6;"
+LABEL_LEFT = "verticalLabelPosition=middle;verticalAlign=middle;labelPosition=left;align=right;spacingRight=6;"
 
 
 class Diagram:
@@ -113,7 +113,8 @@ class Diagram:
             raise ValueError(f"{id}: o pai '{parent}' não é um grupo declarado antes")
         px, py = self.origin[parent]
         self.cells.append(
-            f'<mxCell id="{id}" value={quoteattr(label)} style="{style}" vertex="1" parent="{parent}">'
+            f'<mxCell id={quoteattr(str(id))} value={quoteattr(label)} style={quoteattr(style)} '
+            f'vertex="1" parent={quoteattr(str(parent))}>'
             f'<mxGeometry x="{x - px}" y="{y - py}" width="{w}" height="{h}" as="geometry"/></mxCell>')
         self.ids.add(id)
         if container:
@@ -142,6 +143,8 @@ class Diagram:
     def edge(self, id, src, dst, label="", points=(), dashed=False, exit=None, entry=None, label_pos=0.0, both=False):
         """Seta ortogonal. points: dobras em coordenadas absolutas. exit/entry: (x, y) de 0 a 1 na borda.
         label_pos: -1 (perto da origem) a 1 (perto do destino)."""
+        if id in self.ids:
+            raise ValueError(f"id repetido: {id}")
         style = ("edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;"
                  "endFill=1;strokeColor=#545B64;fontSize=11;labelBackgroundColor=#FFFFFF;")
         if dashed:
@@ -155,8 +158,9 @@ class Diagram:
         pts = "".join(f'<mxPoint x="{x}" y="{y}"/>' for x, y in points)
         geom = (f'<mxGeometry x="{label_pos}" relative="1" as="geometry">'
                 + (f'<Array as="points">{pts}</Array>' if pts else "") + '<mxPoint as="offset"/></mxGeometry>')
-        self.cells.append(f'<mxCell id="{id}" value={quoteattr(label)} style="{style}" edge="1" parent="1" '
-                          f'source="{src}" target="{dst}">{geom}</mxCell>')
+        self.cells.append(
+            f'<mxCell id={quoteattr(str(id))} value={quoteattr(label)} style={quoteattr(style)} edge="1" parent="1" '
+            f'source={quoteattr(str(src))} target={quoteattr(str(dst))}>{geom}</mxCell>')
         self.ids.add(id)
 
     def xml(self) -> str:
@@ -210,11 +214,17 @@ def export_png(path, scale=1.5, border=20) -> Path | None:
         return None
     path = Path(path)
     out = path.with_suffix(".png")
-    cmd = [exe, "--export", "--format", "png", "--scale", str(scale), "--border", str(border), "--output", str(out), str(path)]
+    tmp = out.with_name(out.stem + ".tmp.png")
+    tmp.unlink(missing_ok=True)
+    cmd = [exe, "--export", "--format", "png", "--scale", str(scale), "--border", str(border), "--output", str(tmp), str(path)]
     if platform.system() == "Linux" and not os.environ.get("DISPLAY") and shutil.which("xvfb-run"):
         cmd = ["xvfb-run", "--auto-servernum", *cmd, "--no-sandbox"]
-    subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=120, check=False)
-    return out if out.exists() else None
+    res = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=120, check=False)
+    if res.returncode == 0 and tmp.exists() and tmp.stat().st_size > 0:
+        tmp.replace(out)
+        return out
+    tmp.unlink(missing_ok=True)
+    return None
 
 
 if __name__ == "__main__":

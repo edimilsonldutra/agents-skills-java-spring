@@ -59,13 +59,17 @@ Conte como falha: **timeouts, `5xx`, conexão**; e **chamadas lentas** (*slow ca
 
 ## 5. Resilience4j (Spring Boot)
 
-> **Versões:** o Resilience4j tem starters para Spring Boot e a integração com o Boot 4 / AOP (`spring-boot-starter-aop` foi renomeado no Boot 4) pode ter artifacts novos. **Confirme na versão resolvida** (`library-docs`) o starter exato e a dependência de AOP/AspectJ necessária para as anotações. A **estrutura** abaixo (anotações e propriedades) é estável.
+> **Versões:** no Spring Boot 4, o starter do Resilience4j é `resilience4j-spring-boot4` (a partir da linha 2.4+) e o starter de AOP do Boot foi renomeado para `spring-boot-starter-aspectj` (antes `spring-boot-starter-aop`). **Confirme na versão resolvida** (`library-docs`) o starter exato. A **estrutura** abaixo (anotações e propriedades) é estável.
 
 ```xml
 <dependency>
     <groupId>io.github.resilience4j</groupId>
-    <artifactId>resilience4j-spring-boot3</artifactId>
+    <artifactId>resilience4j-spring-boot4</artifactId>
     <version>${resilience4j.version}</version>
+</dependency>
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-aspectj</artifactId>
 </dependency>
 ```
 (`resilience4j.version` em `<properties>` — fora do BOM do Boot; confirme o artifact para o Boot do projeto. Alternativa **agnóstica de implementação**: `spring-cloud-starter-circuitbreaker-resilience4j` com `CircuitBreakerFactory`, do Spring Cloud — usada também pelo Spring Cloud Gateway, `api-gateway`.)
@@ -95,8 +99,9 @@ resilience4j:
         waitDuration: 200ms
         enableExponentialBackoff: true
         exponentialBackoffMultiplier: 2
-        enableRandomizedWait: true
+        exponentialMaxWaitDuration: 2s
         retryExceptions:
+          - br.com.edimilsonldutra.exception.CatalogUnavailableException
           - org.springframework.web.client.ResourceAccessException
         ignoreExceptions:
           - br.com.edimilsonldutra.exception.BookNotFoundException
@@ -108,7 +113,7 @@ resilience4j:
 ```
 - **`minimumNumberOfCalls`**: o breaker só avalia depois de N chamadas — evita abrir por 1 falha em 2 chamadas.
 - **`ignoreExceptions`**: erros de **negócio** (`BookNotFoundException`) **não** contam como falha e **não** abrem o breaker nem são retentados (a regra do `service-communication`: `404` ≠ falha técnica).
-- **`retryExceptions`**: **só** as exceptions transitórias (`ResourceAccessException`: timeout/conexão; e os `5xx` mapeados para a sua `...UnavailableException`).
+- **`retryExceptions`**: **só** as exceptions transitórias — e **precisa incluir a exception que o método realmente lança** (`CatalogUnavailableException` quando o `try/catch` interno traduz `ResourceAccessException`/`HttpServerErrorException`, senão o `@Retry` nunca vê a exception original). **Atenção no YAML do Resilience4j:** `enableExponentialBackoff: true` e `enableRandomizedWait: true` são mutuamente exclusivos nas properties (`IllegalStateException` no startup); para combinar exponencial **com** jitter, configure `IntervalFunction.ofExponentialRandomBackoff(...)` num bean `RetryConfigCustomizer` (ou `enableExponentialRandomBackoff` quando a versão suportar).
 - **`maxWaitDuration: 0`** no bulkhead = **rejeita na hora** quando cheio (falha rápida, sem fila escondida). Fila ilimitada esconde a lentidão até virar OOM (`jvm-performance`).
 - **Uma instância nomeada por dependência** (`catalog`, `payment`) com limites ajustados a cada uma — **não** um breaker global.
 - Valores acima são **ponto de partida**: calibre com os SLOs e métricas reais.
@@ -141,12 +146,17 @@ public class CatalogGateway implements BookCatalog {
         }
     }
 
+    private boolean availabilityFallback(BookId id, BookNotFoundException cause) {
+        throw cause;
+    }
+
     private boolean availabilityFallback(BookId id, Throwable cause) {
         logger.warn("Catalog unavailable for {}, rejecting the loan: {}", id, cause.toString());
         throw new CatalogUnavailableException("Catalog service unavailable", cause);
     }
 }
 ```
+- **Armadilha do `fallbackMethod` com `ignoreExceptions`:** no Resilience4j, `ignoreExceptions` só evita que a exception conte para abrir o circuit breaker — ela **ainda chama** o `fallbackMethod(BookId, Throwable)`! Sem a sobrecarga específica que relança `BookNotFoundException`, todo `404` seria convertido em `503`.
 - **Ordem dos aspectos** do Resilience4j (de fora para dentro): `Retry` → `CircuitBreaker` → `RateLimiter` → `TimeLimiter` → `Bulkhead` → chamada. Cada tentativa do retry passa pelo breaker; **quando o breaker está OPEN**, o `CallNotPermittedException` interrompe o retry (não adianta retentar).
 - **As anotações só funcionam em chamada vinda de outro bean** (proxy AOP): `this.isAvailable()` ignora-as — mesma regra de `@Transactional`.
 - **Fallback honesto:** o fallback **não finge sucesso** quando a decisão depende do dado. Aqui, decidir um empréstimo **sem saber** se o livro existe seria um erro; o fallback **falha rápido com `503` claro**. Fallbacks válidos para **leituras degradáveis**: devolver **dado em cache marcado como antigo**, uma lista vazia **com aviso**, o campo opcional ausente (`api-gateway`, composição com degradação). **Nunca** invente dados de negócio (preço, saldo, estoque) ou "aprove por padrão" uma validação de segurança/financeira.

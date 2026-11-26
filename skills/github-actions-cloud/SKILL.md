@@ -24,7 +24,7 @@ O princípio é o mesmo de `github-actions-aws`: **nenhuma chave de longa duraç
 ## 1. Google Cloud
 
 ### Confiança (uma vez por projeto)
-1. Crie um **workload identity pool** e um **provider OIDC** com issuer `https://token.actions.githubusercontent.com`, mapeando `attribute.repository = assertion.repository` e com a **condição de atributo** que restringe o repositório: `assertion.repository == 'minha-org/library-api'`. Sem a condição, qualquer repositório do GitHub poderia usar o provider.
+1. Crie um **workload identity pool** e um **provider OIDC** com issuer `https://token.actions.githubusercontent.com`, mapeando `attribute.repository = assertion.repository`, `attribute.ref = assertion.ref` e `attribute.environment = assertion.environment`, com a **condição de atributo** que restringe repositório e branch/environment: `assertion.repository == 'minha-org/library-api' && (assertion.ref == 'refs/heads/main' || assertion.environment == 'production')`. Sem restringir branch/environment, qualquer branch/PR do repositório poderia assumir a role.
 2. Crie uma **service account** para o deploy, com o mínimo: `roles/artifactregistry.writer` no repositório do Artifact Registry e `roles/run.developer` (Cloud Run) ou `roles/container.developer` (GKE). Para o Cloud Run, também `roles/iam.serviceAccountUser` na service account de **runtime** do serviço.
 3. Permita que o pool personifique a service account (`roles/iam.workloadIdentityUser`) **apenas** para o principal do repositório — e, para produção, use uma service account separada.
 
@@ -59,7 +59,7 @@ O princípio é o mesmo de `github-actions-aws`: **nenhuma chave de longa duraç
             --image "$IMAGE" \
             --region "$REGION" \
             --service-account runtime-library-api@meu-projeto.iam.gserviceaccount.com \
-            --set-secrets "DB_PASSWORD=library-db-password:latest" \
+            --set-secrets "SPRING_DATASOURCE_PASSWORD=library-db-password:latest" \
             --no-allow-unauthenticated
 ```
 - **`--set-secrets`** injeta o valor do **Secret Manager** como variável de ambiente: a senha nunca passa pelo GitHub. Fixe a versão do segredo (`:3`) quando quiser deploys reprodutíveis.
@@ -77,14 +77,14 @@ Troque o passo de deploy por:
       - name: Deploy
         run: |
           cd k8s/overlays/prod
-          kustomize edit set image library-api=${{ env.IMAGE }}
+          kustomize edit set image us-central1-docker.pkg.dev/meu-projeto/apps/library-api=${{ env.IMAGE }}
           kubectl apply -k .
-          kubectl -n library rollout status deployment/library-api --timeout=300s
+          kubectl -n library-prod rollout status deployment/library-api --timeout=300s
       - name: Roll back on failure
         if: failure()
-        run: kubectl -n library rollout undo deployment/library-api
+        run: kubectl -n library-prod rollout undo deployment/library-api
 ```
-Dentro do cluster, os pods acessam APIs do Google com **Workload Identity do GKE** (Kubernetes service account ligada a uma service account do Google) — o equivalente ao IRSA da AWS; nunca uma chave montada como Secret.
+(O nome antes do `=` em `kustomize edit set image` deve casar exatamente com o nome da imagem em `k8s/base/deployment.yaml`.) Dentro do cluster, os pods acessam APIs do Google com **Workload Identity do GKE** (Kubernetes service account ligada a uma service account do Google) — o equivalente ao IRSA da AWS; nunca uma chave montada como Secret.
 
 ---
 
@@ -138,12 +138,12 @@ Os três identificadores (client id, tenant id, subscription id) **não são seg
         run: |
           az aks get-credentials --resource-group rg-library-prod --name library-aks
           cd k8s/overlays/prod
-          kustomize edit set image library-api=${{ env.IMAGE }}
+          kustomize edit set image libraryacr.azurecr.io/library-api=${{ env.IMAGE }}
           kubectl apply -k .
-          kubectl -n library rollout status deployment/library-api --timeout=300s
+          kubectl -n library-prod rollout status deployment/library-api --timeout=300s
       - name: Roll back on failure
         if: failure()
-        run: kubectl -n library rollout undo deployment/library-api
+        run: kubectl -n library-prod rollout undo deployment/library-api
 ```
 Com AKS integrado ao Entra ID, o `kubectl` pode precisar do `kubelogin` para usar o token do workflow (`kubelogin convert-kubeconfig -l azurecli`). Pods acessam recursos do Azure com **Workload Identity do AKS**, não com segredos.
 

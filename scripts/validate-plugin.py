@@ -254,6 +254,19 @@ def check_catalogs(skills):
     for duplicated in sorted({n for n in listed if listed.count(n) > 1}):
         error("README.md", f"skill '{duplicated}' aparece em mais de um grupo")
 
+    skill_guide = read(ROOT / "skills/guide/SKILL.md")
+    in_skill_guide = set(re.findall(r"`([a-z0-9-]+)`", skill_guide)) & set(skills)
+    for missing in sorted(set(skills) - in_skill_guide - {"guide"}):
+        error("skills/guide/SKILL.md", f"skill '{missing}' não listada no índice")
+    groups_section = section(skill_guide, "## Como as skills se agrupam") or ""
+    in_groups = set(re.findall(r"`([a-z0-9-]+)`", groups_section)) & set(skills)
+    for missing in sorted(set(skills) - in_groups - {"guide"}):
+        error("skills/guide/SKILL.md", f"skill '{missing}' fora da seção '## Como as skills se agrupam'")
+    quick_section = section(skill_guide, '## Consulta rápida — "Eu quero…"') or ""
+    in_quick = set(re.findall(r"`([a-z0-9-]+)`", quick_section)) & set(skills)
+    for missing in sorted(set(skills) - in_quick - {"guide"}):
+        error("skills/guide/SKILL.md", f"skill '{missing}' fora da tabela 'Consulta rápida'")
+
 
 def check_prompts():
     index = ROOT / "prompts/README.md"

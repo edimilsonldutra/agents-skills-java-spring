@@ -96,14 +96,14 @@ public class IdempotentExecutor {
         if (existing.isPresent()) return replay(existing.get(), requestHash);
         try {
             return store.executeAndRecord(clientId, key, requestHash, action);
-        } catch (DataIntegrityViolationException race) {
+        } catch (IdempotencyKeyConflictException race) {
             return replay(store.find(clientId, key).orElseThrow(() -> new IdempotencyInProgressException(key)), requestHash);
         }
     }
 
     private StoredResponse replay(IdempotencyRecord record, String requestHash) {
         if (!record.requestHash().equals(requestHash)) throw new IdempotencyKeyReuseException(record.key());
-        return record.toResponse();
+        return record.toReplayedResponse();
     }
 }
 ```
@@ -112,10 +112,12 @@ public class IdempotentExecutor {
 public class IdempotencyStore {
 
     private final IdempotencyKeyRepository repository;
+    private final EntityManager entityManager;
     private final Clock clock;
 
-    public IdempotencyStore(IdempotencyKeyRepository repository, Clock clock) {
+    public IdempotencyStore(IdempotencyKeyRepository repository, EntityManager entityManager, Clock clock) {
         this.repository = repository;
+        this.entityManager = entityManager;
         this.clock = clock;
     }
 
@@ -127,15 +129,27 @@ public class IdempotencyStore {
     @Transactional
     public StoredResponse executeAndRecord(String clientId, String key, String requestHash, Supplier<StoredResponse> action) {
         var response = action.get();
-        repository.saveAndFlush(IdempotencyRecord.of(clientId, key, requestHash, response, Instant.now(clock).plus(Duration.ofHours(24))));
+        var record = IdempotencyRecord.of(clientId, key, requestHash, response, Instant.now(clock).plus(Duration.ofHours(24)));
+        try {
+            entityManager.persist(record);
+            entityManager.flush();
+        } catch (DataIntegrityViolationException | PersistenceException conflict) {
+            throw new IdempotencyKeyConflictException(key, conflict);
+        }
         return response;
     }
 }
 ```
 ```java
-public record StoredResponse(int status, String body) {}
+public record StoredResponse(int status, String body, boolean replayed) {
+
+    public StoredResponse(int status, String body) {
+        this(status, body, false);
+    }
+}
 ```
-**Como a corrida é resolvida** (duas requests idênticas simultâneas): ambas veem "sem chave", ambas executam `executeAndRecord`; o `saveAndFlush` da segunda **bloqueia no índice único** até a primeira **confirmar** (ou desfazer); se a primeira confirmou, a segunda recebe `DataIntegrityViolationException` → **sua transaction faz rollback** (desfazendo **também a ação dela** — nada duplicou) → o coordenador **relê a chave da vencedora** (já confirmada) e faz o **replay**. Se a primeira desfez, a segunda **segue e conclui**. **Sem lock distribuído, sem `IN_PROGRESS` obrigatório.** O `IdempotencyStore` é um **bean separado** para o proxy do `@Transactional` valer (chamada interna `this.` ignoraria — `spring-data-jpa`).
+**Por que `entityManager.persist(record)` + `flush()` (ou `Persistable` com `isNew() = true` / `INSERT` via `JdbcClient`), e NÃO `repository.saveAndFlush()`?** Porque `idempotency_key` tem **PK composta atribuída pela aplicação**: sem `Persistable`/`@Version`, `SimpleJpaRepository.save()` entende a entidade como existente e chama `em.merge()` (`SELECT` + `UPDATE`), que **sobrescreve** o registro vencedor em vez de disparar violação de PK — duplicando o efeito em silêncio sob concorrência! Isolar o `try/catch` em volta **apenas** do `persist/flush` da chave também evita mascarar uma `DataIntegrityViolationException` de negócio vinda de `action.get()` (ex.: e-mail/ISBN duplicado) como `409 IdempotencyInProgressException`.
+**Como a corrida é resolvida** (duas requests idênticas simultâneas): ambas veem "sem chave", ambas executam `executeAndRecord`; o `INSERT` da segunda **bloqueia no índice único** até a primeira **confirmar** (ou desfazer); se a primeira confirmou, a segunda falha com `IdempotencyKeyConflictException` → **sua transaction faz rollback** (desfazendo **também a ação dela** — nada duplicou) → o coordenador **relê a chave da vencedora** (já confirmada) e faz o **replay**. Se a primeira desfez, a segunda **segue e conclui**. **Sem lock distribuído, sem `IN_PROGRESS` obrigatório.** O `IdempotencyStore` é um **bean separado** para o proxy do `@Transactional` valer (chamada interna `this.` ignoraria — `spring-data-jpa`).
 
 `IdempotencyKeyReuseException` → `422`; `IdempotencyInProgressException` → `409` com `Retry-After` (mapeadas no `@ControllerAdvice` — `exception-handling`).
 
@@ -153,9 +167,10 @@ public ResponseEntity<String> create(
         var order = service.create(request);
         return new StoredResponse(HttpStatus.CREATED.value(), jsonMapper.writeValueAsString(order));
     });
-    return ResponseEntity.status(stored.status())
-            .contentType(MediaType.APPLICATION_JSON)
-            .body(stored.body());
+    var builder = ResponseEntity.status(stored.status())
+            .contentType(MediaType.APPLICATION_JSON);
+    if (stored.replayed()) builder.header("Idempotent-Replayed", "true");
+    return builder.body(stored.body());
 }
 ```
 - **Hash do corpo canonizado** (serialização estável do **DTO**, não os bytes brutos com espaços/ordem de campos diferentes) → `HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(...))` num `RequestHasher`.

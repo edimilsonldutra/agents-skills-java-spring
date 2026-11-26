@@ -62,7 +62,6 @@ metadata:
   labels:
     app.kubernetes.io/name: library-api
 spec:
-  replicas: 3
   revisionHistoryLimit: 5
   strategy:
     type: RollingUpdate
@@ -193,7 +192,7 @@ spec:
                 port:
                   name: http
 ```
-Na AWS o `ingressClassName` é `alb` e as annotations são outras — veja `aws-eks`. A porta de management (9090) **não** entra no Service/Ingress: só o kubelet e o Prometheus chegam nela.
+Na AWS o `ingressClassName` é `alb` e as annotations são outras — veja `aws-eks`. **Nota:** o controlador comunitário `kubernetes/ingress-nginx` entrou em aposentadoria em março de 2026; para clusters novos fora da AWS, prefira **Kubernetes Gateway API** (`HTTPRoute` com Envoy Gateway/Cilium/etc.) ou o controlador gerenciado do provedor. A porta de management (9090) **não** entra no Service/Ingress: só o kubelet e o Prometheus chegam nela.
 
 ---
 
@@ -281,14 +280,35 @@ spec:
   template:
     spec:
       restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: migrate
           image: 123456789012.dkr.ecr.us-east-1.amazonaws.com/library-api:1.0.0
+          args:
+            - "--spring.main.web-application-type=none"
+            - "--spring.flyway.enabled=true"
           envFrom:
+            - configMapRef:
+                name: library-api-config
             - secretRef:
                 name: library-api-secret
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
 ```
-(com uma imagem/entrypoint que só executa o Flyway e sai, ou o Flyway CLI). Para migrations rápidas o Flyway no startup é suficiente.
+(com `web-application-type=none` para rodar só o Flyway e encerrar sem subir o servidor HTTP, ou um entrypoint dedicado / Flyway CLI; o `securityContext` mantém compatibilidade com namespaces `restricted`). Para migrations rápidas o Flyway no startup é suficiente.
 
 ---
 
@@ -302,13 +322,10 @@ namespace: library-prod
 images:
   - name: 123456789012.dkr.ecr.us-east-1.amazonaws.com/library-api
     newTag: 1.0.0
-replicas:
-  - name: library-api
-    count: 5
 patches:
   - path: resources-patch.yaml
 ```
-`kubectl apply -k k8s/overlays/prod`. O CI atualiza só o `newTag` (`kustomize edit set image`) a cada release. Para parametrização mais rica, ou distribuir o app como pacote, veja `helm-charts`. Para entregar **por GitOps** (o cluster **puxa** do Git em vez de o CI rodar `kubectl apply`), veja `argocd`.
+(Como o `hpa.yaml` já está em `base/`, ajuste `minReplicas`/`maxReplicas` do HPA por patch em vez de fixar `replicas:` no Deployment.) `kubectl apply -k k8s/overlays/prod`. O CI atualiza só o `newTag` (`kustomize edit set image`) a cada release. Para parametrização mais rica, ou distribuir o app como pacote, veja `helm-charts`. Para entregar **por GitOps** (o cluster **puxa** do Git em vez de o CI rodar `kubectl apply`), veja `argocd`.
 
 ---
 
@@ -316,14 +333,14 @@ patches:
 
 ```bash
 kubectl apply -k k8s/overlays/prod
-kubectl -n library rollout status deployment/library-api --timeout=300s
-kubectl -n library rollout undo deployment/library-api
-kubectl -n library get pods -l app.kubernetes.io/name=library-api
-kubectl -n library logs deploy/library-api --tail=200 -f
-kubectl -n library describe pod <pod>
-kubectl -n library top pod
-kubectl -n library port-forward deploy/library-api 8080:8080
-kubectl -n library get events --sort-by=.lastTimestamp
+kubectl -n library-prod rollout status deployment/library-api --timeout=300s
+kubectl -n library-prod rollout undo deployment/library-api
+kubectl -n library-prod get pods -l app.kubernetes.io/name=library-api
+kubectl -n library-prod logs deploy/library-api --tail=200 -f
+kubectl -n library-prod describe pod <pod>
+kubectl -n library-prod top pod
+kubectl -n library-prod port-forward deploy/library-api 8080:8080
+kubectl -n library-prod get events --sort-by=.lastTimestamp
 ```
 Diagnóstico pelo status do pod:
 

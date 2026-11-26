@@ -26,9 +26,9 @@ Dois problemas: **onde o database mora** (RDS gerenciado, privado, com backup) e
 **Conexão da aplicação** (em variáveis de ambiente, via relaxed binding — o `application.yml` não muda):
 ```
 SPRING_DATASOURCE_URL=jdbc:mysql://library.abc123.us-east-1.rds.amazonaws.com:3306/library_api?useTimezone=true&serverTimezone=UTC&sslMode=VERIFY_IDENTITY
-SPRING_DATASOURCE_URL=jdbc:postgresql://library.abc123.us-east-1.rds.amazonaws.com:5432/library_api?sslmode=verify-full
+SPRING_DATASOURCE_URL=jdbc:postgresql://library.abc123.us-east-1.rds.amazonaws.com:5432/library_api?sslmode=verify-full&sslfactory=org.postgresql.ssl.DefaultJavaSSLFactory
 ```
-- Use **TLS verificando o certificado**: importe o *bundle* de CAs do RDS no truststore da imagem (a AWS publica o `global-bundle.pem`) e use `sslMode=VERIFY_IDENTITY` (MySQL) / `sslmode=verify-full` (PostgreSQL). `sslmode=require` cifra mas **não** verifica o servidor.
+- Use **TLS verificando o certificado**: importe o *bundle* de CAs do RDS no truststore da imagem (a AWS publica o `global-bundle.pem`) e use `sslMode=VERIFY_IDENTITY` (MySQL) ou `sslmode=verify-full&sslfactory=org.postgresql.ssl.DefaultJavaSSLFactory` (PostgreSQL — sem `DefaultJavaSSLFactory` ou `sslrootcert=/caminho/global-bundle.pem`, o driver `pgjdbc` procura `~/.postgresql/root.crt` em vez do truststore da JVM). `sslmode=require` cifra mas **não** verifica o servidor.
 - Use o **endpoint** DNS do RDS (ele muda de IP no failover); nunca o IP.
 
 ### Dimensionamento do pool de conexões
@@ -91,7 +91,7 @@ O sufixo `-*` é porque o ARN do segredo termina com 6 caracteres aleatórios. S
 O operador roda no cluster, lê o Secrets Manager (com IRSA) e **cria/atualiza um `Secret` do Kubernetes**, que o Deployment já consome por `envFrom` (veja `kubernetes`). A aplicação continua lendo `SPRING_DATASOURCE_PASSWORD` do ambiente.
 
 ```yaml
-apiVersion: external-secrets.io/v1beta1
+apiVersion: external-secrets.io/v1
 kind: ExternalSecret
 metadata:
   name: library-api-secret

@@ -134,12 +134,16 @@ Declarar o bean `JwtDecoder` **substitui** o auto-configurado por `issuer-uri`; 
 ### Obtendo o usuário no controller
 
 ```java
+public record CurrentUserDTO(String sub, String principal) {}
+
 @GetMapping("/me")
-public Map<String, Object> me(@AuthenticationPrincipal Jwt jwt) {
-    return Map.of("sub", jwt.getSubject(), "username", jwt.getClaimAsString("username"));
+public CurrentUserDTO me(@AuthenticationPrincipal Jwt jwt) {
+    var username = jwt.getClaimAsString("username");
+    var principal = username != null ? username : jwt.getClaimAsString("client_id");
+    return new CurrentUserDTO(jwt.getSubject(), principal);
 }
 ```
-Use **`sub`** (UUID imutável do usuário) como **chave do usuário** nos seus dados — nunca e-mail ou username (podem mudar). **Autorização por recurso** (IDOR): confirme que o recurso pertence ao `sub` do token (`code-reviewer` 🔴 se faltar); papel não substitui checagem de dono.
+(Tokens M2M de `client_credentials` não trazem o claim `username` — evitar `Map.of` com valor possivelmente nulo previne `NullPointerException`.) Use **`sub`** (UUID imutável do usuário) como **chave do usuário** nos seus dados — nunca e-mail ou username (podem mudar). **Autorização por recurso** (IDOR): confirme que o recurso pertence ao `sub` do token (`code-reviewer` 🔴 se faltar); papel não substitui checagem de dono.
 
 ---
 
@@ -147,8 +151,17 @@ Use **`sub`** (UUID imutável do usuário) como **chave do usuário** nos seus d
 
 Criar/desativar usuário, adicionar a grupo, resetar senha por back-office usa o **`CognitoIdentityProviderClient`** (SDK puro — `aws-sdk-java`; sem starter do Spring Cloud AWS), **isolado atrás de uma interface do domínio** (`UserDirectory`):
 ```java
-adminCreateUser: AdminCreateUserRequest.builder().userPoolId(poolId).username(email).userAttributes(...).build()
-adminAddUserToGroup: AdminAddUserToGroupRequest.builder().userPoolId(poolId).username(username).groupName("editor").build()
+cognitoClient.adminCreateUser(AdminCreateUserRequest.builder()
+        .userPoolId(poolId)
+        .username(email)
+        .userAttributes(AttributeType.builder().name("email").value(email).build())
+        .build());
+
+cognitoClient.adminAddUserToGroup(AdminAddUserToGroupRequest.builder()
+        .userPoolId(poolId)
+        .username(username)
+        .groupName("editor")
+        .build());
 ```
 IAM **mínimo** na task role/IRSA (`aws-eks`, `aws-ecs-fargate`): `cognito-idp:AdminCreateUser`, `AdminAddUserToGroup`, `AdminDisableUser`… **no ARN do User Pool** — nunca `cognito-idp:*` em `*`. **Não** exponha essas operações sem autorização forte (`ROLE_admin`).
 
@@ -172,7 +185,7 @@ IAM **mínimo** na task role/IRSA (`aws-eks`, `aws-ecs-fargate`): `cognito-idp:A
 
 ## Testes
 
-- **Unit/slice** (`testing`): use o `SecurityMockMvcRequestPostProcessors.jwt()` do `spring-security-test` para simular o JWT e suas authorities **sem** chamar o Cognito:
+- **Unit/slice** (`testing`): use o `SecurityMockMvcRequestPostProcessors.jwt()` do `spring-boot-starter-security-test` (traz `spring-security-test` no Boot 4) para simular o JWT e suas authorities **sem** chamar o Cognito:
 ```java
 mockMvc.perform(delete("/api/book/v1/{id}", 1L)
                 .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_admin"))))
@@ -186,6 +199,7 @@ mockMvc.perform(get("/api/book/v1/{id}", 1L))
         .andExpect(status().isUnauthorized());
 ```
 (Sem token, o Resource Server responde **401** com `WWW-Authenticate: Bearer` — diferente do 403 vazio do `authentication`; documente no Swagger — `swagger`.) Teste o **mapeamento de `cognito:groups`** e o **validator** (`token_use`, `client_id`) com JWTs montados no teste.
+- **Integration (`RANDOM_PORT`, `integration-testing`):** substitua `JwtDecoder` com `@MockitoBean` no teste para evitar chamada HTTP ao JWKS do Cognito e devolva um `Jwt` de teste com `sub`, `token_use`, `client_id` e `cognito:groups` (envie `Authorization: Bearer test-token` nas requisições HTTP).
 - **Integration real** contra um User Pool de **desenvolvimento** (jobs separados): LocalStack Cognito tem cobertura limitada; prove o fluxo real na conta de dev.
 
 ---
@@ -200,5 +214,5 @@ mockMvc.perform(get("/api/book/v1/{id}", 1L))
 - `sub` é a chave do usuário (nunca e-mail/username).
 - Operações admin pelo SDK atrás de interface, IAM mínimo no ARN do pool; pools separados por ambiente, por IaC.
 - Access token curto; não logar tokens; 401 documentado no Swagger.
-- Testes com `jwt()` do `spring-security-test`; fluxo real em conta de dev.
+- Testes com `jwt()` do `spring-boot-starter-security-test` (e `@MockitoBean JwtDecoder` em `RANDOM_PORT`); fluxo real em conta de dev.
 - **Sem Lombok** — deliberado.

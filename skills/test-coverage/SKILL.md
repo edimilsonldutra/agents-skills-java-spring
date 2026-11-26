@@ -119,6 +119,8 @@ jacoco {
     toolVersion = '{última estável}'
 }
 
+def jacocoExcludes = ['**/Startup.class', '**/config/**', '**/data/dto/**']
+
 jacocoTestReport {
     dependsOn test
     reports {
@@ -127,13 +129,18 @@ jacocoTestReport {
     }
     afterEvaluate {
         classDirectories.setFrom(files(classDirectories.files.collect {
-            fileTree(dir: it, exclude: ['**/Startup.class', '**/config/**', '**/data/dto/**'])
+            fileTree(dir: it, exclude: jacocoExcludes)
         }))
     }
 }
 
 jacocoTestCoverageVerification {
     dependsOn jacocoTestReport
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: jacocoExcludes)
+        }))
+    }
     violationRules {
         rule {
             limit {
@@ -152,7 +159,7 @@ check {
     dependsOn jacocoTestCoverageVerification
 }
 ```
-**Kotlin DSL:** `plugins { jacoco }`, `tasks.jacocoTestReport { dependsOn(tasks.test); reports { xml.required = true; html.required = true } }`, `tasks.jacocoTestCoverageVerification { dependsOn(tasks.jacocoTestReport); violationRules { rule { limit { counter = "BRANCH"; minimum = "0.90".toBigDecimal() } } } }` e `tasks.check { dependsOn(tasks.jacocoTestCoverageVerification) }`. No Gradle o plugin já **encadeia o agent** ao `test` (sem `argLine` manual); com o agent do Mockito (`scaffold`), os `jvmArgs` ficam como já definidos. Lembre: o Gradle **pula testes "UP-TO-DATE"** — para forçar, `cleanTest test` (`maven-config`).
+**Kotlin DSL:** aplique a **mesma lista de exclusões nas duas tasks** (`jacocoTestReport` e `jacocoTestCoverageVerification`, já que cada task no Gradle mantém seu próprio `classDirectories`) e inclua **ambos** os limites (`counter = "LINE"` e `counter = "BRANCH"`, ambos `"0.90".toBigDecimal()`) dentro de `violationRules { rule { ... } }`, com `tasks.check { dependsOn(tasks.jacocoTestCoverageVerification) }`. No Gradle o plugin já **encadeia o agent** ao `test` (sem `argLine` manual); com o agent do Mockito (`scaffold`), os `jvmArgs` ficam como já definidos. Lembre: o Gradle **pula testes "UP-TO-DATE"** — para forçar, `cleanTest test` (`maven-config`).
 
 ## 4. Unit + integração: uma cobertura só
 

@@ -19,8 +19,13 @@ RabbitMQ é um **broker "esperto"** (AMQP 0-9-1): o produtor publica em uma **ex
     <artifactId>spring-boot-starter-amqp</artifactId>
 </dependency>
 <dependency>
-    <groupId>org.springframework.amqp</groupId>
-    <artifactId>spring-rabbit-test</artifactId>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-amqp-test</artifactId>
+    <scope>test</scope>
+</dependency>
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-testcontainers</artifactId>
     <scope>test</scope>
 </dependency>
 <dependency>
@@ -73,7 +78,7 @@ spring:
           initial-interval: 1s
           multiplier: 2.0
           max-interval: 10s
-          max-attempts: 4
+          max-retries: 3
 
 app:
   rabbitmq:
@@ -84,7 +89,7 @@ app:
 - **`guest/guest` só funciona de `localhost`** e **nunca** em produção: crie um usuário por aplicação com permissões mínimas no virtual host; senha por Secret (`kubernetes`, `aws-rds-secrets-manager`).
 - **`publisher-confirm-type: correlated` + `publisher-returns` + `mandatory`:** o broker confirma que **recebeu e enfileirou** a mensagem; se nenhuma queue casa com a routing key, a mensagem **volta** (return) em vez de sumir silenciosamente. Sem isso, `convertAndSend` "dá certo" mesmo quando a mensagem foi descartada.
 - **`default-requeue-rejected: false`:** quando as tentativas se esgotam, a mensagem é **rejeitada sem voltar à queue** → vai para a **DLX/DLQ** (abaixo). Com `true` (o default histórico) ela volta ao início da queue e **gira em loop infinito** (poison message).
-- **`retry`** é o retry **dentro do consumer** (bloqueante, mesma thread): 4 tentativas com backoff exponencial e depois rejeita. Mantenha curto.
+- **`retry`** é o retry **dentro do consumer** (bloqueante, mesma thread): no Boot 4 / Spring AMQP 4 a chave `max-attempts` foi renomeada para **`max-retries`** (3 retries = 4 tentativas totais, com backoff exponencial antes de rejeitar). Mantenha curto.
 - **`prefetch: 20`:** quantas mensagens não confirmadas o broker entrega de uma vez a cada consumer. Alto = throughput, mas uma mensagem lenta atrasa as seguintes e o `ack` fica atrás; para processamento pesado e desigual, use valores baixos (1–10). Combine com `concurrency` e com o pool de conexões do database (`jvm-performance`).
 
 ---
@@ -148,8 +153,12 @@ public class RabbitConfig {
 
 ```java
 @Bean
-MessageConverter jsonMessageConverter() {
-    return new JacksonJsonMessageConverter();
+MessageConverter jsonMessageConverter(JsonMapper jsonMapper) {
+    var converter = new JacksonJsonMessageConverter(jsonMapper);
+    var typeMapper = new DefaultJacksonJavaTypeMapper();
+    typeMapper.setTrustedPackages("br.com.edimilsonldutra.messaging.event");
+    converter.setJavaTypeMapper(typeMapper);
+    return converter;
 }
 ```
 O Boot aplica o bean `MessageConverter` ao `RabbitTemplate` e aos listeners. (**No Spring AMQP 4 / Jackson 3 a classe é a variante `Jackson…`; no Boot 3 era `Jackson2JsonMessageConverter` — confirme na sua versão.**) Sem conversor, o default é a **serialização Java** (insegura e acoplada a classes) — **sempre configure JSON** e **restrinja os tipos confiáveis** do conversor ao package dos eventos, por segurança (`messaging`, seção 7).
@@ -264,12 +273,14 @@ A UI de management em `http://localhost:15672` mostra filas, taxas e permite ins
 
 ```java
 @SpringBootTest
-@Testcontainers
 class BookEventIntegrationTest {
 
-    @Container
     @ServiceConnection
-    static RabbitMQContainer rabbit = new RabbitMQContainer("rabbitmq:4-management");
+    static final RabbitMQContainer rabbit = new RabbitMQContainer("rabbitmq:4.0.7-management");
+
+    static {
+        rabbit.start();
+    }
 
     @Autowired
     private BookEventPublisher publisher;

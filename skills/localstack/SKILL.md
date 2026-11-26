@@ -128,7 +128,7 @@ public class AwsClientsConfig {
         var builder = EventBridgeClient.builder();
         if (!endpointOverride.isBlank()) {
             var uri = URI.create(endpointOverride);
-            Assert.isTrue("localhost".equals(uri.getHost()) || "localstack".equals(uri.getHost()),
+            Assert.isTrue(Set.of("localhost", "127.0.0.1", "localstack").contains(uri.getHost()),
                     "endpoint-override may only point to a local emulator, but was " + uri);
             builder.endpointOverride(uri)
                     .region(Region.US_EAST_1)
@@ -322,4 +322,3 @@ Comandos que funcionam (`docker compose up -d localstack`, o profile `local`, `a
 - Banco, Redis e Kafka **em containers reais**; Cognito por `jwt()`; Keyspaces sem emulador.
 - Escreva as **policies de recurso** (queue policy, bucket policy) mesmo que o emulador não as exija.
 - Documente comandos, tag e limitações no `CLAUDE.md`.
-- **Sem Lombok** — deliberado.

@@ -73,8 +73,8 @@ Entregue artefatos **curtos, acionáveis e legíveis por quem vai executar**, em
 
 Você abre a cadeia de entrega; cada agent termina sugerindo o próximo:
 ```
-product-manager  →  architect (se houver decisão estrutural)  →  tech-lead  →  developer  →  qa  →  code-reviewer
-   (o quê/por quê)         (ADR)                (plano/tarefas)   (código)   (testes)     (revisão)
+product-manager  →  architect (se houver decisão estrutural ou design doc)  →  tech-lead  →  developer  →  qa  →  code-reviewer
+   (o quê/por quê)                 (design doc / ADR)                         (plano/tarefas)  (código)  (testes)    (revisão)
 ```
 | Quando | Passe para | O que entregar |
 |---|---|---|

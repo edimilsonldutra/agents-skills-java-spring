@@ -31,8 +31,8 @@ A mesma imagem roda em dev, staging e produção; **o que muda é a configuraç�
 
 Criar (IaC em `aws-terraform`; CLI para ilustrar):
 ```bash
-aws ssm put-parameter --name /prod/library-api/cors-origins --type String --value "https://app.example.com"
-aws ssm put-parameter --name /prod/library-api/thirdparty-api-key --type SecureString --value "..."
+aws ssm put-parameter --name /prod/library-api/app/library/cors-origin-patterns --type String --value "https://app.example.com"
+aws ssm put-parameter --name /prod/library-api/app/thirdparty/api-key --type SecureString --value "..."
 ```
 Nunca digite um segredo real em um comando de shell compartilhado (fica no histórico): use IaC com valor vindo de um cofre, ou o console/CLI interativo com `--cli-input-json` de um arquivo fora do Git.
 
@@ -57,8 +57,8 @@ spring:
       region:
         static: us-east-1
 ```
-Cada parâmetro sob o prefixo vira uma **property** com o nome após o prefixo, com `/` trocado por `.`: `/prod/library-api/cors/origin-patterns` → `cors.origin-patterns`. Os valores `SecureString` são **decifrados** automaticamente. Assim o `@Value("${cors.origin-patterns}")` e o `@ConfigurationProperties` continuam iguais.
-- **Convenção do Spring Cloud AWS** (se preferir o padrão): sem informar o prefixo ele procura `/config/application/` (comum a todos), `/config/<spring.application.name>/` e `/config/<nome>_<profile>/`. **Confirme a convenção exata na documentação da versão** que usa; o formato explícito acima é mais claro e independe dela.
+Cada parâmetro sob o prefixo vira uma **property** com o nome após o prefixo, com `/` trocado por `.`: `/prod/library-api/app/library/cors-origin-patterns` → `app.library.cors-origin-patterns`. Os valores `SecureString` são **decifrados** automaticamente. Assim o `@Value("${app.library.cors-origin-patterns}")` e o `@ConfigurationProperties(prefix = "app.library")` (abaixo) continuam iguais.
+- **Prefixo sempre explícito:** desde o Spring Cloud AWS 3.x/4.x, o carregamento via `spring.config.import` exige o caminho explícito (`aws-parameterstore:/prod/library-api/` — o antigo comportamento implícito do 2.x de buscar `/config/application/` foi removido). Confirme detalhes na versão resolvida com `library-docs`.
 - **Vários caminhos:** separe por `;` (`aws-parameterstore:/prod/common/;/prod/library-api/`) — o último vence em caso de chave repetida.
 - **Fail-fast em produção:** o import **sem** `optional:` faz a aplicação **não subir** se o Parameter Store estiver inacessível ou o caminho não existir — o comportamento desejado. `optional:aws-parameterstore:...` esconde o erro e sobe sem a config (aceitável em **dev/teste**, nunca em produção).
 - **Perfil só para a AWS:** ponha o import em `application-aws.yml`/`application-prod.yml` para dev local e testes **não** dependerem da AWS (o profile `test` não o ativa).
@@ -75,7 +75,7 @@ Cada parâmetro sob o prefixo vira uma **property** com o nome após o prefixo, 
 }
 ```
 - Por **prefixo da aplicação e do ambiente** — a role de `library-api` em prod **não** lê `/prod/outra-app/*` nem `/dev/*`.
-- `SecureString`: a role também precisa de **`kms:Decrypt`** na chave KMS usada (a `aws/ssm` padrão exige a permissão implícita via o próprio serviço; com **KMS gerenciada por você** conceda-a explicitamente e restrinja com `kms:ViaService`).
+- `SecureString`: se o parâmetro usa uma **chave KMS gerenciada por você (CMK)**, a role precisa explicitamente de **`kms:Decrypt`** nessa chave (restrinja com a condição `kms:ViaService`); com a chave gerenciada padrão `aws/ssm`, a política da chave permite o acesso via SSM dentro da conta.
 - Quem **grava** parâmetros (pipeline/IaC) é outra identidade, com `ssm:PutParameter` — a aplicação **só lê**.
 - Credenciais via **IRSA/task role** (`aws-eks`, `aws-ecs-fargate`) — nunca access keys.
 
@@ -116,7 +116,7 @@ Habilite com `@EnableConfigurationProperties(LibraryProperties.class)` (ou `@Con
 ## Testes
 
 - Em testes **não** carregue o import do Parameter Store (profile `test` sem o `aws-parameterstore:`); forneça as properties por `application.yml` de teste ou `@DynamicPropertySource` (`testing`).
-- Para provar a integração, **LocalStack** com `.withServices("ssm")` (`aws-s3-sqs`): crie parâmetros no `@BeforeAll` (`SsmClient.putParameter`) e suba o contexto com `spring.config.import` apontando ao endpoint do LocalStack (`spring.cloud.aws.endpoint`), verificando que a property chegou ao bean. Credenciais **falsas** só no teste.
+- Para provar a integração, **LocalStack** com `.withServices("ssm")` (`localstack`): crie parâmetros no `@BeforeAll` (`SsmClient.putParameter`) e suba o contexto com `spring.config.import` apontando ao endpoint do LocalStack (`spring.cloud.aws.endpoint`), verificando que a property chegou ao bean. Credenciais **falsas** só no teste.
 - Teste `@ConfigurationProperties` com valores inválidos → o contexto **não sobe**.
 
 ---

@@ -40,9 +40,9 @@ Rode `./mvnw clean package -DskipTests` antes (Gradle: `./gradlew clean build -x
 ```dockerfile
 FROM eclipse-temurin:25-jre
 WORKDIR /app
-RUN groupadd --system app && useradd --system --gid app app
+RUN groupadd --system --gid 10001 app && useradd --system --uid 10001 --gid 10001 app
 COPY target/*.jar app.jar
-USER app
+USER 10001:10001
 EXPOSE 8080
 ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75", "-jar", "app.jar"]
 ```
@@ -61,22 +61,22 @@ COPY .mvn .mvn
 COPY mvnw pom.xml ./
 RUN ./mvnw -q dependency:go-offline
 COPY src src
-RUN ./mvnw -q clean package -DskipTests
-RUN java -Djarmode=tools -jar target/*.jar extract --layers --destination extracted
+RUN ./mvnw -q clean package -DskipTests && cp target/*.jar app.jar
+RUN java -Djarmode=tools -jar app.jar extract --layers --destination extracted
 
 FROM eclipse-temurin:25-jre
 WORKDIR /app
-RUN groupadd --system app && useradd --system --gid app app
+RUN groupadd --system --gid 10001 app && useradd --system --uid 10001 --gid 10001 app
 COPY --from=build /workspace/extracted/dependencies/ ./
 COPY --from=build /workspace/extracted/spring-boot-loader/ ./
 COPY --from=build /workspace/extracted/snapshot-dependencies/ ./
 COPY --from=build /workspace/extracted/application/ ./
-USER app
+USER 10001:10001
 EXPOSE 8080
 ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75", "-jar", "app.jar"]
 ```
 - `COPY pom.xml` e `dependency:go-offline` **antes** de `COPY src`: o download das dependencies fica em cache enquanto o `pom.xml` não mudar.
-- O `-Djarmode=tools ... extract --layers` é o comando do Boot 3.3+/4 (o antigo `-Djarmode=layertools` foi removido). Ele cria `extracted/` com as pastas das camadas e o `app.jar` fino na `application`. Confirme os nomes das pastas gerados na versão do projeto antes de fixá-los no `COPY`.
+- O `-Djarmode=tools ... extract --layers` é o comando do Boot 3.3+/4 (o antigo `-Djarmode=layertools` foi removido). Ele preserva o **nome do JAR de entrada** dentro de `extracted/application/` — por isso o `cp target/*.jar app.jar` antes do `extract` garante que `ENTRYPOINT [..., "app.jar"]` funcione sem depender de `artifactId`/`version`. Confirme os nomes das pastas gerados na versão do projeto antes de fixá-los no `COPY`.
 - Rode os testes **no CI**, não dentro do `docker build` (`-DskipTests`), onde o Docker-in-Docker para o Testcontainers é um problema.
 - **Tag da imagem base:** use a LTS que o projeto escolheu (`java.version`). Para produção, fixe também o digest ou uma tag de patch e atualize com Dependabot/Renovate — `latest` nunca.
 
@@ -94,7 +94,7 @@ ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75", "-jar", "app.jar"]
 
 ## Segurança da imagem
 
-- **Não rode como root** (`USER app`), mesmo em dev. Um escape do container vira root no host.
+- **Não rode como root** (`USER 10001:10001` — UID numérico compatível com Kubernetes `runAsNonRoot: true`), mesmo em dev. Um escape do container vira root no host.
 - Imagem **JRE**, não JDK, em runtime: menor e menos superfície de ataque.
 - Nunca coloque segredo em `ENV`/`ARG` no Dockerfile — ficam no histórico da imagem. Segredos entram em runtime (compose `env_file`/Secrets, Kubernetes Secret, Secrets Manager).
 - Escaneie a imagem no CI (Trivy/Grype, ou o scan do ECR — veja `aws-eks`).
@@ -148,13 +148,13 @@ volumes:
 
 | Database | Imagem | Healthcheck (`test`) | Porta |
 |---|---|---|---|
-| MySQL | `mysql:9` | `["CMD", "mysqladmin", "ping", "-h", "localhost", "-p$$MYSQL_ROOT_PASSWORD"]` | 3306 |
-| PostgreSQL | `postgres:17` | `["CMD-SHELL", "pg_isready -U postgres -d library_api"]` | 5432 |
+| MySQL | `mysql:9` | `["CMD-SHELL", "mysqladmin ping -h localhost -p\"$$MYSQL_ROOT_PASSWORD\""]` | 3306 |
+| PostgreSQL | `postgres:17` | `["CMD-SHELL", "pg_isready -U postgres -d \"$$POSTGRES_DB\""]` | 5432 |
 | MariaDB | `mariadb:11` | `["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]` | 3306 |
-| SQL Server | `mcr.microsoft.com/mssql/server:2022-latest` | `["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -Q 'SELECT 1'"]` | 1433 |
+| SQL Server | `mcr.microsoft.com/mssql/server:2022-CU18-ubuntu-22.04` | `["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -Q 'SELECT 1'"]` | 1433 |
 | Oracle | `gvenzl/oracle-free:23-slim-faststart` | `["CMD", "healthcheck.sh"]` | 1521 |
 
-Variáveis: PostgreSQL `POSTGRES_PASSWORD`/`POSTGRES_DB`; MariaDB `MARIADB_ROOT_PASSWORD`/`MARIADB_DATABASE`; SQL Server `ACCEPT_EULA=Y` + `MSSQL_SA_PASSWORD` (senha forte) e **não cria o database** (crie-o antes da primeira execução); Oracle `ORACLE_PASSWORD`/`APP_USER`/`APP_USER_PASSWORD`. A JDBC URL de cada um está em `maven-config`.
+Variáveis: PostgreSQL `POSTGRES_PASSWORD`/`POSTGRES_DB`; MariaDB `MARIADB_ROOT_PASSWORD`/`MARIADB_DATABASE`; SQL Server `ACCEPT_EULA=Y` + `MSSQL_SA_PASSWORD` (senha forte; fixe uma tag CU específica em vez de `2022-latest` para builds reprodutíveis) e **não cria o database** (crie-o antes da primeira execução); Oracle `ORACLE_PASSWORD`/`APP_USER`/`APP_USER_PASSWORD`. A JDBC URL de cada um está em `maven-config`.
 
 ---
 

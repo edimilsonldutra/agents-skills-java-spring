@@ -13,7 +13,7 @@ Critérios de aceite: <caminho ou lista | não há>
 Threat model: <caminho | não há>
 Camadas: <unidade | @WebMvcTest | @DataJpaTest | integração com Testcontainers | contrato | todas>
 Riscos que me preocupam: <ex.: concorrência na renovação, permissão entre usuários>
-Meta de cobertura: <ex.: 90% de linhas no módulo | padrão do projeto>
+Meta de cobertura: <ex.: 90% de linha e branch no módulo | padrão do projeto>
 Entrega: <só o plano | plano + testes escritos e executados>
 ```
 

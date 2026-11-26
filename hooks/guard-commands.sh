@@ -36,24 +36,24 @@ E='([^[:alnum:]_-]|$)'     # fim de palavra
 
 patterns=(
   # Git: publica, reescreve histórico ou descarta trabalho
-  "git${S}push"
-  "git${S}(commit|merge|tag)${E}"
-  "git${S}reset${S}--(hard|merge)"
-  "git${S}clean"
-  "git${S}checkout${S}(--|\\.)"
-  "git${S}restore"
-  "git${S}switch${S}--discard-changes"
-  "git${S}rebase"
-  "git${S}branch${S}-(D|-delete)"
-  "git${S}stash${S}(drop|clear)"
-  "git${S}(filter-branch|filter-repo|update-ref|reflog${S}expire|gc${S}--prune|worktree${S}remove)"
+  "${B}git(${S}(-[[:alpha:]]|--[[:alnum:]-]+)(${S}[^-[:space:];&|][^;&|]*)?)*${S}push${E}"
+  "${B}git(${S}(-[[:alpha:]]|--[[:alnum:]-]+)(${S}[^-[:space:];&|][^;&|]*)?)*${S}(commit|merge|tag)${E}"
+  "${B}git(${S}(-[[:alpha:]]|--[[:alnum:]-]+)(${S}[^-[:space:];&|][^;&|]*)?)*${S}reset${S}--(hard|merge)"
+  "${B}git(${S}(-[[:alpha:]]|--[[:alnum:]-]+)(${S}[^-[:space:];&|][^;&|]*)?)*${S}clean${E}"
+  "${B}git(${S}(-[[:alpha:]]|--[[:alnum:]-]+)(${S}[^-[:space:];&|][^;&|]*)?)*${S}checkout${S}(--|\\.)"
+  "${B}git(${S}(-[[:alpha:]]|--[[:alnum:]-]+)(${S}[^-[:space:];&|][^;&|]*)?)*${S}restore${E}"
+  "${B}git(${S}(-[[:alpha:]]|--[[:alnum:]-]+)(${S}[^-[:space:];&|][^;&|]*)?)*${S}switch${S}--discard-changes"
+  "${B}git(${S}(-[[:alpha:]]|--[[:alnum:]-]+)(${S}[^-[:space:];&|][^;&|]*)?)*${S}rebase${E}"
+  "${B}git(${S}(-[[:alpha:]]|--[[:alnum:]-]+)(${S}[^-[:space:];&|][^;&|]*)?)*${S}branch${S}-(D|-delete)"
+  "${B}git(${S}(-[[:alpha:]]|--[[:alnum:]-]+)(${S}[^-[:space:];&|][^;&|]*)?)*${S}stash${S}(drop|clear)"
+  "${B}git(${S}(-[[:alpha:]]|--[[:alnum:]-]+)(${S}[^-[:space:];&|][^;&|]*)?)*${S}(filter-branch|filter-repo|update-ref|reflog${S}expire|gc${S}--prune|worktree${S}remove)"
   # Apagar arquivos (bash, cmd e PowerShell)
   "${B}rm${S}-[[:alpha:]]*[rRf]"
   "${B}rm${S}[^;&|]*--(recursive|force)"
   "${B}(del|erase|rd|rmdir)${S}"
   "(Remove-Item|Clear-Content)"
   # Cluster e entrega
-  "kubectl${S}(apply|create|delete|replace|patch|edit|scale|rollout|drain|cordon|uncordon|taint|label|annotate|exec|set)"
+  "${B}kubectl(${S}(-[[:alpha:]]|--[[:alnum:]-]+)(=[^[:space:];&|]+|${S}[^-[:space:];&|][^;&|]*)?)*${S}(apply|create|delete|replace|patch|edit|scale|rollout|drain|cordon|uncordon|taint|label|annotate|exec|set)${E}"
   "helm${S}(install|upgrade|uninstall|delete|rollback|push)"
   "(terraform|tofu)${S}(apply|destroy|import|state|taint|untaint|force-unlock|workspace${S}delete)"
   "argocd${S}(app${S}(sync|delete|rollback|set|create|patch|terminate-op)|proj${S}(create|delete))"
@@ -76,24 +76,40 @@ patterns=(
   "${B}(psql|mysql|mysqladmin|mysqldump|pg_dump|pg_restore|sqlcmd|sqlplus|mongosh|mongo|redis-cli)${S}"
   # Acesso remoto e envio de dados para fora
   "${B}(ssh|scp|sftp|rsync)${S}"
-  "${B}(curl|wget|Invoke-WebRequest|Invoke-RestMethod|iwr|irm)${S}[^;&|]*(-X[[:space:]]*|--request${S}|-Method${S})(POST|PUT|DELETE|PATCH)${E}"
-  "${B}(curl|wget|Invoke-WebRequest|Invoke-RestMethod|iwr|irm)${S}[^;&|]*(${S}-d${S}|--data|--upload-file|${S}-T${S}|--post-data|-Body${S}|-InFile${S})"
+  "${B}(curl|wget|Invoke-WebRequest|Invoke-RestMethod|iwr|irm)${S}[^;&|]*(-X[[:space:]]*|--request${S}|-Method${S})(POST|PUT|DELETE|PATCH)${E}[^;&|]*"
+  "${B}(curl|wget|Invoke-WebRequest|Invoke-RestMethod|iwr|irm)${S}[^;&|]*(${S}-d${S}|--data|--upload-file|${S}-T${S}|--post-data|-Body${S}|-InFile${S})[^;&|]*"
   # Segredos e credenciais: ler ou imprimir
-  "(~|\\\$HOME|%USERPROFILE%|\\\$env:USERPROFILE)/\\.(aws|ssh|kube|docker)/"
+  "(~|\\\$HOME|%USERPROFILE%|\\\$env:USERPROFILE)[/\\\\]\\.(aws|ssh|kube|docker)[/\\\\]"
   "(id_rsa|id_ed25519|\\.pem|\\.p12|\\.jks|\\.pfx)${E}"
   "${B}\\.env(\\.(local|production|prod|staging|stage|dev|development|test|secret|secrets))?([^[:alnum:]_.-]|$)"
-  "(^|[;&|][[:space:]]*)(printenv|env|set)[[:space:]]*(\\||;|>|$)"
+  "(^|[;&|][[:space:]]*)(printenv(${S}[^;&|]+)?|(env|set))[[:space:]]*(\\||;|>|$)"
   "(Get-ChildItem|gci|ls|dir)${S}[Ee][Nn][Vv]:"
 )
 
-# Chamadas HTTP para a própria máquina (API rodando em localhost) não precisam de confirmação.
-local_http='(localhost|127\.0\.0\.1|\[::1\]|host\.docker\.internal|0\.0\.0\.0)'
+# Chamadas HTTP exclusivamente para a própria máquina (API rodando em localhost) não precisam de confirmação.
+# Checa o segmento casado (hit) e exige URL local explícita, sem outra URL externa no mesmo segmento.
+local_http_url='https?://(localhost|127\.0\.0\.1|\[::1\]|host\.docker\.internal|0\.0\.0\.0)(:[0-9]+)?(/|[[:space:]]|'"'"'|"|$)'
+external_http_url='https?://([^/:[:space:]'"'"'"]+)'
+
+is_only_local_http() {
+  local seg=$1 rest=$1 has_local=0
+  while [[ $rest =~ $external_http_url ]]; do
+    local full=${BASH_REMATCH[0]}
+    local host=${BASH_REMATCH[1]}
+    case "$host" in
+      localhost|127.0.0.1|\[::1\]|host.docker.internal|0.0.0.0) has_local=1 ;;
+      *) return 1 ;;
+    esac
+    rest=${rest#*"$full"}
+  done
+  [ "$has_local" -eq 1 ] && [[ $seg =~ $local_http_url ]]
+}
 
 for pattern in "${patterns[@]}"; do
   if [[ $command =~ $pattern ]]; then
     hit=${BASH_REMATCH[0]}
     case "$pattern" in
-      *curl*) [[ $command =~ $local_http ]] && continue ;;
+      *curl*) is_only_local_http "$hit" && continue ;;
     esac
     hit=${hit//\"/}
     hit=${hit//\\/}

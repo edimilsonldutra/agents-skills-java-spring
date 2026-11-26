@@ -49,7 +49,7 @@ infra/
 
 ```hcl
 terraform {
-  required_version = "~> 1.10"
+  required_version = ">= 1.11, < 2.0"
 
   required_providers {
     aws = {
@@ -176,6 +176,7 @@ A **trust policy** da role (IRSA — `aws-eks`; task role — `aws-ecs-fargate`;
 resource "aws_db_instance" "main" {
   identifier                  = "library-${var.env}"
   engine                      = "postgres"
+  engine_version              = "17"
   instance_class              = var.db_instance_class
   allocated_storage           = 50
   db_name                     = "library_api"
@@ -189,6 +190,7 @@ resource "aws_db_instance" "main" {
   backup_retention_period     = 14
   deletion_protection         = var.env == "prod"
   skip_final_snapshot         = var.env != "prod"
+  final_snapshot_identifier   = var.env == "prod" ? "library-${var.env}-final" : null
 }
 ```
 `manage_master_user_password = true`: o RDS cria e **rotaciona** a senha no Secrets Manager — o Terraform **não conhece** o valor (não vai para o state). Se precisar passar um segredo, nunca em `.tfvars` versionado: use `TF_VAR_*` do cofre do CI, ou data source de um segredo existente.
@@ -281,4 +283,3 @@ Com o **AWS CDK em Java** a infraestrutura é código Java comum: o `ECS` + ALB 
 - Recursos com dados: `prevent_destroy` + `deletion_protection`; renomear com `moved {}`; ler o **plan** (replace/destroy = alarme).
 - CI: `fmt` → `validate` → `tflint` → Trivy/Checkov → `plan` (comentado no PR) → `apply` do **mesmo plan**, prod com aprovação; OIDC, sem access keys; detecção de **drift**.
 - Retenção em log groups, SSE/KMS, `publicly_accessible = false`, Multi-AZ e backups em prod — por código.
-- **Sem Lombok** — deliberado.

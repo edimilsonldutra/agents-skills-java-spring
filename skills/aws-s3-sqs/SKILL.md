@@ -3,11 +3,11 @@ name: aws-s3-sqs
 description: Amazon S3 e SQS com Spring Cloud AWS — S3Template (upload, download, presigned URL), SqsTemplate e @SqsListener, DLQ, visibility timeout, consumer idempotente, credenciais pela default chain, IAM mínimo e testes com LocalStack. Use quando guardar arquivos no S3 ou processar trabalho assíncrono em filas SQS.
 ---
 
-Antes de aplicar este pattern, leia também [`../code-organization/SKILL.md`](../code-organization/SKILL.md) e [`../code-style/SKILL.md`](../code-style/SKILL.md). Em produção a identidade da aplicação vem de IRSA/Pod Identity (`aws-eks`); a IAM policy de exemplo está lá.
+Antes de aplicar este pattern, leia também [`../code-organization/SKILL.md`](../code-organization/SKILL.md), [`../code-style/SKILL.md`](../code-style/SKILL.md) e [`../aws-sdk-java/SKILL.md`](../aws-sdk-java/SKILL.md). Em produção a identidade da aplicação vem de IRSA/Pod Identity (`aws-eks`); a IAM policy de exemplo está lá.
 
 # AWS S3 e SQS com Spring Cloud AWS
 
-**S3** guarda arquivos (uploads, relatórios, anexos); **SQS** desacopla processamento assíncrono (a API responde rápido e um consumer processa depois). O Spring Cloud AWS 3.x é construído sobre o AWS SDK v2 e fornece `S3Template`, `SqsTemplate` e `@SqsListener`.
+**S3** guarda arquivos (uploads, relatórios, anexos); **SQS** desacopla processamento assíncrono (a API responde rápido e um consumer processa depois). O Spring Cloud AWS **4.x** (linha para Spring Boot 4; 3.x no Boot 3) é construído sobre o AWS SDK v2 e fornece `S3Template`, `SqsTemplate` e `@SqsListener`.
 
 ## Dependencies
 
@@ -139,7 +139,7 @@ public class BookEventListener {
 - **Visibility timeout** ≥ tempo máximo de processamento (senão a mensagem reaparece enquanto ainda é processada).
 - Concorrência: `@SqsListener(maxConcurrentMessages = "10")` / `spring.cloud.aws.sqs.listener.max-concurrent-messages`. Some com o pool do database (`aws-rds-secrets-manager`).
 - Ordem e deduplicação exigem fila **FIFO** (`.fifo`, `MessageGroupId`) e têm menor throughput; use só se a regra de negócio exigir.
-- Mensagens até 256 KB: para payloads maiores, grave no S3 e envie só a **referência** (key).
+- Mensagens até 1 MB: para payloads maiores (ou grandes anexos), grave no S3 e envie só a **referência** (key).
 - **Transações:** gravar no database *e* publicar no SQS não é atômico. Se perder o evento é inaceitável, use o padrão **transactional outbox** (grava o evento numa tabela na mesma transaction e um publisher o envia — veja `transactional-outbox`). Para fan-out para várias filas (SNS → SQS), veja `aws-sns-sqs`; para escolher o broker, `messaging`.
 
 ---
@@ -156,12 +156,14 @@ Não mocke o SDK: rode o **LocalStack** (emula S3/SQS) com Testcontainers. A ski
 ```
 ```java
 @SpringBootTest
-@Testcontainers
-class FileStorageServiceIT {
+class FileStorageServiceIntegrationTest {
 
-    @Container
-    static LocalStackContainer localstack = new LocalStackContainer(DockerImageName.parse("localstack/localstack:4"))
+    static final LocalStackContainer localstack = new LocalStackContainer(DockerImageName.parse("localstack/localstack:4.2.0"))
             .withServices("s3", "sqs");
+
+    static {
+        localstack.start();
+    }
 
     @DynamicPropertySource
     static void aws(DynamicPropertyRegistry registry) {
@@ -169,16 +171,17 @@ class FileStorageServiceIT {
         registry.add("spring.cloud.aws.region.static", localstack::getRegion);
         registry.add("spring.cloud.aws.credentials.access-key", localstack::getAccessKey);
         registry.add("spring.cloud.aws.credentials.secret-key", localstack::getSecretKey);
+        registry.add("spring.cloud.aws.s3.path-style-access-enabled", () -> "true");
     }
 }
 ```
-(Credenciais fixas aqui são as **falsas** do LocalStack, só no teste. O package do container no Testcontainers 2 é `org.testcontainers.localstack`; confirme na versão resolvida.) Crie o bucket/fila no `@BeforeAll` (`awsCli`/`SqsClient`). Veja `integration-testing` para a estrutura geral. Lembre de `@ServiceConnection`/`@DynamicPropertySource` para apontar o app ao LocalStack.
+(Credenciais fixas aqui são as **falsas** do LocalStack, só no teste. O package do container no Testcontainers 2 é `org.testcontainers.localstack`; confirme na versão resolvida.) Crie o bucket/fila no `@BeforeAll` (`S3Client`/`SqsClient` ou `localstack.execInContainer("awslocal", ...)`). Veja `integration-testing` e `localstack` para o container compartilhado entre testes. Lembre de `@ServiceConnection`/`@DynamicPropertySource` para apontar o app ao LocalStack.
 
 ---
 
 ## IAM de menor privilégio
 
-Somente as ações usadas, nos ARNs exatos — exemplo em `aws-eks` (seção 3). Para S3: `s3:GetObject`/`PutObject` em `arn:aws:s3:::bucket/*` (+ `s3:ListBucket` no ARN do bucket se listar); para SQS: `SendMessage`, `ReceiveMessage`, `DeleteMessage`, `GetQueueAttributes`, `GetQueueUrl` na fila. Se o bucket/fila usa KMS, adicione `kms:GenerateDataKey`/`kms:Decrypt`.
+Somente as ações usadas, nos ARNs exatos — exemplo em `aws-eks` (seção 3). Para S3: `s3:GetObject`/`PutObject` em `arn:aws:s3:::bucket/*` (+ `s3:ListBucket` no ARN do bucket se listar); para SQS: `SendMessage`, `ReceiveMessage`, `DeleteMessage`, `ChangeMessageVisibility`, `GetQueueAttributes`, `GetQueueUrl` na fila. Se o bucket/fila usa KMS, adicione `kms:GenerateDataKey`/`kms:Decrypt`.
 
 ---
 

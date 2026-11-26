@@ -46,8 +46,8 @@ Keyspaces exige **TLS** na porta **9142**, **local datacenter = a região** e co
 ```yaml
 spring:
   cassandra:
-    contact-points: cassandra.us-east-1.amazonaws.com:9142
-    local-datacenter: us-east-1
+    contact-points: cassandra.${AWS_REGION}.amazonaws.com:9142
+    local-datacenter: ${AWS_REGION}
     keyspace-name: library
     schema-action: none
     ssl:
@@ -57,12 +57,12 @@ spring:
       timeout: 5s
     config: classpath:cassandra-driver.conf
 ```
-`cassandra-driver.conf` (configuração do driver, com o provedor SigV4 — **sem credenciais no arquivo**; a região vem do ambiente):
+`cassandra-driver.conf` (configuração do driver, com o provedor SigV4 — **sem credenciais no arquivo**; a região vem da variável de ambiente `AWS_REGION` via HOCON):
 ```
 datastax-java-driver {
   advanced.auth-provider {
     class = software.aws.mcs.auth.SigV4AuthProvider
-    aws-region = us-east-1
+    aws-region = ${?AWS_REGION}
   }
 }
 ```
@@ -148,15 +148,22 @@ Keyspaces e tabelas são **recursos AWS**: declare por Terraform (`aws_keyspaces
 
 ```json
 {
-  "Effect": "Allow",
-  "Action": ["cassandra:Select", "cassandra:Modify"],
-  "Resource": [
-    "arn:aws:cassandra:us-east-1:123456789012:/keyspace/library/table/*",
-    "arn:aws:cassandra:us-east-1:123456789012:/keyspace/system*"
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": ["cassandra:Select", "cassandra:Modify"],
+      "Resource": "arn:aws:cassandra:us-east-1:123456789012:/keyspace/library/table/*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["cassandra:Select"],
+      "Resource": "arn:aws:cassandra:us-east-1:123456789012:/keyspace/system*"
+    }
   ]
 }
 ```
-O acesso a `system*` é necessário para o driver descobrir o *schema/topologia*. A aplicação **não** recebe `cassandra:Create/Alter/Drop`. Via IRSA/task role — **nunca access keys**.
+O acesso somente leitura (`cassandra:Select`) a `system*` é necessário para o driver descobrir o *schema/topologia* — nunca conceda `cassandra:Modify` em `system*`. A aplicação **não** recebe `cassandra:Create/Alter/Drop`. Via IRSA/task role — **nunca access keys**.
 
 ## Testes
 

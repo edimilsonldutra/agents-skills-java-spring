@@ -57,30 +57,32 @@ Uma **rota** = *id* + **predicates** (quando casa) + **filters** (o que fazer) +
 spring:
   cloud:
     gateway:
-      routes:
-        - id: catalog
-          uri: http://library-catalog:8080
-          predicates:
-            - Path=/api/catalog/**
-          filters:
-            - StripPrefix=1
-            - name: CircuitBreaker
-              args:
-                name: catalog
-                fallbackUri: forward:/fallback/catalog
-            - name: RequestRateLimiter
-              args:
-                redis-rate-limiter.replenishRate: 20
-                redis-rate-limiter.burstCapacity: 40
-                key-resolver: "#{@userKeyResolver}"
-        - id: lending
-          uri: http://library-lending:8080
-          predicates:
-            - Path=/api/lending/**
-          filters:
-            - StripPrefix=1
+      server:
+        webflux:
+          routes:
+            - id: catalog
+              uri: http://library-catalog:8080
+              predicates:
+                - Path=/api/catalog/**
+              filters:
+                - StripPrefix=1
+                - name: CircuitBreaker
+                  args:
+                    name: catalog
+                    fallbackUri: forward:/fallback/catalog
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 20
+                    redis-rate-limiter.burstCapacity: 40
+                    key-resolver: "#{@userKeyResolver}"
+            - id: lending
+              uri: http://library-lending:8080
+              predicates:
+                - Path=/api/lending/**
+              filters:
+                - StripPrefix=1
 ```
-(Aqui o prefixo `spring.cloud.gateway.routes` é o clássico; **nas versões recentes ele pode ser `spring.cloud.gateway.server.webflux.routes`** — confirme.) O **`uri`** usa o **nome DNS do Service** do Kubernetes (`http://library-catalog:8080` / `.library.svc.cluster.local`) ou o **Service Connect** do ECS (`service-communication`) — **não** IPs, **não** Eureka no Kubernetes.
+(No Spring Cloud Gateway 5 / Boot 4 o prefixo obrigatório para a variante reativa é `spring.cloud.gateway.server.webflux.*` — inclusive `httpclient` e `globalcors`; o antigo `spring.cloud.gateway.routes` é ignorado. Para a variante MVC, é `spring.cloud.gateway.server.webmvc.*` — confirme com `library-docs`.) O **`uri`** usa o **nome DNS do Service** do Kubernetes (`http://library-catalog:8080` / `.library.svc.cluster.local`) ou o **Service Connect** do ECS (`service-communication`) — **não** IPs, **não** Eureka no Kubernetes.
 
 Em **Java**, a mesma rota com mais controle:
 ```java
@@ -111,7 +113,7 @@ Configure **CORS no gateway** (`spring.cloud.gateway...globalcors`) com **origen
 ## 2. Autenticação na borda — e defesa em profundidade
 
 O gateway é o lugar natural para **validar o token** uma vez e rejeitar o tráfego não autenticado **antes** de chegar aos serviços. Com Spring Security no gateway como **OAuth2 Resource Server** (`aws-cognito`: `issuer-uri` do User Pool, validar `token_use=access` e `client_id`):
-- Rotas públicas (`/auth/**`, `/actuator/health`) liberadas; **todo o resto exige JWT válido**; `anyRequest().denyAll()` (`authentication`).
+- Na variante WebFlux (`ServerHttpSecurity`), libere apenas rotas públicas (`.pathMatchers("/auth/**", "/actuator/health").permitAll()`), exija JWT nas rotas da API (`.pathMatchers("/api/**").authenticated()`) e bloqueie qualquer rota fora da lista (`.anyExchange().denyAll()`). (Em gateway MVC/Servlet o equivalente é `requestMatchers`/`anyRequest()`.)
 - **Autorização grossa** na borda (a rota exige o escopo `library/read`); **autorização fina** (dono do recurso, regra de negócio) **fica no serviço**.
 
 **Defesa em profundidade — o gateway NÃO é a única barreira:**
@@ -128,13 +130,17 @@ Um **BFF** é um gateway/serviço **dedicado a um tipo de cliente** (web, mobile
 ```java
 @GetMapping("/api/bff/home")
 public Mono<HomeResponse> home(@AuthenticationPrincipal Jwt jwt) {
-    var featured = catalogClient.featured();
-    var loans = lendingClient.loansOf(jwt.getSubject());
+    var featured = catalogClient.featured()
+            .timeout(Duration.ofSeconds(2));
+    var loans = lendingClient.loansOf(jwt.getSubject())
+            .timeout(Duration.ofSeconds(2))
+            .map(Optional::of)
+            .onErrorReturn(Optional.empty());
     return Mono.zip(featured, loans)
-            .map(t -> new HomeResponse(t.getT1(), t.getT2()));
+            .map(t -> new HomeResponse(t.getT1(), t.getT2().orElse(null)));
 }
 ```
-- **Chamadas em paralelo**, com **timeouts** e **degradação graciosa** (se `lending` falha, devolva o catálogo e um campo `loans: null` com aviso — `resilience`); nunca falhe a tela inteira por um bloco opcional.
+- **Chamadas em paralelo**, com **timeouts** e **degradação graciosa** (em Reactor, `Mono` não aceita `null` e `Mono.empty()` cancela o `Mono.zip` inteiro — por isso embrulhe o bloco opcional em `Optional` com `.onErrorReturn(Optional.empty())`, devolvendo `loans: null` sem falhar a tela inteira — `resilience`).
 - **Um BFF por canal** (web ≠ mobile) quando as necessidades divergem; **evite** um "gateway que serve tudo para todos" (vira o monolito de novo). Um BFF **pertence ao time do front** que o consome, não a um time central de plataforma.
 - Composição **só de leitura**/agregação de apresentação. **Transações entre serviços** são **saga** nos serviços, **nunca** no BFF.
 - Alternativa: **GraphQL** (um grafo, o cliente escolhe os campos) — avalie quando há muitos clientes com necessidades muito variadas; traz custos próprios (N+1, cache, autorização por campo).

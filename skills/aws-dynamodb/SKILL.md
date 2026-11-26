@@ -158,6 +158,10 @@ public class BookRepository {
         table.putItem(book);
         return book;
     }
+```
+> **Atenção ao `@DynamoDbVersionAttribute`:** `table.putItem(book)` incrementa a versão no DynamoDB, mas **não atualiza `book.getVersion()` em memória** no objeto retornado. Se o chamador for atualizar o mesmo objeto novamente na mesma operação, releia com `findById` ou use `table.updateItem(book)` (que devolve o item já atualizado).
+
+```java
 
     public void createIfAbsent(Book book) {
         table.putItem(PutItemEnhancedRequest.builder(Book.class)
@@ -261,7 +265,7 @@ Sem `dynamodb:Scan`, `CreateTable`, `DeleteTable` para a aplicação. Via IRSA/t
 
 ## 9. Testes
 
-LocalStack com `.withServices("dynamodb")` (`aws-s3-sqs`/`aws-sdk-java`) ou a imagem `amazon/dynamodb-local`. Crie a tabela **no teste** (`table.createTable(...)` com o GSI). Cubra: salvar e buscar, **`createIfAbsent` duplicado → exceção**, **conflito de versão** (duas atualizações do mesmo item → a segunda falha), **query no GSI com paginação**, e o mapeamento da exceção para 409/404 no `@WebMvcTest` (`testing`). Awaitility (nunca `Thread.sleep`) para o GSI eventual.
+LocalStack com `.withServices("dynamodb")` (`localstack`, `aws-sdk-java`) ou a imagem `amazon/dynamodb-local`. Crie a tabela **no teste** (`table.createTable(...)` com o GSI). Cubra: salvar e buscar, **`createIfAbsent` duplicado → exceção**, **conflito de versão** (duas atualizações do mesmo item → a segunda falha), **query no GSI com paginação**, e o mapeamento da exceção para 409/404 no `@WebMvcTest` (`testing`). Lembre que o emulador atualiza o GSI instantaneamente (`localstack`, §6): use Awaitility (nunca `Thread.sleep`) em testes contra a conta AWS de dev e **desenhe o código** para não depender de leitura imediata via GSI.
 
 ---
 

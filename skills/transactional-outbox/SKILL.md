@@ -62,13 +62,16 @@ CREATE TABLE IF NOT EXISTS `outbox_event` (
 ```java
 @Entity
 @Table(name = "outbox_event")
-public class OutboxEvent implements Serializable {
+public class OutboxEvent implements Persistable<String>, Serializable {
 
     private static final long serialVersionUID = 1L;
 
     @Id
     @Column(length = 36)
     private String id;
+
+    @Transient
+    private boolean isNew = false;
 
     @Column(name = "aggregate_type", nullable = false, length = 80)
     private String aggregateType;
@@ -98,7 +101,13 @@ public class OutboxEvent implements Serializable {
         event.eventType = eventType;
         event.payload = payload;
         event.createdAt = Instant.now();
+        event.isNew = true;
         return event;
+    }
+
+    @Override
+    public boolean isNew() {
+        return isNew;
     }
 
     // getters, setters, equals, hashCode
@@ -217,7 +226,7 @@ public class KafkaEventPublisher implements EventPublisher {
 Para RabbitMQ: `rabbitTemplate.convertAndSend(...)` + esperar o confirm (`rabbitmq`); SNS: `snsTemplate.sendNotification(...)` (síncrono, lança — `aws-sns-sqs`); JMS: `jmsTemplate.convertAndSend(...)` (`activemq-artemis`). Para brokers com payload `String`, o adapter envia o JSON **já serializado** (o consumer desserializa pelo `eventType`).
 
 Por que funciona e o que ele **não** garante:
-- Se a publicação **falha**, a exception faz **rollback**: `published_at` continua `NULL` e o evento será tentado no próximo ciclo. **Nada se perde.**
+- Se a publicação **falha** no meio do lote, a exception faz **rollback** do lote inteiro: `published_at` continua `NULL` inclusive para os itens já enviados antes da falha (por isso lotes pequenos, ex. 10–20, ou publicação por item em transaction curta reduzem duplicatas; e consumers idempotentes absorvem qualquer reenvio). **Nada se perde.**
 - Se o processo **cai depois de publicar e antes do commit**, o evento será **publicado de novo** — por isso é **at-least-once** e o consumer **tem que ser idempotente**.
 - **Lotes pequenos e timeout curto** no `send`: o lock e a conexão do database ficam presos durante o `publish`. Um broker lento = pool de conexões ocupado (`jvm-performance`). Se o broker estiver fora, o loop falha rápido e tenta no próximo ciclo; **alarme** quando o backlog da outbox crescer.
 - **Ordenação:** dentro de **uma** instância o `ORDER BY created_at, id` preserva a ordem. Com **várias** instâncias e `SKIP LOCKED`, eventos do **mesmo agregado** podem ser publicados por instâncias diferentes e **chegar fora de ordem**. Se a ordem por agregado é requisito: (a) rode **um** publisher (leader election/`replicas: 1` do relay), (b) particione a outbox por hash do `aggregate_id`, ou (c) faça os consumers tolerarem desordem (compare a versão/`occurredAt` do agregado e ignore o evento antigo). Para a maioria dos casos, (c) é o mais robusto.
@@ -244,20 +253,35 @@ CREATE TABLE IF NOT EXISTS `processed_message` (
 );
 ```
 ```java
+@Repository
+public class ProcessedMessageStore {
+
+    @Autowired
+    private JdbcClient jdbc;
+
+    public boolean markProcessed(String eventId, String consumer) {
+        var inserted = jdbc.sql(
+                "INSERT IGNORE INTO processed_message (message_id, consumer, processed_at) VALUES (:id, :consumer, :at)")
+            .param("id", eventId)
+            .param("consumer", consumer)
+            .param("at", Timestamp.from(Instant.now()))
+            .update();
+        return inserted == 1;
+    }
+}
+
 @Service
 public class BookIndexService {
 
     @Autowired
-    private ProcessedMessageRepository processed;
+    private ProcessedMessageStore processed;
 
     @Autowired
     private BookIndexRepository index;
 
     @Transactional
     public void index(String eventId, BookCreatedEvent event) {
-        try {
-            processed.saveAndFlush(new ProcessedMessage(eventId, "book-index"));
-        } catch (DataIntegrityViolationException duplicate) {
+        if (!processed.markProcessed(eventId, "book-index")) {
             logger.info("Event {} already processed, skipping", eventId);
             return;
         }
@@ -265,7 +289,8 @@ public class BookIndexService {
     }
 }
 ```
-- O `INSERT` em `processed_message` e o efeito (`index.save`) estão na **mesma transaction**: ou ambos ou nenhum. Duplicata → violação de chave → ignora com segurança. Tem que ser `saveAndFlush` para a violação aparecer **ali** (e não só no commit). **Cuidado:** a exception de integridade marca a transaction como *rollback-only* em alguns cenários — isole o insert em um método/`REQUIRES_NEW` ou use `INSERT ... ON DUPLICATE KEY`/`ON CONFLICT DO NOTHING` nativo e olhe o nº de linhas afetadas, que é mais limpo.
+- O `INSERT IGNORE` (MySQL; no PostgreSQL: `INSERT INTO processed_message (...) VALUES (...) ON CONFLICT (message_id, consumer) DO NOTHING`) e o efeito (`index.save`) rodam na **mesma transaction** sem disparar exception de integridade: se já existe, `inserted == 0` e o método retorna sem corromper o `Session` do Hibernate nem abortar a transaction do PostgreSQL.
+- **Nunca use `try { saveAndFlush(); } catch (DataIntegrityViolationException)` dentro de `@Transactional`** (aborta a transaction no PostgreSQL/Hibernate → `UnexpectedRollbackException` manda duplicatas para a DLQ) e **nunca isole o insert em `REQUIRES_NEW`** (se o efeito de negócio falhar depois, o `eventId` já foi commitado e o evento se perde para sempre no redelivery).
 - **Alternativas:** operação naturalmente idempotente (`UPSERT`, `UPDATE ... SET status = 'PAID'`) dispensa a tabela; para efeito externo (pagamento) passe o `eventId` como **chave de idempotência** ao provedor.
 - Apague `processed_message` antigas por job (janela maior que o maior atraso/redelivery possível, ex.: 14–30 dias).
 

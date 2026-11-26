@@ -38,6 +38,7 @@ Execute isto antes de gerar qualquer código com qualquer skill desta família.
 
 ```markdown
 ## Project preferences
+- Base package: br.com.edimilsonldutra
 - Comments in generated code: no
 - Database: MySQL
 - Swagger annotations: *ControllerDocs interface
@@ -47,6 +48,7 @@ Execute isto antes de gerar qualquer código com qualquer skill desta família.
 - User-facing text language: English
 - Entity/DTO mapping: Dozer
 - Dependency injection: field
+- Model profile: auto
 ```
 
 Sempre que uma skill posterior precisar de uma preferência que ainda é desconhecida (por exemplo `swagger` aberta primeiro), pergunte somente essa pergunta e adicione-a à seção salva.
@@ -383,7 +385,7 @@ O driver, a URL e as flags `useTimezone`/`serverTimezone` são específicos do M
 ### Test (`src/test/resources/application.yml`)
 **Uma cópia completa do arquivo principal, não um overlay.** Um arquivo com o mesmo nome em `src/test/resources` faz shadowing do principal no classpath de teste, então qualquer coisa que falte nele (chaves JWT, CORS, mail, springdoc, `check_nullability`) falta nos testes. Copie o arquivo principal inteiro, depois mude somente o que difere:
 - remova `datasource.url`, `username` e `password` — o initializer do Testcontainers os injeta em runtime;
-- adicione `server.port: 8888` (ou outra porta fixa que os testes usem);
+- prefira `RANDOM_PORT` nos testes de integração (`integration-testing`, evita conflito de porta no CI); adicione `server.port: 8888` somente se uma suíte legada depender de porta fixa;
 - aponte qualquer diretório de upload para `target/` (Gradle: `build/`), por exemplo `file.upload-dir: target/test-uploads`.
 
 Toda mudança posterior em uma setting compartilhada precisa ser feita nos dois arquivos.

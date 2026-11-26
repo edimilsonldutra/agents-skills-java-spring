@@ -138,7 +138,6 @@ Quando o projeto usa Spring Security, adicione estas a `permitAll()` para que o 
 .requestMatchers(
     "/auth/signin",
     "/auth/refresh/**",
-    "/auth/createUser",
     "/swagger-ui/**",
     "/v3/api-docs/**"
 ).permitAll()
@@ -163,9 +162,7 @@ public interface BookControllerDocs {
         tags = {"Book"},
         responses = {
             @ApiResponse(description = "Success", responseCode = "200",
-                content = @Content(
-                    mediaType = MediaType.APPLICATION_JSON_VALUE,
-                    array = @ArraySchema(schema = @Schema(implementation = BookDTO.class)))),
+                content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE)),
             @ApiResponse(description = "Bad Request",           responseCode = "400", content = @Content),
             @ApiResponse(description = "Forbidden",             responseCode = "403", content = @Content),
             @ApiResponse(description = "Internal Server Error", responseCode = "500", content = @Content)
@@ -258,7 +255,9 @@ ResponseEntity<Resource> exportPage(
     tags = {"Book"},
     responses = {
         @ApiResponse(description = "Success", responseCode = "200",
-            content = @Content(schema = @Schema(implementation = BookDTO.class))),
+            content = @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                array = @ArraySchema(schema = @Schema(implementation = BookDTO.class)))),
         @ApiResponse(description = "Bad Request",           responseCode = "400", content = @Content),
         @ApiResponse(description = "Forbidden",             responseCode = "403", content = @Content),
         @ApiResponse(description = "Internal Server Error", responseCode = "500", content = @Content)
@@ -357,4 +356,4 @@ Todo endpoint usa este conjunto — adicione ou remova códigos conforme apropri
 - `springdoc.paths-to-match` limita os paths expostos a `/auth/**` e `/api/**/v1/**`.
 - Documente os status codes reais: 403 sem body para tokens ausentes/inválidos; o status que o controller de fato retorna.
 - Endpoints de export referenciam `MediaTypes.APPLICATION_XLSX_VALUE` etc. da sua interface `MediaTypes` — não strings hardcoded.
-- `content = @Content` (sem args) = sem response body. Nunca o omita em responses de erro.
+- `content = @Content` (sem args) = sem response body (ex.: `204`, `403`). Em responses de erro que devolvem body (`ExceptionResponse`/`ProblemDetail`), documente o schema de erro (ou delegue a um `OpenApiCustomizer` — `swagger-advanced`, evitando declarar `500` vazio na operação para que `putIfAbsent` funcione). Para `PagedModel`, deixe o springdoc inferir o schema paginado (não anote com `@ArraySchema`, que gera array JSON falso).

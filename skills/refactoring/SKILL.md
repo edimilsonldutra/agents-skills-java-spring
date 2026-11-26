@@ -9,7 +9,7 @@ Antes de aplicar este pattern, leia também [`../code-organization/SKILL.md`](..
 
 **Refatorar é mudar a estrutura interna do código sem mudar o seu comportamento observável.** O objetivo é torná-lo **mais fácil de entender e de modificar** — não mais "bonito". Se o comportamento muda, **não é refatoração**: é feature ou correção de bug, e deve ser feita **separadamente**.
 
-## As duas "chapéus" (Kent Beck)
+## Os dois "chapéus" (Kent Beck)
 
 Em qualquer momento você usa **um** chapéu:
 - **Chapéu de feature/bug:** muda o comportamento; escreve **testes novos**; os testes existentes **podem** mudar.
@@ -55,9 +55,9 @@ verde → (1 passo pequeno) → rodar testes → verde → commit → próximo p
 
 | Smell (cheiro) | Sinal | Refatoração |
 |---|---|---|
-| **Long Method** | Método com várias responsabilidades, > ~20–30 linhas, níveis de abstração misturados | **Extract Method**; nomes que explicam o "porquê" (sem comentários — o pacote não os usa) |
+| **Long Method** | Método com várias responsabilidades, > ~20–30 linhas, níveis de abstração misturados | **Extract Method**; nomes que explicam o "porquê" (respeitando a preferência de comentários salva; default: sem comentários) |
 | **God Service / Large Class** | `*Service` com 20 métodos e 10 dependências; muda por vários motivos | **Extract Class**; **mover regra para o domínio**; separar por caso de uso |
-| **Anemic Domain Model** | Entity só com getters/setters; toda regra em `*Service` | **Move Method** para a entity/aggregate; setters viram métodos de negócio (`ddd-hexagonal`) |
+| **Anemic Domain Model** *(em domínio rico / DDD)* | Entity só com getters/setters em regra de negócio complexa; toda invariante espalhada em `*Service` *(em CRUD simples flat-by-layer de `code-organization`, não é smell)* | **Move Method** para a entity/aggregate; setters viram métodos de negócio (`ddd-hexagonal`) |
 | **Feature Envy** | Método que usa mais dados de **outra** classe que da sua | **Move Method** para a classe dos dados |
 | **Primitive Obsession** | `String email`, `double price`, `Long customerId/orderId` intercambiáveis | **Replace Primitive with Value Object** (`record Email`, `Money`, `OrderId`) |
 | **Data Clumps / Long Parameter List** | Os mesmos 3–4 parâmetros andam juntos; assinatura com 6+ | **Introduce Parameter Object** (record) |
@@ -225,7 +225,7 @@ Refatoração que **não cabe em passos pequenos verdes** (API pública, banco, 
 
 ## Regras principais
 
-- **Refatorar = mudar a estrutura, não o comportamento.** **Duas chapéus, nunca juntas**: refatoração, feature e bug em **commits/PRs separados**.
+- **Refatorar = mudar a estrutura, não o comportamento.** **Dois chapéus, nunca juntos**: refatoração, feature e bug em **commits/PRs separados**.
 - **Rede de segurança primeiro**: testes verdes antes, **characterization tests** se não houver, **cobertura do trecho dentro dos 90%** (e mutation score nas regras críticas).
 - **Passos pequenos, verdes a cada passo**, commits `refactor:`; **vermelho → desfaça o último passo**; prefira **refatorações automáticas da IDE** e o **compilador** como rede; **escopo e critério de parada** definidos antes.
 - **Use o catálogo de smells** (Long Method, God Service, Anemic Model, Primitive Obsession, N+1, switch por tipo…) e **a refatoração correspondente**; **records/`Clock`/sealed + pattern switch** quando couber.

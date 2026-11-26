@@ -32,7 +32,7 @@ EventBridge tem **latência e limites de vazão maiores** que SNS/Kafka (cotas p
 ```
 - **`source`** (quem publica; use namespace reverso, **nunca** o prefixo reservado `aws.`), **`detail-type`** (o tipo do evento — nome no passado, `messaging`) e **`detail`** (seu payload JSON) são os campos que as **regras casam**.
 - Dentro do `detail`, siga o envelope de `messaging`: **`eventId` único**, **`eventVersion`**, `occurredAt`, `correlationId`. O EventBridge também gera um `id` do evento, mas o **seu `eventId`** é a chave de **idempotência** dos consumers.
-- **Tamanho máx. 256 KB** por evento; payload grande → S3 + referência (`aws-s3-sqs`).
+- **Tamanho máx. 1 MB** por chamada/evento (limite ampliado pela AWS; confirme cotas atuais da região); payload grande → S3 + referência (`aws-s3-sqs`).
 - Evento é **record dedicado**, não entity (`messaging`, `java-modern-features`).
 
 ---
@@ -80,7 +80,7 @@ public class EventBridgeEventPublisher implements EventPublisher {
 }
 ```
 **A armadilha principal:** `PutEvents` retorna **HTTP 200 mesmo quando entradas falham** (throttling, evento inválido). A falha vem em `failedEntryCount()` / nos `entries()` com `errorCode`. Se você **não verifica**, **perde eventos em silêncio**. Sempre cheque, e **lance** (para o outbox/retry reagir).
-- **Lote:** até **10 entradas por chamada** e **256 KB no total**; em lote, **re-envie só as entradas que falharam** (as `entries()` vêm na mesma ordem do request).
+- **Lote:** até **10 entradas por chamada** e **1 MB no total**; em lote, **re-envie só as entradas que falharam** (as `entries()` vêm na mesma ordem do request).
 - Implemente a interface `EventPublisher` do `transactional-outbox` (a mesma de Kafka/RabbitMQ/SNS): o **relay do outbox** publica no EventBridge **depois do commit** e só marca como publicado se `failedEntryCount == 0`. **Não** chame `putEvents` de dentro da transaction do negócio (dual write — `messaging`).
 - Nome do bus por configuração (`app.aws.eventbus`); o bus `default` recebe eventos dos serviços AWS — para os **seus** eventos use um **bus customizado** (isola permissões e regras).
 
@@ -144,7 +144,7 @@ Métricas do CloudWatch por regra: **`FailedInvocations`** (entrega ao target fa
 ## Testes
 
 - **Unit:** o adapter com o `EventBridgeClient` mockado: com `failedEntryCount = 0` não lança; com `failedEntryCount > 0` **lança** (teste esse caso — é o que previne perda silenciosa). O service com o `EventPublisher` mockado (`testing`).
-- **Integration:** LocalStack com `.withServices("events", "sqs")` (`aws-s3-sqs`): crie bus, fila-alvo, regra e target (SDK/`awslocal`), publique e **aguarde a mensagem na fila** com Awaitility; evento que **não casa** com o pattern **não** chega. A cobertura de recursos avançados (Scheduler, archive/replay) no LocalStack pode ser parcial — valide-os na conta de dev.
+- **Integration:** LocalStack com `.withServices("events", "sqs")` (`localstack`): crie bus, fila-alvo, regra e target (SDK/`awslocal`), publique e **aguarde a mensagem na fila** com Awaitility; evento que **não casa** com o pattern **não** chega. A cobertura de recursos avançados (Scheduler, archive/replay) no LocalStack pode ser parcial — valide-os na conta de dev.
 - **Contrato:** um JSON de exemplo do evento desserializa no record do consumer (pega quebra de schema).
 
 ---
@@ -153,7 +153,7 @@ Métricas do CloudWatch por regra: **`FailedInvocations`** (entrega ao target fa
 
 - **EventBridge** para roteamento por conteúdo, eventos de serviços AWS/SaaS e agendamento; SNS+SQS para fan-out de alta vazão; Kafka para replay/streaming.
 - **Bus customizado** para os seus eventos; `source` com namespace reverso (nunca `aws.`), `detail-type` no passado, `detail` com **`eventId`**, versão, `occurredAt`, `correlationId`.
-- **Sempre verifique `failedEntryCount`** do `PutEvents` (200 não significa sucesso) e re-envie só as falhas; lote ≤ 10 entradas / 256 KB.
+- **Sempre verifique `failedEntryCount`** do `PutEvents` (200 não significa sucesso) e re-envie só as falhas; lote ≤ 10 entradas / 1 MB.
 - Publique pelo **relay do outbox** (`transactional-outbox`), nunca dentro da transaction do negócio.
 - Targets: **uma fila SQS por consumer** com DLQ, queue policy permitindo `events.amazonaws.com` + `aws:SourceArn` da regra; **DLQ e retry policy do target sempre configurados**, com alarme.
 - Consumers **idempotentes** (at-least-once; replay duplica).
