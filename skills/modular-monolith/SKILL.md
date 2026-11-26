@@ -42,7 +42,7 @@ Um **monolito modular** é **uma aplicação, um deploy, um banco** — mas **or
     <scope>test</scope>
 </dependency>
 ```
-`spring-modulith.version` em `<properties>` (fora do BOM do Boot — `maven-config`): **use a linha compatível com o Boot do projeto** (o Spring Modulith tem uma linha por geração do Boot) — confirme no Context7/documentação. O `starter-jpa` ativa o **event publication registry** persistido (seção 4); sem JPA, use só o `core`.
+`spring-modulith.version` em `<properties>` (fora do BOM do Boot — `maven-config`): **use a linha compatível com o Boot do projeto** (o Spring Modulith tem uma linha por geração do Boot) — confirme com `library-docs`. O `starter-jpa` ativa o **event publication registry** persistido (seção 4); sem JPA, use só o `core`.
 
 ---
 

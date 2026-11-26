@@ -125,7 +125,7 @@ Quando não há Kubernetes (EC2/ECS) ou quando se quer o valor sempre fresco, a 
     <artifactId>spring-cloud-aws-starter-secrets-manager</artifactId>
 </dependency>
 ```
-Gerencie as versões pelo BOM `io.awspring.cloud:spring-cloud-aws-dependencies` (no `dependencyManagement`), na **linha compatível com o Boot do projeto** — Spring Cloud AWS tem uma linha por geração do Boot; confirme a correta no Context7/documentação (veja `maven-config`, "Resolving the latest versions") em vez de copiar de um projeto Boot 3.
+Gerencie as versões pelo BOM `io.awspring.cloud:spring-cloud-aws-dependencies` (no `dependencyManagement`), na **linha compatível com o Boot do projeto** — Spring Cloud AWS tem uma linha por geração do Boot; confirme a correta com `library-docs` em vez de copiar de um projeto Boot 3.
 
 ```yaml
 spring:

@@ -59,7 +59,7 @@ Conte como falha: **timeouts, `5xx`, conexão**; e **chamadas lentas** (*slow ca
 
 ## 5. Resilience4j (Spring Boot)
 
-> **Versões:** o Resilience4j tem starters para Spring Boot e a integração com o Boot 4 / AOP (`spring-boot-starter-aop` foi renomeado no Boot 4) pode ter artifacts novos. **Confirme na documentação/Context7 da versão resolvida** (`maven-config`) o starter exato e a dependência de AOP/AspectJ necessária para as anotações. A **estrutura** abaixo (anotações e propriedades) é estável.
+> **Versões:** o Resilience4j tem starters para Spring Boot e a integração com o Boot 4 / AOP (`spring-boot-starter-aop` foi renomeado no Boot 4) pode ter artifacts novos. **Confirme na versão resolvida** (`library-docs`) o starter exato e a dependência de AOP/AspectJ necessária para as anotações. A **estrutura** abaixo (anotações e propriedades) é estável.
 
 ```xml
 <dependency>

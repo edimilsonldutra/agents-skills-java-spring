@@ -35,7 +35,7 @@ Consumidor (lending)                    Provedor (catalog)
 
 **Padrão do pack: Pact** (consumer-driven, com broker e `can-i-deploy`) para APIs entre **times**; SCC quando é um ecossistema Spring fechado em que o provedor dita o contrato. **Escolha uma** por par provedor/consumidor.
 
-> **Versões:** Pact JVM e Spring Cloud Contract mudam de API entre versões. Os trechos mostram a **estrutura**; **confirme os nomes e artifacts na versão resolvida** (Context7, `maven-config`).
+> **Versões:** Pact JVM e Spring Cloud Contract mudam de API entre versões. Os trechos mostram a **estrutura**; **confirme os nomes e artifacts na versão resolvida** (`library-docs`).
 
 ---
 

@@ -40,7 +40,7 @@ O **API Gateway** é a **porta de entrada única** dos clientes externos para os
 
 ## 1. Spring Cloud Gateway
 
-> **Versões:** o Spring Cloud Gateway tem **duas variantes** (WebFlux reativa e **Server WebMVC**, com virtual threads — `java-modern-features`) e **os nomes dos starters e o prefixo das properties mudaram nas versões recentes** do Spring Cloud. **Confirme na documentação/Context7 da versão resolvida** (`maven-config`) o artifact e o prefixo exatos antes de copiar — os trechos abaixo mostram a **estrutura**, que é estável.
+> **Versões:** o Spring Cloud Gateway tem **duas variantes** (WebFlux reativa e **Server WebMVC**, com virtual threads — `java-modern-features`) e **os nomes dos starters e o prefixo das properties mudaram nas versões recentes** do Spring Cloud. **Confirme na versão resolvida** (`library-docs`) o artifact e o prefixo exatos antes de copiar — os trechos abaixo mostram a **estrutura**, que é estável.
 
 ```xml
 <dependency>

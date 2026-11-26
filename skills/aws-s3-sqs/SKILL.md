@@ -33,7 +33,7 @@ Antes de aplicar este pattern, leia também [`../code-organization/SKILL.md`](..
     <artifactId>spring-cloud-aws-starter-sqs</artifactId>
 </dependency>
 ```
-Declare `spring-cloud-aws.version` em `<properties>` (veja `maven-config`: não está no BOM do Boot). **A versão precisa ser a linha compatível com o Spring Boot do projeto** — o Spring Cloud AWS tem uma linha por geração do Boot; confirme no Context7/documentação em vez de copiar de um projeto Boot 3.
+Declare `spring-cloud-aws.version` em `<properties>` (veja `maven-config`: não está no BOM do Boot). **A versão precisa ser a linha compatível com o Spring Boot do projeto** — o Spring Cloud AWS tem uma linha por geração do Boot; confirme com `library-docs` em vez de copiar de um projeto Boot 3.
 
 ## application.yml
 

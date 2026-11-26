@@ -39,6 +39,7 @@ Além de `code-organization` e `code-style` (sempre), **leia o `SKILL.md` da ár
 |---|---|
 | Projeto ou serviço novo | `scaffold` (gera e verifica o build), depois `project-claude-md` |
 | Dependency, plugin, versão, Maven ↔ Gradle | `maven-config` (o que o BOM gerencia, como resolver a versão atual — nunca invente versão) |
+| Nome de classe, package, starter ou property que mudou entre gerações (Boot 3 → 4, Jackson 2 → 3) | `library-docs` — confirme no jar resolvido (`javap`, `spring-configuration-metadata.json`) ou no Context7 e declare a fonte; sem fonte, "não confirmado" |
 | **Qualquer endpoint** que recebe id, body ou arquivo | `application-security` — **autorização por objeto** na query (`findByIdAndUserId`, 404 para recurso de outro usuário), DTO de request só com campos editáveis, limites, sem concatenação; se a feature tem threat model (`docs/security/`), implemente as mitigações dele |
 | Desenhar classes, escolher a estrutura de uma solução | `solid` e `design-patterns` — comece pelo problema; CRUD simples continua simples; sem interface + `Impl` nem factory sem necessidade; regra sobre um dado no dono do dado (`solid`, "Coesão") |
 | Repositório com `cdd.json` | `cognitive-complexity` — antes de entregar, conte as classes que você alterou; se alguma passou do limite, extraia levando os pontos para outra classe (ou relate o motivo) |
