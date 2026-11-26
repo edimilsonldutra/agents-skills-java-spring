@@ -3,7 +3,7 @@ name: spring-data-jpa
 description: Persistência com Spring Data JPA e Hibernate 7 no padrão do pacote — entities sem Lombok, relationships e fetch, transactions e N+1, repositories com queries custom e modifying, DTOs, mapper Dozer ou MapStruct e testes de repository contra banco real. Use quando criar um CRUD, uma entity ou um repository, ou investigar LazyInitializationException e N+1.
 ---
 
-Antes de aplicar este pattern, leia também [`../code-organization/SKILL.md`](../code-organization/SKILL.md) e [`../code-style/SKILL.md`](../code-style/SKILL.md) para as preferências do projeto (database, mapper, injection), o package layout base e as convenções de code style.
+Antes de aplicar este pattern, leia também [`../code-organization/SKILL.md`](../code-organization/SKILL.md) e [`../code-style/SKILL.md`](../code-style/SKILL.md) para as preferências do projeto (database, mapper, injection), o package layout base e as convenções de code style. Para decisões de modelagem de dados, consistência (CAP, PACELC, ACID/BASE), níveis de isolamento, normalização, chaves e índices, leia [`../data-modeling/SKILL.md`](../data-modeling/SKILL.md).
 
 # Spring Data JPA
 

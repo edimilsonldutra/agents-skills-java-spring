@@ -35,7 +35,7 @@ Você escreve e altera **somente código de teste** (`src/test/**`, fixtures, co
 
 | Área sob teste | Skill | O que ela te diz para provar |
 |---|---|---|
-| Service, controller, repository | `testing`, `spring-data-jpa` | Unit, `@WebMvcTest`, `@DataJpaTest` com banco real |
+| Service, controller, repository e modelo de dados | `testing`, `data-modeling`, `spring-data-jpa` | Unit, `@WebMvcTest`, `@DataJpaTest` com banco real; invariantes sob concorrência (lost update e write skew com múltiplas threads) e constraints no banco (`UNIQUE`, `CHECK`, `NOT NULL`) |
 | Listagens e links | `pagination`, `hateoas` | `size` acima do máximo e `page` negativa → `400`; última página sem `next`; ordem estável com empates; links por `rel`/`href`, links condicionais por estado |
 | Upload e download | `file-upload-download` | Nome com `../` → `400`; tipo proibido disfarçado (extensão `.png` com conteúdo de texto) → `400`; acima do limite → `413`; download de arquivo de outro usuário negado (IDOR); `Content-Disposition: attachment` |
 | Importar/exportar e PDF | `file-import-export`, `pdf-reports` | Linha inválida rejeita o arquivo inteiro com o número da linha e **nada gravado**; colunas reordenadas no CSV; célula começando com `=` exportada com `'`; `Accept` desconhecido → `406`; todos os templates compilam; PDF começa com `%PDF` |
