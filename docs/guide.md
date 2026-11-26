@@ -10,7 +10,7 @@ Guia de referência do plugin `squads` para o Claude Code: instalação, configu
 
 O plugin leva para o Claude Code um padrão único de construção de APIs REST com **Java 25 e Spring Boot 4** — package layout, code style, segurança, testes, documentação e entrega — em duas camadas:
 
-- **Skills (90)** — o *como*. Cada skill documenta uma maneira específica de fazer algo: uma entity, uma migration, um teste de integração, um design doc, um pipeline. São a **fonte de verdade do padrão**: agents e o próprio Claude Code as carregam sob demanda, em vez de responder de memória.
+- **Skills (91)** — o *como*. Cada skill documenta uma maneira específica de fazer algo: uma entity, uma migration, um teste de integração, um design doc, um pipeline. São a **fonte de verdade do padrão**: agents e o próprio Claude Code as carregam sob demanda, em vez de responder de memória.
 - **Agents (7)** — o *quem*. Especialistas com papel, permissões e formato de entrega próprios: `product-manager`, `architect`, `tech-lead`, `developer`, `qa` e `code-reviewer`, coordenados pelo `orchestrator`. Cada agent carrega as skills da sua tarefa antes de agir.
 
 ```
@@ -69,7 +69,7 @@ Os passos acima instalam o **plugin completo** no Claude Code. Para as outras fe
 
 | Ferramenta | Como instalar | O que chega |
 |---|---|---|
-| Gemini CLI | `gemini extensions install https://github.com/edimilsonldutra/agents-skills-java-spring` | 90 skills descobertas automaticamente e os 7 agents como `/squads:<agent>` |
+| Gemini CLI | `gemini extensions install https://github.com/edimilsonldutra/agents-skills-java-spring` | 91 skills descobertas automaticamente e os 7 agents como `/squads:<agent>` |
 | Codex | `python scripts/portable.py install --tool codex --project <projeto>` (repositório clonado) | `.agents/skills/`, `.codex/agents/*.toml` e a seção do squads no `AGENTS.md` |
 | GitHub Copilot | `python scripts/portable.py install --tool copilot --project <projeto>` | `.agents/skills/`, `.github/agents/*.agent.md` e a seção no `.github/copilot-instructions.md` |
 | Qualquer LLM | `python scripts/portable.py install --tool generic --project <projeto>` | `.agents/skills/`, `agents/*.md` como system prompts e `AGENTS.md` |
@@ -86,7 +86,7 @@ Na pasta do projeto onde as skills vão ficar, rode:
 npx skills add edimilsonldutra/agents-skills-java-spring --skill '*'
 ```
 
-O `'*'` instala **as 90 skills de uma vez** — e é o recomendado, porque as skills se referenciam umas às outras (a `design-docs` aponta para `prd-writing` e `threat-modeling`, por exemplo) e esses links só funcionam quando todas estão instaladas lado a lado. O CLI pergunta para quais ferramentas instalar.
+O `'*'` instala **as 91 skills de uma vez** — e é o recomendado, porque as skills se referenciam umas às outras (a `design-docs` aponta para `prd-writing` e `threat-modeling`, por exemplo) e esses links só funcionam quando todas estão instaladas lado a lado. O CLI pergunta para quais ferramentas instalar.
 
 | Quero… | Comando |
 |---|---|
@@ -265,9 +265,9 @@ Skills que os agents carregam e que também podem ser usadas diretamente (pedido
 | `pdf-reports` | `/squads:pdf-reports` | Relatórios PDF com JasperReports 7: templates no formato novo, compilação com cache, sub-relatório, QR code, fontes no container e testes. | "Gere o relatório PDF da listagem de livros e o PDF de um livro com QR code." |
 | `email` | `/squads:email` | E-mail por SMTP com Spring Mail: timeouts, HTML com Thymeleaf, anexos, envio depois do commit e fora da request, Mailpit no desenvolvimento e GreenMail nos testes. Na AWS, veja `aws-ses`. | "Envie um e-mail de boas-vindas quando um usuário se cadastrar." |
 
-**Especificação, segurança e design de código (5 skills)**
+**Especificação, segurança e design de código (6 skills)**
 
-*Usadas por:* `architect` (escreve o design doc e o threat model, desenha os módulos), `developer` (segue o design doc; `application-security` em todo endpoint; `solid` e `design-patterns` ao desenhar classes), `tech-lead` (planeja a partir dos critérios do design doc; mitigações viram tarefas), `qa` (cada critério e cada ameaça mitigada vira teste), `code-reviewer` (revisa contra o design doc; checklist de segurança e de design) e `product-manager` (revisa os critérios de produto; casos de abuso no PRD).
+*Usadas por:* `architect` (escreve o design doc e o threat model, desenha os módulos), `developer` (segue o design doc; `application-security` em todo endpoint; `solid` e `design-patterns` ao desenhar classes), `tech-lead` (planeja a partir dos critérios do design doc; mitigações viram tarefas), `qa` (cada critério e cada ameaça mitigada vira teste), `code-reviewer` (revisa contra o design doc; checklist de segurança e de design; `cognitive-complexity` quando o repositório tem `cdd.json`) e `product-manager` (revisa os critérios de produto; casos de abuso no PRD).
 
 | Skill | Comando | Descrição | Exemplo de prompt |
 |---|---|---|---|
@@ -275,6 +275,7 @@ Skills que os agents carregam e que também podem ser usadas diretamente (pedido
 | `application-security` | `/squads:application-security` | Segurança da API pelo **OWASP API Security Top 10**: autorização por objeto (IDOR), mass assignment, limites e rate limit, injeção, SSRF, desserialização, security headers, segredos, logs de segurança, dependências e SBOM, e testes (incluindo SAST, secret scanning e ZAP); a **revisão de segurança** vira relatório com IDs, gravidade e evidência, e a correção sai um achado por vez. | "Faça uma revisão de segurança dos endpoints de empréstimo." |
 | `threat-modeling` | `/squads:threat-modeling` | Pensa em como a feature pode ser abusada **antes** de construir: diagrama com fronteiras de confiança, STRIDE, casos de abuso, prioridade e uma decisão por ameaça — cada mitigação vira tarefa e teste. Também modela um **sistema que já roda**, a partir do código e com evidência. Grava em `docs/security/`. | "Faça o threat model da renovação online de empréstimo." |
 | `solid` | `/squads:solid` | Os cinco princípios SOLID no código Spring Boot do pacote, com antes/depois, mais DRY, KISS, YAGNI e Lei de Demeter — e quando **não** aplicar (CRUD simples continua simples). | "Este BookService está difícil de testar. O que viola SOLID e como corrigir?" |
+| `cognitive-complexity` | `/squads:cognitive-complexity` | Complexidade cognitiva por classe com **Cognitive-Driven Development**: o time combina num `cdd.json` o que conta como ponto (desvio, loop, `catch`, operador lógico, tipo do projeto, lambda) e o teto por classe; a contagem sai com `arquivo:linha`, comparada com a base do PR, e cada violação vem com uma extração que de fato tira pontos da classe. Traz um modelo de `cdd.json` calibrado para o layout do pacote. | "Meça a complexidade cognitiva das classes alteradas nesta branch." |
 | `design-patterns` | `/squads:design-patterns` | Padrões de projeto que aparecem de verdade numa API Spring Boot (Strategy, Factory, Adapter, Proxy/AOP, Observer, State, Specification…), onde o Spring já os usa, a armadilha da auto-invocação e os anti-padrões. | "Qual padrão usar para calcular multas diferentes por tipo de sócio?" |
 
 **Java/Spring Boot, Kubernetes e AWS (13 skills)**
@@ -414,7 +415,7 @@ Complementam a skill `testing` (unit e slice). *Usadas por:* `qa` (o dono do tem
 | `refactoring` | `/squads:refactoring` | Refatoração segura: rede de segurança (characterization tests), passos pequenos e verdes, catálogo de smells → refatoração, Parallel Change/Strangler/expand → contract e como revisar o PR. | "Refatore o `LoanService` sem mudar o comportamento." |
 | `backlog-refinement` | `/squads:backlog-refinement` | Sessão de refinamento de backlog: preparação, roteiro de 60 min, DoR estendida (privacidade, NFRs, contrato, migration, rollout, métricas), Example Mapping, fatiamento, estimativa e card refinado. Também usada pelo agent `product-manager`. | "Refine estes 5 itens do topo do backlog." |
 
-**Total: 90 skills, todas neste plugin.** Na dúvida sobre qual usar, pergunte à skill `guide` — ela lê o que está realmente instalado e indica a skill certa para cada necessidade.
+**Total: 91 skills, todas neste plugin.** Na dúvida sobre qual usar, pergunte à skill `guide` — ela lê o que está realmente instalado e indica a skill certa para cada necessidade.
 
 ---
 
