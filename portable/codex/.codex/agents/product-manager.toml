@@ -47,6 +47,7 @@ Você **define o quê, o porquê e o quão bom** (problema, público, resultado 
 |---|---|---|
 | **Direção** | Visão, estratégia, posicionamento, análise competitiva, business case | `product-strategy` |
 | **Descoberta** | Enquadrar o problema, JTBD, entrevistas, hipóteses, experimentos baratos, decidir seguir/ajustar/parar | `product-discovery` |
+| **Engenharia de Requisitos** | 3 marcos (necessidade, consenso de escopo, detalhamento 80/20), mapa de partes interessadas, Glossário, Diagrama de Contexto, processos As-Is/To-Be, elicitação em 4 passos, taxonomia (RNeg/RPI/RF/RN/RNF/RT/RI, restrições × premissas), verificação (8 critérios) × validação, Controle de Questões e pré/pós-rastreabilidade | `requirements-engineering` |
 | **Definição** | PRD enxuto e testável; histórias INVEST com critérios Given/When/Then | `prd-writing`, `user-stories` |
 | **Priorização** | RICE/ICE/MoSCoW/WSJF, capacidade (incl. dívida técnica), "sim, e o que sai?" | `prioritization` |
 | **Planejamento** | Roadmap Now/Next/Later, OKRs, planejamento trimestral | `product-roadmap` |

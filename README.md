@@ -1,13 +1,13 @@
 # Squads — Agents & Skills para Claude Code
 
-![version](https://img.shields.io/badge/version-2.12.0-blue)
+![version](https://img.shields.io/badge/version-2.13.0-blue)
 ![Java](https://img.shields.io/badge/Java-25-orange)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4-6DB33F)
 ![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin-D97757)
-![skills](https://img.shields.io/badge/skills-94-informational)
+![skills](https://img.shields.io/badge/skills-95-informational)
 ![agents](https://img.shields.io/badge/agents-7-informational)
 
-Plugin para o [Claude Code](https://claude.com/claude-code) — e, pelo formato aberto Agent Skills, também para **Gemini CLI, Codex, GitHub Copilot e qualquer LLM** ([como](#outras-ferramentas-gemini-cli-codex-github-copilot-e-qualquer-llm)) — que leva um **time de agents especialistas** e **94 skills** para o desenvolvimento de APIs REST com **Java 25 e Spring Boot 4**. Os agents planejam, implementam, testam e revisam; as skills definem o padrão que todos seguem — do layout de packages ao deploy — para que o código gerado por IA saia consistente, testado e seguro em qualquer projeto do time.
+Plugin para o [Claude Code](https://claude.com/claude-code) — e, pelo formato aberto Agent Skills, também para **Gemini CLI, Codex, GitHub Copilot e qualquer LLM** ([como](#outras-ferramentas-gemini-cli-codex-github-copilot-e-qualquer-llm)) — que leva um **time de agents especialistas** e **95 skills** para o desenvolvimento de APIs REST com **Java 25 e Spring Boot 4**. Os agents planejam, implementam, testam e revisam; as skills definem o padrão que todos seguem — do layout de packages ao deploy — para que o código gerado por IA saia consistente, testado e seguro em qualquer projeto do time.
 
 **Sumário:** [Visão geral](#visão-geral) · [Início rápido](#início-rápido) · [Como funciona](#como-funciona) · [Agents](#agents) · [Fluxo completo](#fluxo-completo-de-uma-feature) · [Fluxos individuais](#fluxo-individual-de-cada-agent) · [Skills](#skills) · [Outras ferramentas](#outras-ferramentas-gemini-cli-codex-github-copilot-e-qualquer-llm) · [Atualização](#atualização) · [Estrutura](#estrutura-do-repositório) · [Contribuindo](#contribuindo)
 
@@ -18,7 +18,7 @@ Plugin para o [Claude Code](https://claude.com/claude-code) — e, pelo formato 
 | | |
 |---|---|
 | **Agents** | 7 — `orchestrator`, `product-manager`, `architect`, `tech-lead`, `developer`, `qa`, `code-reviewer` |
-| **Skills** | 94 — Spring Boot, API, arquivos e e-mail, especificação, segurança, design de código, testes, mensageria, microsserviços, CI/CD, Kubernetes, AWS e produto |
+| **Skills** | 95 — Spring Boot, API, arquivos e e-mail, especificação, segurança, design de código, testes, mensageria, microsserviços, CI/CD, Kubernetes, AWS e produto |
 | **Stack** | Java 25 (LTS), Spring Boot 4, Spring Framework 7, Spring Security 7, Hibernate 7, Jackson 3, Maven ou Gradle |
 | **Databases** | MySQL (padrão), PostgreSQL, SQL Server, Oracle, MariaDB |
 | **Plataformas** | Docker, Kubernetes, Helm, Argo CD, AWS (EKS, ECS, Lambda, RDS, S3, SQS/SNS…), Google Cloud e Azure via GitHub Actions |
@@ -66,7 +66,7 @@ O plugin tem duas camadas: **agents** (quem faz, com papel e permissões) e **sk
 flowchart LR
     U(["Você"]) -->|"pedido"| O["orchestrator"]
     O -->|"brief + skills"| A["Agents especialistas<br/>product-manager · architect · tech-lead<br/>developer · qa · code-reviewer"]
-    A -->|"carregam"| S[("94 skills<br/>o padrão do projeto")]
+    A -->|"carregam"| S[("95 skills<br/>o padrão do projeto")]
     A -->|"entregas"| O
     O -->|"verifica e pede aprovação"| U
 ```
@@ -187,7 +187,7 @@ flowchart LR
     F --> G["docs/product/ (com confirmação)"]
     G --> H["Handoff: architect ou tech-lead"]
 ```
-- **Skills:** as 12 de produto + `backlog-refinement` e `threat-modeling` (casos de abuso).
+- **Skills:** as 13 de produto + `backlog-refinement` e `threat-modeling` (casos de abuso).
 - **Entrega:** PRD enxuto e testável, histórias com critérios Given/When/Then, métricas, plano de lançamento e comunicados. Nunca inventa dados — o que não tem fonte é marcado como hipótese.
 
 #### `architect`
@@ -216,7 +216,7 @@ flowchart LR
     F --> G["Plano + matriz critério → tarefa"]
     G --> H["Handoff: developer"]
 ```
-- **Skills:** atribui a skill certa a cada tarefa (mapa completo de 94); usa `design-docs`, `repository-understanding`, `refactoring`, `backlog-refinement` e `test-coverage` (DoD com 90%).
+- **Skills:** atribui a skill certa a cada tarefa (mapa completo de 95); usa `design-docs`, `repository-understanding`, `refactoring`, `backlog-refinement` e `test-coverage` (DoD com 90%).
 - **Entrega:** plano acionável, sem escrever código. Decisões estruturais vão para o `architect`; o escopo é do `product-manager`.
 
 #### `developer`
@@ -270,7 +270,7 @@ flowchart LR
 
 ## Skills
 
-94 skills em 12 grupos. A lista completa, com descrição e exemplo de prompt de cada uma, está no [guia de referência](docs/guide.md#catálogo-de-skills).
+95 skills em 12 grupos. A lista completa, com descrição e exemplo de prompt de cada uma, está no [guia de referência](docs/guide.md#catálogo-de-skills).
 
 | Grupo | Skills |
 |---|---|
@@ -283,7 +283,7 @@ flowchart LR
 | **AWS** (13) | `aws-sdk-java`, `localstack`, `aws-dynamodb`, `aws-keyspaces`, `aws-lambda`, `aws-ecs-fargate`, `aws-cognito`, `aws-parameter-store`, `aws-ses`, `aws-eventbridge`, `aws-observability`, `aws-terraform`, `aws-architecture-diagram` |
 | **CI/CD e GitOps** (3) | `github-actions`, `github-actions-cloud`, `argocd` |
 | **Microsserviços** (10) | `microservices`, `modular-monolith`, `ddd-hexagonal`, `api-gateway`, `service-communication`, `resilience`, `saga-pattern`, `cqrs-event-sourcing`, `contract-testing`, `idempotency` |
-| **Produto** (12) | `product-strategy`, `product-discovery`, `prd-writing`, `user-stories`, `prioritization`, `product-roadmap`, `product-metrics`, `agile-delivery`, `release-management`, `technical-product-management`, `privacy-lgpd`, `stakeholder-communication` |
+| **Produto** (13) | `product-strategy`, `product-discovery`, `requirements-engineering`, `prd-writing`, `user-stories`, `prioritization`, `product-roadmap`, `product-metrics`, `agile-delivery`, `release-management`, `technical-product-management`, `privacy-lgpd`, `stakeholder-communication` |
 | **Testes** (4) | `test-patterns`, `integration-testing`, `test-coverage`, `postman-newman` |
 | **Entender, refatorar e refinar** (4) | `repository-understanding`, `monolith-decomposition`, `refactoring`, `backlog-refinement` |
 
@@ -338,7 +338,7 @@ agents-skills-java-spring/
 │   ├── developer/developer.md
 │   ├── qa/qa.md
 │   └── code-reviewer/code-reviewer.md
-├── skills/                     # 94 skills (<nome>/SKILL.md)
+├── skills/                     # 95 skills (<nome>/SKILL.md)
 ├── prompts/                    # prompts reutilizáveis por fluxo (feature, bug, revisão, ADR…)
 ├── docs/
 │   └── guide.md                # guia de referência

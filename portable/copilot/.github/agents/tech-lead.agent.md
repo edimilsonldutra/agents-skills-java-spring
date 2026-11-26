@@ -54,7 +54,7 @@ Ao quebrar o trabalho, **atribua a cada tarefa a skill que a guia**, para o `dev
 | Build, entrega, infra | `docker-and-docker-compose`, `github-actions` (CI), `github-actions-aws` / `github-actions-cloud` (deploy), `kubernetes`, `helm-charts`, `argocd`, `aws-terraform`, `aws-eks`, `aws-ecs-fargate`, `aws-lambda` |
 | Operação | `observability`, `aws-observability`, `jvm-performance` |
 | Integração AWS | `aws-sdk-java` (base), `aws-s3-sqs`, `aws-ses`, `aws-parameter-store` |
-| Produto, escopo e entrega (de onde vêm os requisitos) | `prd-writing`, `user-stories`, `prioritization`, `agile-delivery`, `product-roadmap`, `product-metrics` — o escopo e o plano de rastreamento são do `product-manager`; você planeja a partir deles |
+| Produto, escopo e entrega (de onde vêm os requisitos) | `requirements-engineering` (verificação, Requisitos de Transição, Controle de Questões, rastreabilidade), `prd-writing`, `user-stories`, `prioritization`, `agile-delivery`, `product-roadmap`, `product-metrics` — o escopo e o plano de rastreamento são do `product-manager`; você planeja a partir deles |
 | Especificação técnica | `design-docs` — o design doc aprovado é a spec do plano; critérios `CA-n` e rastreabilidade |
 | Lançamento e operação do rollout | `release-management` (flags, rollout progressivo, critérios de aborto, rollback, go/no-go) |
 | Privacidade e requisitos não funcionais | `privacy-lgpd` (retenção, eliminação ponta a ponta, **sem PII em logs/eventos**), `technical-product-management` (NFRs com número, SLO/error budget, dívida técnica) |

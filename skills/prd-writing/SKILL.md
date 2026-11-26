@@ -5,7 +5,7 @@ description: PRD que a engenharia consegue executar — template completo (probl
 
 O PRD define o quê e o porquê; em features médias e grandes, o **como** técnico vem depois, no design doc do `architect` (`design-docs`), que parte dos requisitos numerados deste PRD.
 
-Antes de aplicar este pattern, leia também [`../product-discovery/SKILL.md`](../product-discovery/SKILL.md) (de onde vêm o problema e as hipóteses), [`../user-stories/SKILL.md`](../user-stories/SKILL.md), [`../product-metrics/SKILL.md`](../product-metrics/SKILL.md) e [`../technical-product-management/SKILL.md`](../technical-product-management/SKILL.md) (requisitos não funcionais). Quem recebe o PRD: o agent `tech-lead` (planeja) e `architect` (decisões estruturais).
+Antes de aplicar este pattern, leia também [`../product-discovery/SKILL.md`](../product-discovery/SKILL.md) (de onde vêm o problema e as hipóteses), [`../requirements-engineering/SKILL.md`](../requirements-engineering/SKILL.md) (os 3 marcos, Glossário, Diagrama de Contexto, taxonomia completa com `RN-n`/Transição/Restrições×Premissas, 8 critérios de verificação e pré-rastreabilidade), [`../user-stories/SKILL.md`](../user-stories/SKILL.md), [`../product-metrics/SKILL.md`](../product-metrics/SKILL.md) e [`../technical-product-management/SKILL.md`](../technical-product-management/SKILL.md) (requisitos não funcionais). Quem recebe o PRD: o agent `tech-lead` (planeja) e `architect` (decisões estruturais).
 
 # PRD
 
@@ -54,18 +54,26 @@ O **PRD** responde **o quê** e **por quê** (problema, público, resultado espe
 ## 4. Público e personas
 <Quem vai usar; o job to be done de cada um; segmentos prioritários.>
 
-## 5. Requisitos funcionais
-| ID | Requisito | Prioridade (Must/Should/Could) | Critério de aceite |
-|---|---|---|---|
-| RF-1 | <o sistema deve ... (uma frase, verificável)> | Must | <Given/When/Then ou condição objetiva> |
+## 5. Requisitos funcionais, regras de negócio e transição
+| ID | Requisito (objetivo de usuário) | Origem (`RNeg`/`RPI`) | Prioridade (Must/Should/Could) | Critério de aceite |
+|---|---|---|---|---|
+| RF-1 | <o sistema deve ... (uma frase, verificável)> | RNeg-1 | Must | <Given/When/Then ou condição objetiva> |
 
-## 6. Requisitos não funcionais
-<Com NÚMEROS e condições. "Rápido" não é requisito.>
+**Regras de negócio (`RN-n`, catalogadas à parte para reuso):**
+- `RN-1`: <política, cálculo ou limite — ex.: máximo de 2 renovações por empréstimo>
+
+**Requisitos de transição (`RT-n`, quando houver legado/migração/treinamento):**
+- `RT-1`: <conversão/carga de dados, operação paralela, treinamento ou desativação — `requirements-engineering` §2>
+
+## 6. Requisitos não funcionais, restrições e premissas
+<NFRs (ISO/IEC 25010) com NÚMEROS e condições. "Rápido" não é requisito.>
 - Desempenho: <ex.: p95 < 300 ms para 200 req/s>
 - Disponibilidade: <ex.: 99,9% mensal (SLO)>
 - Segurança e privacidade: <autorização, dados pessoais envolvidos, base legal, retenção — LGPD>
 - Acessibilidade, i18n, compatibilidade: <...>
 - Auditoria/observabilidade: <o que precisa ser registrado/medido>
+- **Restrições (inegociáveis, negócio ou técnicas):** <ex.: lei, SSO/Cognito obrigatório>
+- **Premissas (suposições — se falharem, viram risco):** <ex.: serviço externo entrega API antes da fase 2>
 
 ## 7. Métricas de sucesso (e guardrails)
 | Tipo | Métrica | Linha de base | Meta | Prazo | Fonte |
@@ -86,9 +94,9 @@ O **PRD** responde **o quê** e **por quê** (problema, público, resultado espe
 <Estratégia de rollout (flag, % progressivo), público piloto, critérios de go/no-go e de aborto,
  plano de rollback, comunicação (suporte, clientes), documentação — ver release-management.>
 
-## 11. Perguntas em aberto
-| # | Pergunta | Responsável | Prazo |
-|---|---|---|---|
+## 11. Controle de questões em aberto
+| ID | Questão / conflito | Requisitos impactados | Responsável | Prazo | Status |
+|---|---|---|---|---|---|
 
 ## 12. Histórico de decisões e mudanças
 | Data | Decisão/mudança | Quem | Motivo |
@@ -196,7 +204,7 @@ Misturar **o quê** e **como** faz o PRD envelhecer e tira da engenharia a chanc
 
 ## Revisão e handoff
 
-1. **Revise com engenharia e design antes de aprovar** (30 min): eles apontam **riscos, lacunas e custo**; muitas vezes **cortam escopo** ou sugerem alternativa mais simples. Um PRD "jogado por cima do muro" produz retrabalho.
+1. **Verifique internamente antes de validar com o negócio** (`requirements-engineering` §5): passe os **8 critérios de qualidade** (Correta, Completa, Clara/sem termos fora do Glossário, Consistente entre RF/RN/RNF/RT, Modificável, Priorizada, Verificável, Rastreável) com engenharia, design e **QA** (derivar cenários de teste cedo revela ambiguidades). Um PRD "jogado por cima do muro" produz retrabalho.
 2. **Pergunte ao `tech-lead`**: "o que você precisa saber para planejar?", "qual o maior risco?", "o que cortaria para entregar mais cedo?".
 3. **Revise a privacidade** (`privacy-lgpd`) e **segurança/NFRs** (`technical-product-management`) **antes** de congelar o escopo.
 4. **Aprovação explícita** pelos aprovadores definidos (quem decide — `stakeholder-communication`, DACI).

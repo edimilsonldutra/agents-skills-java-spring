@@ -2,6 +2,14 @@
 
 Mudanças notáveis do plugin `squads`. A versão é a de `.claude-plugin/plugin.json`; quem já instalou só recebe uma mudança quando ela sobe.
 
+## 2.13.0 — 2026-11-26
+
+### Nova skill: Engenharia de Requisitos
+- Nova skill `requirements-engineering` (fundamentada em Vazquez & Simões, *Engenharia de Requisitos: software orientado ao negócio*): ciclo em 3 Marcos (Necessidade, Consenso de Escopo, Detalhamento 80/20 e nível de detalhe por horizonte); taxonomia completa (`RNeg`, `RPI`, `RF` em 3 níveis, `RN`, `RNF` via ISO/IEC 25010 e FURPS+, `RT` de Transição, `RI` Inversos, `REST` de negócio × técnicas e `PREM` Premissas); Mapa de Partes Interessadas com autoridade; elicitação em 4 passos (Preparar → Executar → Documentar entendimento → Confirmar) e 5 técnicas com Glossário do domínio; modelagem ambiental e análise (Diagrama de Contexto Mermaid, processos As-Is/To-Be, decomposição funcional, modelagem de domínio, Casos de Uso × Histórias INVEST+CCC, prototipação); Verificação pelos 8 critérios de qualidade × Validação; Controle de Questões, Gestão de Mudanças e rastreabilidade bidirecional (pré e pós).
+- `prd-writing` enriquecida com origem (`RNeg`/`RPI`), regras de negócio (`RN-n`), requisitos de transição (`RT-n`), separação Restrições × Premissas, Controle de questões em aberto e verificação pelos 8 critérios de qualidade antes da validação. Encadeada também em `product-discovery`, `user-stories`, `backlog-refinement`, `design-docs` (que também referencia `data-modeling`), `guide`, `README.md`, `docs/guide.md`, `product-manager`, `orchestrator`, `architect`, `tech-lead`, `qa` e `code-reviewer`.
+- Eval `engenharia-de-requisitos` (gatilho de `requirements-engineering`, sem disparar `product-discovery`). Ainda não executado.
+- 95 skills.
+
 ## 2.12.0 — 2026-11-26
 
 ### Nova skill: Modelagem de dados e consistência

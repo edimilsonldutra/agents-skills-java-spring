@@ -3,7 +3,7 @@ name: product-discovery
 description: Descoberta de produto antes de construir — os quatro riscos, enquadramento do problema, Jobs to be Done, entrevistas sem viés (The Mom Test), síntese, árvore de oportunidades, hipóteses testáveis, experimentos baratos e a decisão de seguir, ajustar ou parar. Use antes de escrever um PRD ou quando o pedido chega como solução pronta.
 ---
 
-Antes de aplicar este pattern, leia também [`../product-strategy/SKILL.md`](../product-strategy/SKILL.md) (a direção que a descoberta serve) e, adiante, [`../prd-writing/SKILL.md`](../prd-writing/SKILL.md) e [`../product-metrics/SKILL.md`](../product-metrics/SKILL.md) (como o que foi descoberto vira requisito e meta). Dados pessoais de pesquisa: `privacy-lgpd`.
+Antes de aplicar este pattern, leia também [`../product-strategy/SKILL.md`](../product-strategy/SKILL.md) (a direção que a descoberta serve) e, adiante, [`../requirements-engineering/SKILL.md`](../requirements-engineering/SKILL.md) (consenso de escopo, elicitação sistemática, Glossário, verificação e rastreabilidade), [`../prd-writing/SKILL.md`](../prd-writing/SKILL.md) e [`../product-metrics/SKILL.md`](../product-metrics/SKILL.md) (como o que foi descoberto vira requisito e meta). Dados pessoais de pesquisa: `privacy-lgpd`.
 
 # Descoberta de produto
 
