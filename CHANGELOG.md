@@ -2,6 +2,15 @@
 
 Mudanças notáveis do plugin `squads`. A versão é a de `.claude-plugin/plugin.json`; quem já instalou só recebe uma mudança quando ela sobe.
 
+## 2.14.0 — 2026-11-26
+
+### Desenho de casos de teste (Aniche, *Effective Software Testing*)
+- `test-patterns`, seção 6: roteiro de 7 passos do teste a partir da especificação (entender → explorar → partições → limites → casos → automatizar → ampliar), pontos on/off/in/out, critério de fronteira de laço (0, 1 e N iterações), heurísticas para quando as combinações explodem e "especificação primeiro, cobertura depois". Seção 14: contratos (pré e pós-condições, invariantes, Liskov) e testabilidade como design (domínio × infraestrutura, controlabilidade, observabilidade de métodos `void`, métodos privados, estáticos). Checklist da seção 15, regras principais e nova seção de referências.
+- `spring-data-jpa`: "Que casos escrever para uma query" (MC/DC no `WHERE`/`JOIN`/`HAVING`, `NULL` como terceiro valor, nenhuma linha, duplicata por `JOIN 1:N`, grupos, empate na ordenação, isolamento entre donos, dados mínimos e asserts sobre as linhas exatas).
+- `test-coverage`: cobertura lida depois dos casos por especificação; ramo descoberto é pergunta, não alvo.
+- `qa`: roteiro de geração de casos e técnicas de laço, contrato e query. `code-reviewer`: achados de laço sem zero iterações, query sem caso de `NULL`/duplicata e código pouco testável. `guide` e `docs/guide.md` atualizados.
+- Técnicas reescritas com os exemplos do pacote; nenhum trecho do livro copiado.
+
 ## 2.13.0 — 2026-11-26
 
 ### Nova skill: Engenharia de Requisitos

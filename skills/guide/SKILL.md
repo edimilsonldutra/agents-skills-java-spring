@@ -104,7 +104,7 @@ Antes de descrever a lista de skills, verifique o que realmente está presente e
 | Rodar/testar a AWS localmente sem conta (LocalStack) | `localstack` |
 | Unit e slice tests (JUnit, Mockito, `@WebMvcTest`) | `testing` |
 | Confirmar um nome ou versão de biblioteca (Boot 3 → 4, Jackson 3), Context7, "não responda de memória" | `library-docs` |
-| Padrões de teste: test doubles, builders, matchers coringa, valores-limite e MC/DC, test smells, flaky, TDD/BDD, property-based | `test-patterns` |
+| Padrões de teste: casos a partir da especificação (partições, pontos on/off, laços), test doubles, builders, matchers coringa, valores-limite e MC/DC, contratos e testabilidade, test smells, flaky, TDD/BDD, property-based | `test-patterns` |
 | Testes de integração com banco real em container (Testcontainers, REST Assured) | `integration-testing` |
 | Cobertura de testes (JaCoCo), diff coverage, gate no CI, mutation testing (PIT) | `test-coverage` |
 | Deploy por GitOps, promoção dev → staging → prod, rollback por Git | `argocd` |

@@ -357,6 +357,19 @@ class BookRepositoryTest {
 ```
 O container é iniciado em um static block, então nenhum artifact extra de JUnit do Testcontainers é necessário. Se o projeto já tem a base class de container compartilhada do setup de integration tests (a skill `integration-testing`), estenda-a em vez de repetir o container aqui, para que a suíte inteira reutilize um container. O Flyway roda contra o container quando o context inicia, então as linhas seedadas estão disponíveis.
 
+### Que casos escrever para uma query
+
+Uma query é uma composição de **condições**: as do `WHERE`, as do `ON` de cada `JOIN` e as do `HAVING`. Ela se testa com as mesmas técnicas de qualquer regra (`test-patterns`, seção 6), mais o que é próprio do SQL:
+- **MC/DC nas condições**: em `WHERE b.price > :min AND b.price < :max`, um caso que satisfaz as duas e um caso que falha **só** em cada uma (`n + 1` casos), já nos **pontos on e off** (`:min` e o valor seguinte na escala da coluna).
+- **`NULL` é um terceiro valor**: a comparação com uma coluna `NULL` não é verdadeira nem falsa, e a linha some do resultado. Para cada coluna anulável que aparece em uma condição, um caso com ela `NULL`: o livro sem `launch_date` deve ou não aparecer na busca por período? O teste documenta a decisão. O mesmo vale para `LEFT JOIN` (linha sem par) × `JOIN` (linha descartada).
+- **Nenhuma linha**: um caso em que a query não retorna nada (o método devolve lista vazia, `Optional.empty()` ou página vazia, nunca `null` nem exception).
+- **Linhas duplicadas**: um `JOIN` com relação `1:N` repete a linha da esquerda. Um caso com **dois** filhos para o mesmo pai prova se o resultado vem duplicado (e se o `DISTINCT` ou o `JOIN FETCH` está certo).
+- **Agrupamento**: com `GROUP BY`, dados que formam **pelo menos dois grupos**, e com `HAVING`, um grupo de cada lado do limite.
+- **Ordenação e paginação**: empate no campo de ordenação (dois títulos iguais) e o elemento na virada de página (`pagination`).
+- **Isolamento entre donos**: query filtrada por usuário (`findByIdAndUserId`) com dados de **outro** usuário no banco, provando que eles não vazam (`application-security`, IDOR).
+
+Na montagem: **dados mínimos** (só as tabelas e linhas que o caso precisa, criadas no próprio teste com Test Data Builder, não dependentes do seed); **asserts sobre as linhas exatas** (`extracting(Book::getTitle).containsExactly(...)`), não só "não está vazio"; e o **schema vindo das migrations** do Flyway, para que uma mudança de schema quebre o teste certo e não uma cópia desatualizada.
+
 ---
 
 ## Regras principais
