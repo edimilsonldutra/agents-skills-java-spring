@@ -275,8 +275,11 @@ O controller declara `@Tag` em nível de classe (uma vez — não repetido na in
 @Tag(name = "Book", description = "Endpoints for Managing Books")
 public class BookController implements BookControllerDocs {
 
-    @Autowired
-    private BookService service;
+    private final BookService service;
+
+    public BookController(BookService service) {
+        this.service = service;
+    }
 
     @GetMapping(value = "/{id}", produces = {
             MediaType.APPLICATION_JSON_VALUE,
@@ -302,8 +305,11 @@ As mesmas annotations, no método, e sem interface:
 @Tag(name = "Book", description = "Endpoints for Managing Books")
 public class BookController {
 
-    @Autowired
-    private BookService service;
+    private final BookService service;
+
+    public BookController(BookService service) {
+        this.service = service;
+    }
 
     @Operation(summary = "Finds a Book",
         description = "Find a specific Book by its ID",

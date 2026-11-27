@@ -54,17 +54,21 @@ public class EmailService {
 
     private static final Logger logger = LoggerFactory.getLogger(EmailService.class);
 
-    @Autowired
-    private JavaMailSender mailSender;
+    private final JavaMailSender mailSender;
+    private final TemplateEngine templateEngine;
+    private final String from;
+    private final String configurationSet;
 
-    @Autowired
-    private TemplateEngine templateEngine;
-
-    @Value("${app.mail.from}")
-    private String from;
-
-    @Value("${app.mail.configuration-set}")
-    private String configurationSet;
+    public EmailService(
+            JavaMailSender mailSender,
+            TemplateEngine templateEngine,
+            @Value("${app.mail.from}") String from,
+            @Value("${app.mail.configuration-set}") String configurationSet) {
+        this.mailSender = mailSender;
+        this.templateEngine = templateEngine;
+        this.from = from;
+        this.configurationSet = configurationSet;
+    }
 
     public void sendWelcome(Long userId, String to, String name) {
         var context = new Context();

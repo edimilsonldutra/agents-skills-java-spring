@@ -12,9 +12,9 @@ Antes de aplicar este pattern, leia também [`../code-organization/SKILL.md`](..
 ```java
 @Transactional
 public BookDTO create(BookDTO book) {
-    var saved = repository.save(parseObject(book, Book.class));
+    var saved = repository.save(mapper.toEntity(book));
     publisher.bookCreated(event(saved));
-    return parseObject(saved, BookDTO.class);
+    return mapper.toDto(saved);
 }
 ```
 Parece correto, mas há **dois sistemas sem transação em comum**: o database e o broker.
@@ -134,28 +134,35 @@ public interface OutboxEventRepository extends JpaRepository<OutboxEvent, String
 @Service
 public class BookService {
 
-    @Autowired
-    private BookRepository repository;
+    private final BookRepository repository;
+    private final BookMapper mapper;
+    private final OutboxEventRepository outbox;
+    private final JsonMapper jsonMapper;
 
-    @Autowired
-    private OutboxEventRepository outbox;
-
-    @Autowired
-    private JsonMapper jsonMapper;
+    public BookService(
+            BookRepository repository,
+            BookMapper mapper,
+            OutboxEventRepository outbox,
+            JsonMapper jsonMapper) {
+        this.repository = repository;
+        this.mapper = mapper;
+        this.outbox = outbox;
+        this.jsonMapper = jsonMapper;
+    }
 
     @Transactional
     public BookDTO create(BookDTO book) {
         if (book == null) throw new RequiredObjectIsNullException();
-        var saved = repository.save(parseObject(book, Book.class));
+        var saved = repository.save(mapper.toEntity(book));
         var eventId = UUID.randomUUID().toString();
         var event = new BookCreatedEvent(eventId, saved.getId(), saved.getTitle(), Instant.now());
         outbox.save(OutboxEvent.of(eventId, "Book", String.valueOf(saved.getId()), "BookCreated", jsonMapper.writeValueAsString(event)));
-        return parseObject(saved, BookDTO.class);
+        return mapper.toDto(saved);
     }
 }
 ```
 - **Mesmo método `@Transactional`**: a mudança de dados e o `outbox.save` fazem commit **ou** rollback **juntos**. Esse é o ponto de todo o padrão.
-- `JsonMapper` é o `tools.jackson.databind.json.JsonMapper` do Jackson 3 (bean do Boot; **não** confunda com o `ObjectMapper` do Dozer do pack — `code-organization`). `JacksonException` é unchecked.
+- `JsonMapper` é o `tools.jackson.databind.json.JsonMapper` do Jackson 3 (bean do Boot). `JacksonException` é unchecked.
 - O **evento é um record dedicado** (contrato público), não a entity (`messaging`). O `eventId` é gerado **uma vez** e usado tanto dentro do payload quanto como `id` da linha da outbox, para que a mesma identidade apareça no banco, no broker, nos logs e na tabela de idempotência dos consumers.
 - **Nada de chamar o broker aqui.** O service só grava.
 
@@ -167,11 +174,13 @@ public class OutboxPublisher {
 
     private static final Logger logger = LoggerFactory.getLogger(OutboxPublisher.class);
 
-    @Autowired
-    private OutboxEventRepository repository;
+    private final OutboxEventRepository repository;
+    private final EventPublisher eventPublisher;
 
-    @Autowired
-    private EventPublisher eventPublisher;
+    public OutboxPublisher(OutboxEventRepository repository, EventPublisher eventPublisher) {
+        this.repository = repository;
+        this.eventPublisher = eventPublisher;
+    }
 
     @Scheduled(fixedDelayString = "${app.outbox.poll-interval:1000}")
     @Transactional
@@ -204,11 +213,15 @@ Exemplo de adapter Kafka (`kafka`) — o **`.get(timeout)` espera a confirmaçã
 @Component
 public class KafkaEventPublisher implements EventPublisher {
 
-    @Autowired
-    private KafkaTemplate<String, String> kafkaTemplate;
+    private final KafkaTemplate<String, String> kafkaTemplate;
+    private final String topic;
 
-    @Value("${app.kafka.topics.book-events}")
-    private String topic;
+    public KafkaEventPublisher(
+            KafkaTemplate<String, String> kafkaTemplate,
+            @Value("${app.kafka.topics.book-events}") String topic) {
+        this.kafkaTemplate = kafkaTemplate;
+        this.topic = topic;
+    }
 
     @Override
     public void publish(String key, String eventType, String eventId, String payload) {
@@ -256,8 +269,11 @@ CREATE TABLE IF NOT EXISTS `processed_message` (
 @Repository
 public class ProcessedMessageStore {
 
-    @Autowired
-    private JdbcClient jdbc;
+    private final JdbcClient jdbc;
+
+    public ProcessedMessageStore(JdbcClient jdbc) {
+        this.jdbc = jdbc;
+    }
 
     public boolean markProcessed(String eventId, String consumer) {
         var inserted = jdbc.sql(
@@ -273,11 +289,13 @@ public class ProcessedMessageStore {
 @Service
 public class BookIndexService {
 
-    @Autowired
-    private ProcessedMessageStore processed;
+    private final ProcessedMessageStore processed;
+    private final BookIndexRepository index;
 
-    @Autowired
-    private BookIndexRepository index;
+    public BookIndexService(ProcessedMessageStore processed, BookIndexRepository index) {
+        this.processed = processed;
+        this.index = index;
+    }
 
     @Transactional
     public void index(String eventId, BookCreatedEvent event) {
@@ -327,5 +345,5 @@ public class BookIndexService {
 - Limpe a outbox e a `processed_message`; alarme no **backlog e na idade do evento mais antigo**.
 - Debezium/CDC quando já há Kafka em escala; polling para o caso simples; Modulith se já usado.
 - Teste com database real: atomicidade (rollback conjunto), relay, falha de publicação e duplicata.
-- Evento = record dedicado, nunca a entity; `JsonMapper` (Jackson 3), não o `ObjectMapper` do Dozer.
+- Evento = record dedicado, nunca a entity; serialize com `JsonMapper` (Jackson 3).
 - **Sem Lombok** — deliberado.

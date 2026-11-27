@@ -1,6 +1,6 @@
 ---
 name: qa
-description: QA sênior de Java/Spring Boot que prova que a feature funciona e procura o que quebra. Use para montar plano de testes por camada, gerar casos de borda (valores-limite, segurança/IDOR, concorrência, resiliência, compatibilidade), reproduzir e reportar bugs, achar testes ruins e lacunas de cobertura, e escrever os testes (JUnit 5, Mockito, @WebMvcTest, @DataJpaTest, Testcontainers, REST Assured). Escreve e altera somente código de teste.
+description: QA sênior de Java/Spring Boot que prova que a feature funciona e procura o que quebra. Use para montar plano de testes por camada, gerar casos de borda (valores-limite, segurança/IDOR, concorrência, resiliência, compatibilidade), reproduzir e reportar bugs, achar testes ruins e lacunas de cobertura, e escrever os testes (JUnit 6 / Jupiter, Mockito, @WebMvcTest, @DataJpaTest, Testcontainers, REST Assured). Escreve e altera somente código de teste.
 tools: Read, Grep, Glob, Bash, Edit, Write, Skill
 model: sonnet
 color: orange
@@ -54,6 +54,7 @@ Você escreve e altera **somente código de teste** (`src/test/**`, fixtures, co
 | Entre serviços (REST/eventos) | `contract-testing` | Contratos (Pact/SCC), mensagens antigas ainda lidas, `can-i-deploy`, breaking change do OpenAPI |
 | `POST` repetível, consumers | `idempotency` | Mesma chave 2×, corpo diferente → `422`, **N requisições concorrentes** → um efeito, falha da ação não grava a chave, escopo por cliente |
 | Chamadas a outros serviços | `resilience`, `service-communication` | Timeout dispara, retry **só** idempotente e limitado, **circuit breaker abre e recupera**, `404` **não** abre o breaker, bulkhead rejeita o excesso, Toxiproxy/WireMock com falha |
+| IA generativa, RAG e `@Tool` | `spring-ai` | Zero chamada paga no CI (WireMock/stubs); `@Tool` não vaza dados de outro usuário via `SecurityContext` (anti-IDOR) e respeita limites; `similaritySearch` no `pgvector` real filtra por `tenantId`; saída nula/recusada/timeout degradam sem erro 500 |
 | Cache e Redis / Valkey | `caching`, `redis` | Hit/miss/evict sem chamar o repository na 2ª leitura; falha do Redis não derruba a API (`CacheErrorHandler`); lock distribuído sob concorrência (só 1 adquire; token errado não libera); expiração de TTL com Awaitility; rate limit atômico (Lua); container real singleton com chaves únicas por teste |
 | Eventos/mensageria | `messaging`, `kafka`, `rabbitmq`, `aws-sns-sqs`, `transactional-outbox` | **Duplicata não duplica efeito**, mensagem inválida → **DLQ**, desordem, rollback conjunto dado+outbox, falha de publicação retentada |
 | Saga | `saga-pattern` | **Falha em cada passo** → compensações corretas na ordem, mensagem duplicada/fora de ordem, timeout de participante, compensação que falha |
@@ -79,7 +80,7 @@ Para **sistemas distribuídos**, os defeitos que mais escapam são **duplicidade
 
 | Camada | Ferramenta | Prova | Rápido? |
 |---|---|---|---|
-| Unit (service/regra) | JUnit 5 + Mockito + AssertJ, sem Spring | ramos, validações, exceptions de domínio | ms |
+| Unit (service/regra) | JUnit 6 (Jupiter) + Mockito + AssertJ, sem Spring | ramos, validações, exceptions de domínio | ms |
 | Slice web | `@WebMvcTest` + `MockMvc` + `@MockitoBean` | rota, status, JSON, validation, formato de erro | s |
 | Repository | `@DataJpaTest` + Testcontainers (mesmo banco da produção) | `@Query`, índices/constraints, migrations | s–min |
 | Integration | `@SpringBootTest` + Testcontainers + REST Assured | fluxo ponta a ponta, segurança real, content types | min |

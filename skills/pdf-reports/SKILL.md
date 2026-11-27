@@ -83,8 +83,11 @@ Alternativa: compilar no build (plugin Maven/Gradle de Jasper ou um passo que ge
 @Component
 public class PdfExporter implements FileExporter {
 
-    @Autowired
-    private ReportTemplates templates;
+    private final ReportTemplates templates;
+
+    public PdfExporter(ReportTemplates templates) {
+        this.templates = templates;
+    }
 
     @Override
     public Resource exportFile(List<BookDTO> books) throws Exception {

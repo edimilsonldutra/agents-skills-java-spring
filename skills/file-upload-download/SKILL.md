@@ -75,7 +75,6 @@ public class FileStorageService {
 
     public record StoredFile(String storedName, String contentType, long size) {}
 
-    @Autowired
     public FileStorageService(FileStorageConfig fileStorageConfig) {
         this.fileStorageLocation = Paths.get(fileStorageConfig.getUploadDir()).toAbsolutePath().normalize();
         try {
@@ -130,7 +129,7 @@ Por que cada linha existe:
 - **Tipo pela assinatura, não pela extensão nem pelo `Content-Type`** do client (ambos são declarados pelo client e mentem). `org.apache.tika:tika-core` (fora do BOM — property de versão, `maven-config`) lê os *magic bytes*; chame `tika.detect(InputStream)` **sem** o nome do arquivo, para que a extensão do client não influencie o resultado. Use uma **lista permitida** do que o caso de uso aceita; nunca uma lista de proibidos.
 - **Stream, nunca `file.getBytes()`**: `getBytes()` carrega o arquivo inteiro na memória (10 réplicas × 10 uploads de 200 MB = OOM).
 - Mensagens das exceptions seguem o idioma salvo (`exception-handling`).
-- Com a preferência de field injection, a injeção por constructor aqui é deliberada: o diretório é resolvido uma vez na construção.
+- O diretório base é resolvido e criado uma única vez no construtor (`fileStorageLocation` imutável).
 
 **Conteúdo perigoso:** imagens podem carregar payload (SVG com script — não aceite SVG de usuários, ou sanitize), PDFs podem ter JavaScript. Para arquivos que outros usuários vão baixar, considere **antivírus** (ClamAV em um serviço separado, assíncrono) antes de liberar o download.
 
@@ -146,8 +145,11 @@ public class FileController implements FileControllerDocs {
 
     private static final Logger logger = LoggerFactory.getLogger(FileController.class);
 
-    @Autowired
-    private FileStorageService service;
+    private final FileStorageService service;
+
+    public FileController(FileStorageService service) {
+        this.service = service;
+    }
 
     @PostMapping("/uploadFile")
     @Override

@@ -1,6 +1,6 @@
 ---
 name: redis
-description: Redis e Valkey em produção com Spring Boot 4 / Spring Data Redis — escolha Redis vs banco relacional vs broker, StringRedisTemplate e RedisTemplate com Jackson 3 (nunca serialização Java), estruturas (String, Hash, Set, Sorted Set), TTL por cache (RedisCacheManagerBuilderCustomizer), atomicidade com scripts Lua, locks distribuídos com liberação segura (e quando preferir lock no banco), rate limiting distribuído, revogação de JWT e sessões, Redis Streams vs Pub/Sub, maxmemory-policy e isolamento de instâncias, SCAN (nunca KEYS *), Lettuce, Sentinel vs Cluster com hash tags, Valkey e Amazon ElastiCache, métricas e testes com Testcontainers. Use quando usar Redis/Valkey/ElastiCache diretamente (estruturas de dados, Lua, lock distribuído, rate limit, Streams, Pub/Sub, sessão, tuning operacional ou topologia). Não use apenas para escolher entre Caffeine e Redis ou configurar @Cacheable simples (caching).
+description: Redis e Valkey em produção com Spring Boot 4 / Spring Data Redis — StringRedisTemplate e Jackson 3 (sem serialização Java), TTL por cache, scripts Lua atômicos, locks distribuídos, rate limit, revogação de JWT, Streams vs Pub/Sub, maxmemory-policy, SCAN, Cluster/Sentinel, ElastiCache e testes com Testcontainers. Use quando operar Redis/Valkey além de cache básico (estruturas, Lua, locks, rate limit, Streams, sessão ou topologia). Não use apenas para @Cacheable simples ou escolha Caffeine vs Redis (caching).
 ---
 
 Antes de aplicar este pattern, leia também [`../code-organization/SKILL.md`](../code-organization/SKILL.md), [`../code-style/SKILL.md`](../code-style/SKILL.md), [`../caching/SKILL.md`](../caching/SKILL.md) (padrão de cache com `@Cacheable`, invalidação e stampede), [`../library-docs/SKILL.md`](../library-docs/SKILL.md) (confirmar classes e properties no Spring Boot 4 / Spring Data Redis 4) e [`../application-security/SKILL.md`](../application-security/SKILL.md).
@@ -108,8 +108,11 @@ public class RevokedTokenStore {
 
     private static final String KEY_PREFIX = "library:auth:revoked:";
 
-    @Autowired
-    private StringRedisTemplate redisTemplate;
+    private final StringRedisTemplate redisTemplate;
+
+    public RevokedTokenStore(StringRedisTemplate redisTemplate) {
+        this.redisTemplate = redisTemplate;
+    }
 
     public void revoke(String jti, Duration remainingTtl) {
         if (remainingTtl.isNegative() || remainingTtl.isZero()) return;
@@ -146,8 +149,11 @@ public class RedisRateLimiter {
             Long.class
     );
 
-    @Autowired
-    private StringRedisTemplate redisTemplate;
+    private final StringRedisTemplate redisTemplate;
+
+    public RedisRateLimiter(StringRedisTemplate redisTemplate) {
+        this.redisTemplate = redisTemplate;
+    }
 
     public boolean isAllowed(String subjectId, int maxRequests, Duration window) {
         var key = "library:ratelimit:{" + subjectId + "}:" + (System.currentTimeMillis() / window.toMillis());
@@ -187,8 +193,11 @@ public class RedisDistributedLock {
             Long.class
     );
 
-    @Autowired
-    private StringRedisTemplate redisTemplate;
+    private final StringRedisTemplate redisTemplate;
+
+    public RedisDistributedLock(StringRedisTemplate redisTemplate) {
+        this.redisTemplate = redisTemplate;
+    }
 
     public Optional<String> tryAcquire(String lockKey, Duration ttl) {
         var token = UUID.randomUUID().toString();

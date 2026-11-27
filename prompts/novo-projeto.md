@@ -13,7 +13,7 @@ Group id e base package: <br.com.edimilsonldutra | outro>
 Banco: <MySQL | PostgreSQL | SQL Server | Oracle | MariaDB>
 Build: <Maven | Gradle>
 Configuração: <YAML | properties>
-Mapeamento entity/DTO: <Dozer | MapStruct>
+Mapeamento entity/DTO: <MapStruct | Dozer>
 Injeção de dependência: <construtor | field>
 Comentários no código gerado: <sim | não>
 Recursos iniciais: <ex.: CRUD de <Entity> com campos <...>, Swagger, autenticação JWT, Docker Compose, GitHub Actions>

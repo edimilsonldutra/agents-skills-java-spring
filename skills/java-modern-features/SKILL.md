@@ -36,7 +36,7 @@ public record Money(BigDecimal amount, String currency) {
     }
 }
 ```
-**Não use para:** entities JPA (o Hibernate precisa de no-arg constructor, campos mutáveis e proxies) e os DTOs de entidade deste pack (o Dozer/MapStruct e o Jackson com `RepresentationModel` esperam classe com setters — `code-organization`). Como **`@Embeddable`** (value object embutido na entity), o Jakarta Persistence 3.2 aceita record (`jpa-advanced-mapping`). Para uma **projection** de leitura, porém, um record é ótimo: `SELECT new com.x.BookSummary(b.id, b.title) FROM Book b`.
+**Não use para:** entities JPA (o Hibernate precisa de no-arg constructor, campos mutáveis e proxies) e DTOs de entidade que estendem `RepresentationModel` (HATEOAS exige classe — `code-organization`; em legado com Dozer setters também são exigidos, enquanto o MapStruct mapeia records nativamente para requests/responses sem HATEOAS). Como **`@Embeddable`** (value object embutido na entity), o Jakarta Persistence 3.2 aceita record (`jpa-advanced-mapping`). Para uma **projection** de leitura, porém, um record é ótimo: `SELECT new com.x.BookSummary(b.id, b.title) FROM Book b`.
 
 ## Sealed interfaces + pattern matching em switch
 

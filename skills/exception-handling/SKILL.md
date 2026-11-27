@@ -33,10 +33,10 @@ As exceptions específicas de feature (abaixo) entram neste package quando a fea
 
 ## ExceptionResponse
 
-Declarado como um `record` — três campos: `timestamp`, `message`, `details`. Imutável por definição. O Jackson 3 mantém a ordem de properties declarada de um record.
+Declarado como um `record` — três campos: `timestamp`, `message`, `details`. Imutável por definição (`java.time.Instant`, serializado pelo Jackson 3 como ISO-8601 UTC terminando em `Z`). O Jackson 3 mantém a ordem de properties declarada de um record.
 
 ```java
-public record ExceptionResponse(Date timestamp, String message, String details) {}
+public record ExceptionResponse(Instant timestamp, String message, String details) {}
 ```
 
 ---
@@ -161,7 +161,7 @@ public class CustomEntityResponseHandler extends ResponseEntityExceptionHandler 
     public final ResponseEntity<ExceptionResponse> handleAllExceptions(Exception ex, WebRequest request) {
         logger.error("Unexpected error on {}", request.getDescription(false), ex);
         ExceptionResponse response = new ExceptionResponse(
-                new Date(),
+                Instant.now(),
                 ex.getMessage(),
                 request.getDescription(false));
         return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
@@ -170,7 +170,7 @@ public class CustomEntityResponseHandler extends ResponseEntityExceptionHandler 
     @ExceptionHandler(ResourceNotFoundException.class)
     public final ResponseEntity<ExceptionResponse> handleNotFoundExceptions(Exception ex, WebRequest request) {
         ExceptionResponse response = new ExceptionResponse(
-                new Date(),
+                Instant.now(),
                 ex.getMessage(),
                 request.getDescription(false));
         return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
@@ -179,7 +179,7 @@ public class CustomEntityResponseHandler extends ResponseEntityExceptionHandler 
     @ExceptionHandler(RequiredObjectIsNullException.class)
     public final ResponseEntity<ExceptionResponse> handleRequiredObjectExceptions(Exception ex, WebRequest request) {
         ExceptionResponse response = new ExceptionResponse(
-                new Date(),
+                Instant.now(),
                 ex.getMessage(),
                 request.getDescription(false));
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
@@ -188,7 +188,7 @@ public class CustomEntityResponseHandler extends ResponseEntityExceptionHandler 
     @ExceptionHandler(BadRequestException.class)
     public final ResponseEntity<ExceptionResponse> handleBadRequestExceptions(Exception ex, WebRequest request) {
         ExceptionResponse response = new ExceptionResponse(
-                new Date(),
+                Instant.now(),
                 ex.getMessage(),
                 request.getDescription(false));
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
@@ -196,7 +196,7 @@ public class CustomEntityResponseHandler extends ResponseEntityExceptionHandler 
 }
 ```
 
-Imports: `org.springframework.http.HttpHeaders`, `HttpStatus`, `HttpStatusCode`, `ProblemDetail`, `ResponseEntity`; `org.springframework.web.context.request.WebRequest`; `org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler`; `java.net.URI`; `java.util.Date`.
+Imports: `org.springframework.http.HttpHeaders`, `HttpStatus`, `HttpStatusCode`, `ProblemDetail`, `ResponseEntity`; `org.springframework.web.context.request.WebRequest`; `org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler`; `java.net.URI`; `java.time.Instant`.
 
 Para cada exception específica de feature, adicione um handler no mesmo formato, com o status que a exception declara (`FileNotFoundException` → 404, `FileStorageException` → 500, `InvalidJwtAuthenticationException` → 403).
 
@@ -214,7 +214,7 @@ Domain exception — `ExceptionResponse`:
   "details": "uri=/api/book/v1/99"
 }
 ```
-`request.getDescription(false)` — `false` mantém somente a URI, remove a informação do client. O Jackson 3 escreve `Date` como ISO-8601 UTC terminando em `Z` (o Boot 3 escrevia `+00:00`).
+`request.getDescription(false)` — `false` mantém somente a URI, remove a informação do client. O Jackson 3 serializa `Instant` como ISO-8601 UTC terminando em `Z`.
 
 Mesma response com a preferência de idioma definida como português — só `message` muda; `timestamp` e `details` não dependem de idioma:
 ```json
@@ -247,7 +247,7 @@ O catch-all acima devolve `ex.getMessage()` ao client. Para exceptions **inesper
 
 ```java
 ExceptionResponse response = new ExceptionResponse(
-        new Date(),
+        Instant.now(),
         "Unexpected error. Contact support with the request details.",
         request.getDescription(false));
 ```

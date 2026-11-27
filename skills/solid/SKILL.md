@@ -38,21 +38,28 @@ Depois — cada preocupação na sua classe, o service orquestra:
 @Service
 public class BookService {
 
-    @Autowired
-    private BookRepository repository;
+    private final BookRepository repository;
+    private final BookMapper mapper;
+    private final FileExporterFactory exporterFactory;
+    private final ApplicationEventPublisher publisher;
 
-    @Autowired
-    private FileExporterFactory exporterFactory;
-
-    @Autowired
-    private ApplicationEventPublisher publisher;
+    public BookService(
+            BookRepository repository,
+            BookMapper mapper,
+            FileExporterFactory exporterFactory,
+            ApplicationEventPublisher publisher) {
+        this.repository = repository;
+        this.mapper = mapper;
+        this.exporterFactory = exporterFactory;
+        this.publisher = publisher;
+    }
 
     @Transactional
     public BookDTO create(BookDTO book) {
         if (book == null) throw new RequiredObjectIsNullException();
-        var saved = repository.save(parseObject(book, Book.class));
+        var saved = repository.save(mapper.toEntity(book));
         publisher.publishEvent(new BookCreatedEvent(saved.getId()));
-        return parseObject(saved, BookDTO.class);
+        return mapper.toDto(saved);
     }
 }
 ```
@@ -80,8 +87,11 @@ public interface FileExporter {
 @Component
 public class FileExporterFactory {
 
-    @Autowired
-    private List<FileExporter> exporters;
+    private final List<FileExporter> exporters;
+
+    public FileExporterFactory(List<FileExporter> exporters) {
+        this.exporters = exporters;
+    }
 
     public FileExporter getExporter(String mediaType) {
         return exporters.stream()
@@ -189,7 +199,7 @@ Assim a entity não precisa de repository para se validar, e cada regra tem um t
 
 ### Estado com regra muda só por método de negócio
 
-No flat-by-layer, a entity tem getter e setter para todos os campos, porque o mapper (Dozer) os usa (`code-organization`). Isso continua. O que muda é **quem chama** os setters dos campos de **estado com regra** (status, contadores, datas de ciclo de vida, coleções):
+No flat-by-layer, a entity tem getter e setter para todos os campos, porque o Hibernate e o mapper (`MapStruct`, ou `Dozer` em legado) os usam (`code-organization`). Isso continua. O que muda é **quem chama** os setters dos campos de **estado com regra** (status, contadores, datas de ciclo de vida, coleções):
 ```java
 // ❌ o service decide a transição campo a campo
 loan.setStatus(LoanStatus.RENEWED);
@@ -201,7 +211,7 @@ loan.renew(clock);
 ```
 - Setter é para atributo **descritivo** (título, descrição, observação) e para o mapper. Campo de estado muda por um **método de negócio** da entity, que aplica a regra e as invariantes num lugar só.
 - Coleção com regra (itens do empréstimo) muda por `addItem`/`removeItem` na entity (`jpa-advanced-mapping`), nunca por `getItems().add(...)` no service.
-- Em contexto com DDD decidido (`ddd-hexagonal`) vale o passo seguinte: sem setter público nos campos de estado e getter de coleção devolvendo lista imutável. No flat-by-layer, o Dozer precisa dos setters e da coleção mutável; não aplique ali.
+- Em contexto com DDD decidido (`ddd-hexagonal`) vale o passo seguinte: sem setter público nos campos de estado e getter de coleção devolvendo lista imutável. No flat-by-layer, mantenha os getters/setters padrão das entities e concentre as transições nos métodos de negócio.
 
 **Severidade depende do layout do projeto.** No flat-by-layer do pacote, entities com getters/setters e regras no service **são o padrão** (`code-organization`): o service lendo campos da entity para mapear, persistir ou montar o DTO de resposta não é achado. Ali, os três sinais são 🟡 **Minor** (sugestão de mover a regra para a entity ou para uma policy), e passam a 🟠 **Major** quando a **mesma regra aparece em dois lugares** (conhecimento duplicado, que diverge na primeira mudança). Em contexto com DDD decidido (`ddd-hexagonal`), regra de negócio fora do aggregate dono é 🟠 desde a primeira vez. Navegação longa só para **ler e reexpor** (DTO de saída, log, e-mail) é no máximo 🔵 **Nit**: sugira um acessor delegado (`loan.memberCity()`) ou traga o dado pronto no DTO.
 

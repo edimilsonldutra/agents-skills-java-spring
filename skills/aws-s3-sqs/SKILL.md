@@ -66,11 +66,15 @@ public class FileStorageService {
 
     private static final Logger logger = LoggerFactory.getLogger(FileStorageService.class);
 
-    @Autowired
-    private S3Template s3Template;
+    private final S3Template s3Template;
+    private final String bucket;
 
-    @Value("${app.aws.bucket}")
-    private String bucket;
+    public FileStorageService(
+            S3Template s3Template,
+            @Value("${app.aws.bucket}") String bucket) {
+        this.s3Template = s3Template;
+        this.bucket = bucket;
+    }
 
     public String upload(MultipartFile file) {
         var key = "uploads/" + UUID.randomUUID() + "-" + sanitize(file.getOriginalFilename());
@@ -103,11 +107,15 @@ public class FileStorageService {
 @Service
 public class BookEventPublisher {
 
-    @Autowired
-    private SqsTemplate sqsTemplate;
+    private final SqsTemplate sqsTemplate;
+    private final String queue;
 
-    @Value("${app.aws.queue}")
-    private String queue;
+    public BookEventPublisher(
+            SqsTemplate sqsTemplate,
+            @Value("${app.aws.queue}") String queue) {
+        this.sqsTemplate = sqsTemplate;
+        this.queue = queue;
+    }
 
     public void bookCreated(BookDTO book) {
         sqsTemplate.send(to -> to.queue(queue).payload(new BookCreatedEvent(book.getId(), book.getTitle())));

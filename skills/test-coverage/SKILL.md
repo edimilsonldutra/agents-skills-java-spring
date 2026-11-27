@@ -256,7 +256,7 @@ Rode com `./mvnw org.pitest:pitest-maven:mutationCoverage` (relatório em `targe
 - **Mutantes sobreviventes** são a **lista de testes a escrever/fortalecer**: *"mudar `>` por `>=` na regra de multa não quebrou nenhum teste"* → falta o **teste do valor-limite** (`test-patterns`, seção 6). Esse é o ganho: **achar o teste que não tem assert ou não cobre o limite**.
 - **Mutantes equivalentes** (a mudança **não altera** o comportamento observável) sobrevivem sem ser falha de teste — **ignore-os** com critério; não persiga 100% de mutation score.
 - **Metas:** use como **tendência e lista de trabalho**; um *threshold* (acima, 70%) só depois de **medir** a linha de base.
-- Pode precisar de **ajuste do `argLine`/JVM args** para o **agent do Mockito** (`maven-config`) e a versão do plugin compatível com o **JUnit 5** da plataforma/Java — confirme na documentação atual.
+- Pode precisar de **ajuste do `argLine`/JVM args** para o **agent do Mockito** (`maven-config`) e a versão do plugin `pitest-junit5-plugin` compatível com o **JUnit Platform 6** (JUnit Jupiter 6 do Boot 4) e o Java do projeto — confirme com `library-docs` na documentação atual.
 Uma suíte com **90% de cobertura e 40% de mutation score** é **teatro**; **90% de cobertura com alto mutation score** nas regras críticas **protege de verdade**.
 
 ## 9. Como ler e agir sobre os números

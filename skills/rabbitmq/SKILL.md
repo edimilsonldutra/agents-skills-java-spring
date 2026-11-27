@@ -171,11 +171,15 @@ O Boot aplica o bean `MessageConverter` ao `RabbitTemplate` e aos listeners. (**
 @Component
 public class BookEventPublisher {
 
-    @Autowired
-    private RabbitTemplate rabbitTemplate;
+    private final RabbitTemplate rabbitTemplate;
+    private final String exchange;
 
-    @Value("${app.rabbitmq.exchange}")
-    private String exchange;
+    public BookEventPublisher(
+            RabbitTemplate rabbitTemplate,
+            @Value("${app.rabbitmq.exchange}") String exchange) {
+        this.rabbitTemplate = rabbitTemplate;
+        this.exchange = exchange;
+    }
 
     public void bookCreated(BookCreatedEvent event) {
         var correlation = new CorrelationData(event.eventId());
@@ -198,8 +202,11 @@ public class BookEventListener {
 
     private static final Logger logger = LoggerFactory.getLogger(BookEventListener.class);
 
-    @Autowired
-    private BookIndexService service;
+    private final BookIndexService service;
+
+    public BookEventListener(BookIndexService service) {
+        this.service = service;
+    }
 
     @RabbitListener(queues = "${app.rabbitmq.queues.book-created}")
     public void onBookCreated(BookCreatedEvent event) {

@@ -52,8 +52,11 @@ data/dto/
 @Tag(name = "Book v2", description = "Endpoints for Managing Books (v2)")
 public class BookControllerV2 implements BookControllerV2Docs {
 
-    @Autowired
-    private BookService service;
+    private final BookService service;
+
+    public BookControllerV2(BookService service) {
+        this.service = service;
+    }
 
     @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     @Override

@@ -40,7 +40,7 @@ public LoanDTO renew(Long id) {
     ensureRenewable(loan);
     loan.renew(clock);
     notifyMember(loan);
-    return parseObject(repository.save(loan), LoanDTO.class);
+    return mapper.toDto(repository.save(loan));
 }
 ```
 Ler o método conta a história; o detalhe de cada passo está num método privado com nome de negócio. Um método que mistura a orquestração com um laço de cálculo e a montagem de um e-mail no meio pede extração (`refactoring`, `cognitive-complexity`). Não extraia por extrair: um passo de uma linha clara não precisa de método próprio.
@@ -234,7 +234,7 @@ public void setId(Long id) {
 - **Declare pela interface que expressa a semântica**: `List` quando a **ordem** importa ou há repetição, `Set` quando o que importa é **não repetir** (tags, ids, permissões), `Map` para **busca por chave**, `SequencedCollection` quando importa o primeiro e o último (`java-modern-features`). `List` onde a regra é unicidade esconde um bug de duplicata.
 - **Nunca devolva `null` para coleção**: devolva vazia (`List.of()`). Quem chama itera sem `if`, e o `null` não vaza para o JSON.
 - **Coleção que não deve mudar**: `List.of`, `Set.of`, `Map.of` para literais; `List.copyOf`/`Set.copyOf` para publicar uma cópia imutável (configuração carregada no startup, resultado de regra); `Stream.toList()` já devolve lista não modificável.
-- **Cópia de segurança** ao guardar ou devolver uma coleção que o outro lado pode alterar, em classes com invariantes (domínio rico, value objects, componentes com estado). Nas entities e DTOs do flat-by-layer, o Dozer precisa da coleção mutável: lá, a regra é o service não alterar coleção com regra por fora da entity (`solid`, "Estado com regra").
+- **Cópia de segurança** ao guardar ou devolver uma coleção que o outro lado pode alterar, em classes com invariantes (domínio rico, value objects, componentes com estado). Nas entities e DTOs do flat-by-layer, o Hibernate e mappers baseados em setters usam coleção mutável: lá, a regra é o service não alterar coleção com regra por fora da entity (`solid`, "Estado com regra").
 - **Parâmetro coletor**: quando vários métodos contribuem para um resultado, passe a coleção que acumula (`collectViolations(loan, violations)`) em vez de criar e juntar listas em cada um.
 - Volume grande não cabe em coleção: pagine ou percorra em stream (`pagination`, `design-patterns`: Iterator).
 
@@ -258,7 +258,7 @@ logger.info("Email sent to {}", recipient);
 
 Features do Java 17+ que o codebase usa onde encaixam. Nenhuma é obrigatória para uma feature funcionar.
 
-- **Records** para payloads imutáveis, somente de serialização, sem framework que precise de setters, como o error body: `public record ExceptionResponse(Date timestamp, String message, String details) {}`. Entities e DTOs que Dozer, Hibernate ou Jackson precisam popular continuam classes com um constructor sem argumentos.
+- **Records** para payloads imutáveis, somente de serialização, sem framework que precise de setters, como o error body: `public record ExceptionResponse(Instant timestamp, String message, String details) {}`. Entities JPA e DTOs de entidade que estendem `RepresentationModel` (HATEOAS) continuam classes com constructor sem argumentos.
 - **`instanceof` pattern matching** (veja acima) em vez de um cast na linha seguinte.
 - **`Stream.toList()`** em vez de `collect(Collectors.toList())` quando o resultado só é lido.
 - **Text blocks** para fixtures multi-linha em testes (conteúdo CSV, bodies JSON).

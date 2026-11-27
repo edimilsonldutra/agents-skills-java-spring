@@ -232,7 +232,7 @@ O nome da collection relation deve casar com a chave `@JsonProperty` no wrapper 
 
 O Spring Boot 4 usa os defaults do Jackson 3 e a saída difere da do Boot 3 de maneiras que os clients podem notar. Não os "conserte" com switches de compatibilidade a menos que o desenvolvedor precise manter um contrato existente:
 - **Ordem das properties:** as properties são escritas em ordem alfabética (um record como `ExceptionResponse` mantém sua ordem declarada). Em um item HATEOAS, o `_links` do HAL portanto vem primeiro, e `links` em XML/YAML fica entre os outros campos.
-- **Datas:** valores `java.util.Date` terminam em `Z` (`2024-01-15T10:30:00.000Z`), não `+00:00`; `LocalDate` é `"2024-01-15"`.
+- **Datas:** valores `Instant` e `java.util.Date` terminam em `Z` (`2024-01-15T10:30:00Z`), não `+00:00`; `LocalDate` é `"2024-01-15"`.
 - **Datas em YAML** são strings ISO, não epoch milliseconds.
 - **Nulls em XML** são escritos como `<field xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:nil="true"/>` em vez de `<field/>`.
 - **Properties desconhecidas são ignoradas** na entrada por default (o Jackson 2 as rejeitava); habilite `FAIL_ON_UNKNOWN_PROPERTIES` explicitamente onde rejeitá-las for o comportamento pretendido.

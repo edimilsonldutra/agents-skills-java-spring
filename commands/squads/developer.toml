@@ -55,6 +55,7 @@ Além de `code-organization` e `code-style` (sempre), **leia o `SKILL.md` da ár
 | Enviar e-mail | `email` (depois do commit, fora da request, com timeouts); pela AWS, `aws-ses` |
 | Login, tokens, roles | `authentication` ou `aws-cognito` |
 | **Chamar outro serviço** | `service-communication` e `resilience` (**timeout em toda chamada de saída**; retry só em operação idempotente) |
+| **Integrar LLM**, RAG (`pgvector`) ou `@Tool` | `spring-ai` (`ChatClient` fora de `@Transactional`, saída tratada como input não confiável, defesa contra prompt injection, autorização por `SecurityContext` na tool, filtro por tenant no `VectorStore`, sem logar PII) |
 | **`POST` que pode ser repetido**, ou **consumer de mensagem** | `idempotency` |
 | **Publicar evento a partir de mudança no banco** | `transactional-outbox` (**nunca dual write**) + `messaging` + a skill do broker (`kafka`, `rabbitmq`, `activemq-artemis`, `aws-sns-sqs`, `aws-eventbridge`) |
 | Transação entre serviços | `saga-pattern` (só se já decidida pelo `architect`) |

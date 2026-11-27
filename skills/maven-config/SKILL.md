@@ -46,7 +46,7 @@ Não chute versões de memória — o Spring Boot se move rápido e várias libr
 
     <properties>
         <java.version>{latest LTS}</java.version>
-        <dozer.version>{latest}</dozer.version>
+        <mapstruct.version>{latest}</mapstruct.version>
         <springdoc.version>{latest 3.x}</springdoc.version>
         <rest-assured.version>{latest}</rest-assured.version>
         <greenmail.version>{latest}</greenmail.version>
@@ -138,7 +138,7 @@ O Spring Boot 4 usa Jackson 3. Os módulos XML e YAML se moveram para o group `t
     <artifactId>jackson-dataformat-yaml</artifactId>
 </dependency>
 ```
-O Jackson 2 ainda pode aparecer transitivamente (java-jwt, Dozer). Somente os packages `core`, `databind` e `dataformat` mudaram para `tools.jackson.*`; as annotations (`@JsonProperty`, `@JsonIgnore`, `@JsonInclude`) continuam em `com.fasterxml.jackson.annotation`.
+O Jackson 2 ainda pode aparecer transitivamente (`java-jwt`, ou `dozer-core` em projetos legados). Somente os packages `core`, `databind` e `dataformat` mudaram para `tools.jackson.*`; as annotations (`@JsonProperty`, `@JsonIgnore`, `@JsonInclude`) continuam em `com.fasterxml.jackson.annotation`.
 
 ### Dependencies de teste
 
@@ -200,14 +200,14 @@ O Jackson 2 ainda pode aparecer transitivamente (java-jwt, Dozer). Somente os pa
 |---|---|---|
 | Swagger / OpenAPI | `org.springdoc:springdoc-openapi-starter-webmvc-ui` (`${springdoc.version}`, 3.x para o Boot 4) | `swagger` |
 | JWT | `com.auth0:java-jwt` | `authentication` |
-| Mapeamento Entity ↔ DTO | `com.github.dozermapper:dozer-core` | `spring-data-jpa` (preferência Dozer) |
+| Mapeamento Entity ↔ DTO | `org.mapstruct:mapstruct` (+ `mapstruct-processor` no compiler plugin) | `spring-data-jpa` (default MapStruct; em legado Dozer: `com.github.dozermapper:dozer-core`) |
 | Excel | `org.apache.poi:poi-ooxml` | `file-import-export` |
 | CSV | `org.apache.commons:commons-csv` | `file-import-export` |
 | Detecção de tipo de arquivo | `org.apache.tika:tika-core` | `file-upload-download` |
 | Relatórios PDF | `net.sf.jasperreports:jasperreports`, `jasperreports-fonts`, `jasperreports-pdf`, `jasperreports-jdt` (todos `${jasperreports.version}`) | `pdf-reports` |
 | QR Code | `com.google.zxing:core`, `com.google.zxing:javase` | `pdf-reports` |
 
-Com a preferência MapStruct, substitua o Dozer por `org.mapstruct:mapstruct` (uma property `<mapstruct.version>`) mais o annotation processor `mapstruct-processor` declarado no `maven-compiler-plugin` — o processor **não** deve ser uma dependency normal:
+Com o **MapStruct** (default), declare `org.mapstruct:mapstruct` (`<mapstruct.version>`) mais o annotation processor `mapstruct-processor` no `maven-compiler-plugin` — o processor **não** deve ser uma dependency normal:
 ```xml
 <dependency>
     <groupId>org.mapstruct</groupId>
@@ -363,106 +363,7 @@ mvn spring-boot:run
 
 ## Gradle (se escolhido no Step 0)
 
-Ambos os build tools são suportados. O `scaffold` gera o projeto Gradle (Groovy ou Kotlin DSL) e ele foi construído, testado e iniciado de verdade — seu build file é a base. O que outras skills adicionam depois mapeia do Maven como abaixo; todo mapeamento desta seção foi compilado em um build Gradle real. **Todo bloco `<dependency>` nestas skills é escrito em XML do Maven — com Gradle, escreva o equivalente por estas regras.**
-
-### Maven para Gradle
-
-| Maven | Gradle, Groovy DSL | Gradle, Kotlin DSL |
-|---|---|---|
-| `<dependency>` com compile scope | `implementation 'group:artifact'` | `implementation("group:artifact")` |
-| `<scope>runtime</scope>` (JDBC driver) | `runtimeOnly '…'` | `runtimeOnly("…")` |
-| `<scope>test</scope>` | `testImplementation '…'` | `testImplementation("…")` |
-| devtools (`runtime` + `optional`) | `developmentOnly '…'` | `developmentOnly("…")` |
-| version em `<properties>` (`${x.version}`) | `ext { set('xVersion', '1.2.3') }` e `"group:artifact:${xVersion}"` | `val xVersion = "1.2.3"` e `"group:artifact:$xVersion"` |
-| sem `<version>` (gerenciada pelo Boot BOM) | sem version — o plugin `io.spring.dependency-management` decide | igual |
-| `<exclusions>` | `testImplementation('…') { exclude group: 'g', module: 'a' }` | `testImplementation("…") { exclude(group = "g", module = "a") }` |
-| `annotationProcessorPaths` (MapStruct) | `annotationProcessor 'org.mapstruct:mapstruct-processor:…'` | `annotationProcessor("…")` |
-| `<java.version>` | `java { toolchain { languageVersion = JavaLanguageVersion.of(N) } }` | igual |
-| `spring-boot-maven-plugin` | o plugin `org.springframework.boot`, já em `plugins` | igual |
-| `argLine` do surefire (agent do Mockito) | a configuration `mockitoAgent` e os `jvmArgs` que o `scaffold` escreve | igual |
-| `flyway-maven-plugin` | o plugin `org.flywaydb.flyway` (abaixo) | igual |
-
-As tabelas de dependencies desta skill dão as coordenadas; somente a sintaxe de declaração muda. Algumas libraries, declaradas do jeito Gradle:
-
-```groovy
-ext {
-    set('springdocVersion', '{latest 3.x}')
-    set('restAssuredVersion', '{latest}')
-    set('greenmailVersion', '{latest}')
-}
-
-dependencies {
-    implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${springdocVersion}"
-    implementation 'tools.jackson.dataformat:jackson-dataformat-yaml'
-    testImplementation "io.rest-assured:rest-assured:${restAssuredVersion}"
-    testImplementation("com.icegreen:greenmail-junit5:${greenmailVersion}") {
-        exclude group: 'org.eclipse.angus', module: 'jakarta.mail'
-    }
-}
-```
-```kotlin
-val springdocVersion = "{latest 3.x}"
-val restAssuredVersion = "{latest}"
-val greenmailVersion = "{latest}"
-
-dependencies {
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:$springdocVersion")
-    implementation("tools.jackson.dataformat:jackson-dataformat-yaml")
-    testImplementation("io.rest-assured:rest-assured:$restAssuredVersion")
-    testImplementation("com.icegreen:greenmail-junit5:$greenmailVersion") {
-        exclude(group = "org.eclipse.angus", module = "jakarta.mail")
-    }
-}
-```
-
-### O que é diferente no Gradle
-
-- **O Gradle ignora os repositories que o próprio POM de uma dependency declara; o Maven os segue.** O `jasperreports-pdf` precisa do OpenPDF do repository da Jaspersoft, então com Gradle o build para com `Could not find com.github.librepdf:openpdf:…jaspersoft…` até que o repository seja adicionado ao lado de `mavenCentral()` (detalhes na skill `pdf-reports`):
-```groovy
-repositories {
-    mavenCentral()
-    maven { url 'https://jaspersoft.jfrog.io/jaspersoft/third-party-ce-artifacts/' }
-}
-```
-No Kotlin DSL: `maven("https://jaspersoft.jfrog.io/jaspersoft/third-party-ce-artifacts/")`.
-- **Annotation processors não são descobertos pelo classpath** — o processor do MapStruct (e qualquer outro, como o `spring-boot-configuration-processor`) deve ser declarado com `annotationProcessor`.
-- **Dois jars são construídos**: o `bootJar` escreve `build/libs/<name>-<version>.jar` (o executável) e o `jar` escreve `<name>-<version>-plain.jar`. Qualquer coisa que copie "o jar" (um Dockerfile, um step de CI) não deve pegar o plain — veja `docker-and-docker-compose`.
-- **Testes são pulados quando nada mudou** (`:test UP-TO-DATE`). Para forçá-los, execute `cleanTest test`.
-- **O Flyway plugin roda fora do classpath da aplicação**, então o módulo do database e o JDBC driver vão em `buildscript`, com versions explícitas (o Boot BOM não alcança o `buildscript`). Use as versões que o BOM resolve: `./gradlew dependencies --configuration runtimeClasspath` lista `flyway-core` e o driver. A versão do plugin é igual à versão do Flyway. Somente valores de desenvolvimento local — nunca aponte-o para um database compartilhado ou de produção:
-```groovy
-buildscript {
-    dependencies {
-        classpath 'org.flywaydb:flyway-mysql:{flyway version of the BOM}'
-        classpath 'com.mysql:mysql-connector-j:{driver version of the BOM}'
-    }
-}
-
-plugins {
-    id 'org.flywaydb.flyway' version '{flyway version of the BOM}'
-}
-
-flyway {
-    url = 'jdbc:mysql://localhost:3306/{db_name}?useTimezone=true&serverTimezone=UTC'
-    user = 'root'
-    password = 'admin123'
-}
-```
-O `buildscript` vem primeiro no arquivo, antes de `plugins`. O módulo do Flyway e o driver seguem o database escolhido no Step 0 (a tabela acima). No Kotlin DSL a sintaxe é `classpath("…")`, `id("org.flywaydb.flyway") version "…"` e `url = "…"`.
-
-### Comandos
-
-| Tarefa | Maven (`./mvnw`, ou `mvn`) | Gradle (`./gradlew`) |
-|---|---|---|
-| build e execução de todos os testes | `mvn clean package` | `./gradlew clean build` |
-| build, pulando os testes | `mvn clean package -DskipTests` | `./gradlew clean build -x test` |
-| todos os testes | `mvn test` | `./gradlew cleanTest test` |
-| uma test class | `mvn test -Dtest=PersonServicesTest` | `./gradlew cleanTest test --tests PersonServicesTest` |
-| executar a aplicação | `mvn spring-boot:run` | `./gradlew bootRun` |
-| aplicar as migrations | `mvn flyway:migrate` | `./gradlew flywayMigrate` |
-| árvore de dependencies | `mvn dependency:tree` | `./gradlew dependencies --configuration runtimeClasspath` |
-| o jar executável | `target/<name>-<version>.jar` | `build/libs/<name>-<version>.jar` |
-
-No Windows o wrapper é `mvnw.cmd` / `gradlew.bat`. O Dockerfile e os steps de CI mudam de acordo (veja `docker-and-docker-compose` e `github-actions-aws`).
+Maven e Gradle (Groovy ou Kotlin DSL) são ambos suportados e verificados em build real. Todo bloco `<dependency>` nas skills do pacote é escrito em XML do Maven: **quando o projeto usar Gradle (ou ao traduzir entre Maven e Gradle), leia [`references/gradle.md`](references/gradle.md)** para a tabela completa de equivalência de escopos, properties, exclusões, `annotationProcessor`, repositórios transitivos (`jasperreports-pdf`), `bootJar` × `-plain.jar`, `flyway` em `buildscript` e comandos (`./gradlew clean build`, `cleanTest test --tests …`, `bootRun`). No Windows o wrapper é `mvnw.cmd` / `gradlew.bat`.
 
 ---
 
@@ -470,7 +371,7 @@ No Windows o wrapper é `mvnw.cmd` / `gradlew.bat`. O Dockerfile e os steps de C
 
 - O parent é sempre `spring-boot-starter-parent` — nunca gerencie versões de dependencies do Spring manualmente.
 - Todas as versões de terceiros são declaradas em `<properties>` com uma property nomeada — nunca inline em `<dependency>`.
-- Dependencies gerenciadas pelo BOM nunca declaram `<version>` — deixe o BOM vencer. Nunca assuma que uma library é gerenciada: REST Assured, springdoc, GreenMail, java-jwt, Dozer, POI, commons-csv, Tika, JasperReports e ZXing **não** são.
+- Dependencies gerenciadas pelo BOM nunca declaram `<version>` — deixe o BOM vencer. Nunca assuma que uma library é gerenciada: REST Assured, springdoc, MapStruct, ArchUnit, GreenMail, java-jwt, Dozer, POI, commons-csv, Tika, JasperReports e ZXing **não** são.
 - Os starters do Boot 4 são modulares: `spring-boot-starter-webmvc`, `-flyway`, `-hateoas`, `-validation`, `-data-jpa-test`. Uma library solta normalmente deixa de se auto-configurar.
 - Jackson 3: `tools.jackson.dataformat` para XML/YAML; as annotations continuam em `com.fasterxml.jackson.annotation`.
 - O driver do database é `<scope>runtime</scope>` — não é necessário em tempo de compilação.

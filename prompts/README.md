@@ -15,6 +15,7 @@ Copie o bloco **Prompt**, preencha os campos e apague as linhas que não se apli
 | [`plano-de-testes.md`](plano-de-testes.md) | Plano de testes, casos de borda e lacunas de cobertura | `squads:qa` |
 | [`refatoracao.md`](refatoracao.md) | Refatorar com rede de segurança, em passos pequenos | `squads:orchestrator` |
 | [`entender-repositorio.md`](entender-repositorio.md) | Mapear um repositório desconhecido | `squads:architect` ou `squads:tech-lead` |
+| [`auditoria-de-seguranca.md`](auditoria-de-seguranca.md) | Auditoria AppSec (OWASP API Top 10) e LGPD de um serviço, com relatório `SR-n` e correção guiada | `squads:orchestrator` |
 | [`go-no-go.md`](go-no-go.md) | Prontidão para lançamento | `squads:orchestrator` |
 | [`definicao-de-projeto.md`](definicao-de-projeto.md) | Ficha completa de um projeto novo (domínio, regras, segurança, qualidade, infraestrutura, entregas) para gravar em `docs/projeto.md` | Sessão normal + `squads:orchestrator` |
 | [`novo-projeto.md`](novo-projeto.md) | Criar um projeto Spring Boot no padrão do pacote | Sessão normal (skill `scaffold`) |

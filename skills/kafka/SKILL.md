@@ -146,11 +146,15 @@ public class BookEventPublisher {
 
     private static final Logger logger = LoggerFactory.getLogger(BookEventPublisher.class);
 
-    @Autowired
-    private KafkaTemplate<String, Object> kafkaTemplate;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final String topic;
 
-    @Value("${app.kafka.topics.book-created}")
-    private String topic;
+    public BookEventPublisher(
+            KafkaTemplate<String, Object> kafkaTemplate,
+            @Value("${app.kafka.topics.book-created}") String topic) {
+        this.kafkaTemplate = kafkaTemplate;
+        this.topic = topic;
+    }
 
     public void bookCreated(BookCreatedEvent event) {
         kafkaTemplate.send(topic, String.valueOf(event.id()), event)
@@ -177,8 +181,11 @@ public class BookEventListener {
 
     private static final Logger logger = LoggerFactory.getLogger(BookEventListener.class);
 
-    @Autowired
-    private BookIndexService service;
+    private final BookIndexService service;
+
+    public BookEventListener(BookIndexService service) {
+        this.service = service;
+    }
 
     @KafkaListener(topics = "${app.kafka.topics.book-created}", groupId = "${spring.kafka.consumer.group-id}")
     public void onBookCreated(BookCreatedEvent event) {

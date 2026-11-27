@@ -101,7 +101,7 @@ public class BookService {
     }
 }
 ```
-(Uma exceção justificada à field injection: o registry é necessário para construir os meters.) Alternativas sem código: `@Timed`/`@Observed` com `ObservedAspect` habilitado — no Spring Boot 4 exige `spring-boot-starter-aspectj` (renomeado de `spring-boot-starter-aop`), senão as anotações são ignoradas em silêncio.
+O `MeterRegistry` é recebido pelo construtor para registrar os meters uma única vez na inicialização do bean. Alternativas sem código: `@Timed`/`@Observed` com `ObservedAspect` habilitado — no Spring Boot 4 exige `spring-boot-starter-aspectj` (renomeado de `spring-boot-starter-aop`), senão as anotações são ignoradas em silêncio.
 
 Regras de ouro:
 - **Cardinalidade baixa nas tags.** Tag = valor de um conjunto pequeno e fixo (`status`, `method`, `result`). **Nunca** `userId`, `email`, `orderId`, URL com parâmetro: cada valor novo cria uma série e derruba o Prometheus.
@@ -117,8 +117,11 @@ Para uma dependência que torna o pod inútil (e que você incluiu na readiness)
 @Component
 public class PaymentGatewayHealthIndicator implements HealthIndicator {
 
-    @Autowired
-    private PaymentGatewayClient client;
+    private final PaymentGatewayClient client;
+
+    public PaymentGatewayHealthIndicator(PaymentGatewayClient client) {
+        this.client = client;
+    }
 
     @Override
     public Health health() {

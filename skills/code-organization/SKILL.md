@@ -29,8 +29,8 @@ Execute isto antes de gerar qualquer código com qualquer skill desta família.
 | Java version | **Latest LTS** | Escolhido no `scaffold`: qualquer release LTS a partir da 17, ou outro número depois de um aviso de que uma release não-LTS não é adequada para produção. Em um projeto existente é o `java.version` / toolchain do build file. |
 | Configuration file | **YAML** / properties | `application.yml` (default) ou `application.properties`, escolhido no `scaffold`. Com properties, todo bloco YAML destas skills é escrito como chaves flat com pontos. |
 | User-facing text language | **English** (igual aos identifiers) / idioma do desenvolvedor | Identifiers de código (packages, classes, campos, métodos) são sempre em inglês; somente o texto que um client de fato lê — mensagens de Bean Validation (veja `bean-validation`), mensagens de exception (veja `exception-handling`), summaries/descriptions do Swagger (veja `swagger`) — segue esta resposta. Escolhido no `scaffold`. |
-| Entity ↔ DTO mapping | **Dozer** / MapStruct | O package `mapper` e toda conversão de service (veja `spring-data-jpa`). **Perguntado no `scaffold` somente quando seu decorator de Persistence é escolhido.** |
-| Dependency injection | **Field `@Autowired`** / constructor | Controllers e services; os unit tests continuam funcionando com `@InjectMocks` de qualquer jeito. |
+| Entity ↔ DTO mapping | **MapStruct** / Dozer | O package `mapper` e toda conversão de service (veja `spring-data-jpa` e `maven-config`). **MapStruct** gera código de getter/setter em tempo de compilação (zero reflexão, sem Jackson 2 transitivo, compatível com records e AOT); `Dozer` fica como opção apenas para projetos legados. **Perguntado no `scaffold` somente quando seu decorator de Persistence é escolhido.** |
+| Dependency injection | **Constructor** / field `@Autowired` | Controllers, services e componentes usam campos `private final` + construtor explícito (sem `@Autowired` quando há construtor único e sem Lombok); os unit tests funcionam tanto instanciando direto pelo construtor quanto com `@InjectMocks` (`testing`), e classes de teste JUnit do Spring (`@WebMvcTest`, `@DataJpaTest`, `@SpringBootTest`) continuam usando `@Autowired` nos campos de teste. |
 
 **Lombok nunca é usado e não é uma opção.** Entities e DTOs sempre têm constructors, getters, setters, `equals()` e `hashCode()` explícitos.
 
@@ -46,8 +46,8 @@ Execute isto antes de gerar qualquer código com qualquer skill desta família.
 - Java version: 25 (LTS)
 - Configuration file: YAML
 - User-facing text language: English
-- Entity/DTO mapping: Dozer
-- Dependency injection: field
+- Entity/DTO mapping: MapStruct
+- Dependency injection: constructor
 - Model profile: auto
 ```
 
@@ -101,7 +101,7 @@ br.com.edimilsonldutra/
 ├── mail/                                   # E-mail sending (when needed)
 ├── messaging/                              # Brokers: event/, publisher/, listener/, config/ (see messaging)
 └── mapper/
-    └── ObjectMapper.java                   # Dozer wrapper (parseObject / parseListObjects)
+    └── BookMapper.java                     # MapStruct interface (@Mapper(componentModel = "spring"))
 ```
 
 Crie somente os packages de que uma feature precisa; um primeiro CRUD tem `controllers`, `services`, `repository`, `model`, `data/dto`, `exception`, `config`, `mapper`.
@@ -227,14 +227,17 @@ public class BookDTO implements Serializable {
 ### Controller
 O CRUD abaixo é o ponto de partida para dado simples. Recurso com regra, ciclo de vida ou consumidor externo: desenhe antes com `api-design` (papel do endpoint, transição de estado como ação, `If-Match`).
 
-`@Autowired` no campo por default. Implementa `*ControllerDocs` quando a preferência de Swagger é a interface. Retorna `ResponseEntity<>` quando é preciso controlar o status HTTP, o DTO diretamente caso contrário. Os endpoints declaram os media types escolhidos pelo projeto — JSON sempre, XML/YAML somente quando o projeto os pediu (veja `web-config`). Validations rápidas de input vivem em métodos privados.
+Constructor injection explícita por default (`private final` + construtor sem `@Autowired`, pois há um único construtor). Implementa `*ControllerDocs` quando a preferência de Swagger é a interface. Retorna `ResponseEntity<>` quando é preciso controlar o status HTTP, o DTO diretamente caso contrário. Os endpoints declaram os media types escolhidos pelo projeto — JSON sempre, XML/YAML somente quando o projeto os pediu (veja `web-config`). Validations rápidas de input vivem em métodos privados.
 ```java
 @RestController
 @RequestMapping("/api/book/v1")
 public class BookController implements BookControllerDocs {
 
-    @Autowired
-    private BookService service;
+    private final BookService service;
+
+    public BookController(BookService service) {
+        this.service = service;
+    }
 
     @GetMapping(value = "/{id}", produces = {
         MediaType.APPLICATION_JSON_VALUE,
@@ -269,7 +272,7 @@ public class BookController implements BookControllerDocs {
 ```
 Os `produces`/`consumes` acima assumem que JSON + XML + YAML foram todos escolhidos; use somente `MediaType.APPLICATION_JSON_VALUE` quando o projeto é somente JSON.
 
-Com a preferência de **constructor injection**, substitua o campo por um `private final BookService service;` e um constructor que o receba; o resto não muda.
+Com a preferência de **field injection** (`field` no Step 0, comum em projetos legados), substitua o campo `final` e o construtor por `@Autowired private BookService service;`; o resto não muda.
 
 ### Controller Docs interface
 Com a preferência default, todas as annotations de Swagger/OpenAPI vivem aqui e o controller fica limpo (`@Tag` vai na classe do controller). Com a preferência "directly on the controller", coloque as mesmas annotations nos métodos do controller e pule a interface. Veja `swagger`.
@@ -288,54 +291,52 @@ public interface BookControllerDocs {
 ```
 
 ### Service
-Logger SLF4J, `private static final`. A conversão Entity ↔ DTO passa pelo wrapper `mapper`, importado estaticamente para que o nome não colida com o próprio `ObjectMapper` do Jackson (`tools.jackson.databind.ObjectMapper`) no mesmo arquivo. Lança domain exceptions diretamente no corpo do método. Escritas com `@Transactional`, leituras com `@Transactional(readOnly = true)` (veja `spring-data-jpa`). Com a preferência MapStruct, injete uma interface de mapper gerada no lugar.
+Logger SLF4J, `private static final`. A conversão Entity ↔ DTO passa pela interface MapStruct do package `mapper` injetada no construtor (`BookMapper`). Lança domain exceptions diretamente no corpo do método. Escritas com `@Transactional`, leituras com `@Transactional(readOnly = true)` (veja `spring-data-jpa`). Com a preferência legada Dozer, use o wrapper estático `ObjectMapper.parseObject` no lugar.
 ```java
 @Service
 public class BookService {
 
     private static final Logger logger = LoggerFactory.getLogger(BookService.class);
 
-    @Autowired
-    private BookRepository repository;
+    private final BookRepository repository;
+    private final BookMapper mapper;
+
+    public BookService(BookRepository repository, BookMapper mapper) {
+        this.repository = repository;
+        this.mapper = mapper;
+    }
 
     @Transactional(readOnly = true)
     public BookDTO findById(Long id) {
         logger.info("Finding one book!");
         var entity = repository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("No records found for this ID!"));
-        return parseObject(entity, BookDTO.class);
+        return mapper.toDto(entity);
     }
 
     @Transactional
     public BookDTO create(BookDTO book) {
         if (book == null) throw new RequiredObjectIsNullException();
         logger.info("Creating one book!");
-        var entity = parseObject(book, Book.class);
-        return parseObject(repository.save(entity), BookDTO.class);
+        var entity = mapper.toEntity(book);
+        return mapper.toDto(repository.save(entity));
     }
 }
 ```
-com `import static br.com.edimilsonldutra.mapper.ObjectMapper.parseObject;`.
 
-### Mapper wrapper (preferência Dozer)
+### Mapper (preferência default MapStruct)
 ```java
-public class ObjectMapper {
+@Mapper(componentModel = "spring")
+public interface BookMapper {
 
-    private static final Mapper mapper = DozerBeanMapperBuilder.buildDefault();
+    BookDTO toDto(Book entity);
 
-    public static <O, D> D parseObject(O origin, Class<D> destination) {
-        return mapper.map(origin, destination);
-    }
+    Book toEntity(BookDTO dto);
 
-    public static <O, D> List<D> parseListObjects(List<O> origin, Class<D> destination) {
-        List<D> destinationObjects = new ArrayList<>();
-        for (Object o : origin) {
-            destinationObjects.add(mapper.map(o, destination));
-        }
-        return destinationObjects;
-    }
+    List<BookDTO> toDtoList(List<Book> entities);
 }
 ```
+Com a preferência legada **Dozer**, usa-se um wrapper estático `mapper/ObjectMapper` (`DozerBeanMapperBuilder.buildDefault()`) com `parseObject` e `parseListObjects` (detalhes em `spring-data-jpa`).
 
 ### Exception
 Toda exception declara `serialVersionUID`. Veja `exception-handling` para o conjunto completo e o handler global.

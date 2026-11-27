@@ -65,8 +65,11 @@ As factories escolhem a implementação; as implementações são beans (`@Compo
 @Component
 public class FileImporterFactory {
 
-    @Autowired
-    private ApplicationContext context;
+    private final ApplicationContext context;
+
+    public FileImporterFactory(ApplicationContext context) {
+        this.context = context;
+    }
 
     public FileImporter getImporter(String fileName) {
         var name = fileName.toLowerCase(Locale.ROOT);
@@ -79,8 +82,11 @@ public class FileImporterFactory {
 @Component
 public class FileExporterFactory {
 
-    @Autowired
-    private ApplicationContext context;
+    private final ApplicationContext context;
+
+    public FileExporterFactory(ApplicationContext context) {
+        this.context = context;
+    }
 
     public MediaType resolveMediaType(String acceptHeader) {
         if (acceptHeader == null || acceptHeader.isBlank()) return MediaType.parseMediaType(MediaTypes.APPLICATION_CSV_VALUE);
@@ -170,11 +176,20 @@ public class XlsxImporter implements FileImporter {
 
 ### Service — validação linha a linha, uma transação
 ```java
-@Autowired
-private FileImporterFactory importerFactory;
+private final BookMapper mapper;
+private final FileImporterFactory importerFactory;
+private final Validator validator;
 
-@Autowired
-private Validator validator;
+public BookService(
+        BookRepository repository,
+        BookMapper mapper,
+        FileImporterFactory importerFactory,
+        Validator validator) {
+    this.repository = repository;
+    this.mapper = mapper;
+    this.importerFactory = importerFactory;
+    this.validator = validator;
+}
 
 @Transactional
 public List<BookDTO> massCreation(MultipartFile file) {
@@ -184,8 +199,8 @@ public List<BookDTO> massCreation(MultipartFile file) {
     try (var input = file.getInputStream()) {
         var books = importerFactory.getImporter(originalName).importFile(input);
         validateRows(books);
-        var entities = books.stream().map(dto -> parseObject(dto, Book.class)).toList();
-        return parseListObjects(repository.saveAll(entities), BookDTO.class);
+        var entities = books.stream().map(mapper::toEntity).toList();
+        return mapper.toDtoList(repository.saveAll(entities));
     } catch (BadRequestException e) {
         throw e;
     } catch (IllegalArgumentException e) {
@@ -291,7 +306,7 @@ public class CsvExporter implements FileExporter {
 @Transactional(readOnly = true)
 public Resource exportPage(Pageable pageable, MediaType mediaType) {
     logger.info("Exporting a Book page!");
-    var books = repository.findAll(pageable).map(entity -> parseObject(entity, BookDTO.class)).getContent();
+    var books = repository.findAll(pageable).map(mapper::toDto).getContent();
     try {
         return exporterFactory.getExporter(mediaType).exportFile(books);
     } catch (BadRequestException e) {

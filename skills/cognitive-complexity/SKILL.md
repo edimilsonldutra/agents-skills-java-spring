@@ -50,23 +50,28 @@ public class BookService {
 
     private static final Logger logger = LoggerFactory.getLogger(BookService.class);
 
-    @Autowired
-    private BookRepository repository;
+    private final BookRepository repository;
+    private final BookMapper mapper;
+
+    public BookService(BookRepository repository, BookMapper mapper) {
+        this.repository = repository;
+        this.mapper = mapper;
+    }
 
     public List<BookDTO> findAll() {
-        return parseListObjects(repository.findAll(), BookDTO.class);
+        return mapper.toDtoList(repository.findAll());
     }
 
     public BookDTO findById(Long id) {
         var entity = repository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("No records found for this ID!"));
-        return parseObject(entity, BookDTO.class);
+        return mapper.toDto(entity);
     }
 
     public BookDTO create(BookDTO book) {
         if (book == null) throw new RequiredObjectIsNullException();
-        var entity = parseObject(book, Book.class);
-        return parseObject(repository.save(entity), BookDTO.class);
+        var entity = mapper.toEntity(book);
+        return mapper.toDto(repository.save(entity));
     }
 
     public BookDTO update(BookDTO book) {
@@ -75,7 +80,7 @@ public class BookService {
             .orElseThrow(() -> new ResourceNotFoundException("No records found for this ID!"));
         entity.setTitle(book.getTitle());
         entity.setPrice(book.getPrice());
-        return parseObject(repository.save(entity), BookDTO.class);
+        return mapper.toDto(repository.save(entity));
     }
 
     public void delete(Long id) {
@@ -88,12 +93,12 @@ public class BookService {
 
 | Regra | Ocorrências | Pontos |
 |---|---|---|
-| `project-type` | `BookRepository`, `BookDTO`, `ResourceNotFoundException`, `RequiredObjectIsNullException`, `Book` | 5 |
+| `project-type` | `BookRepository`, `BookMapper`, `BookDTO`, `ResourceNotFoundException`, `RequiredObjectIsNullException` | 5 |
 | `function-argument` | os três `() -> new ResourceNotFoundException(...)` | 3 |
 | `branch` | os dois `if (book == null)` | 2 |
 | **Total** | | **10** |
 
-`Logger`/`LoggerFactory` são de biblioteca, `parseObject`/`parseListObjects` são funções importadas estaticamente e `var` não nomeia o tipo: nada disso conta. Com o limite em **12**, o CRUD passa com folga de 2 pontos, e uma regra de negócio de verdade (um `if/else` e mais um tipo) já cruza o teto. Esse é o sinal que interessa: o service deixou de ser CRUD e a regra nova merece um lugar próprio. Testes referenciam mais tipos (a classe testada, os dublês, os builders), por isso o modelo começa com `testLimit` 15. **Os dois números são ponto de partida.** Calibre no seu código (seção 6).
+`Logger`/`LoggerFactory` são de biblioteca e `var` não nomeia o tipo (`var entity = mapper.toEntity(book)` não precisa citar `Book` explicitamente): nada disso conta. Com o limite em **12**, o CRUD passa com folga de 2 pontos, e uma regra de negócio de verdade (um `if/else` e mais um tipo) já cruza o teto. Esse é o sinal que interessa: o service deixou de ser CRUD e a regra nova merece um lugar próprio. Testes referenciam mais tipos (a classe testada, os dublês, os builders), por isso o modelo começa com `testLimit` 15. **Os dois números são ponto de partida.** Calibre no seu código (seção 6).
 
 O modelo ignora `config/`, `controllers/docs/`, `data/dto/`, `mapper/` e `Startup.java`: são declaração e cola, e contar suas annotations e getters só gera ruído. `model/` **não** é ignorado: entity anêmica soma quase zero, e entity que ganhou comportamento precisa ser medida.
 
@@ -115,14 +120,23 @@ O modelo ignora `config/`, `controllers/docs/`, `data/dto/`, `mapper/` e `Startu
 - Com `unit: "class"`, a classe tocada pelo diff é contada **inteira**: a carga cognitiva é de quem lê a classe, não de quem lê o diff.
 - Respeite `ignore`. Arquivo sem `cdd.json` aplicável fica de fora e aparece em "Não contados".
 
-## 4. Passo a passo
+## 4. Passo a passo (com o contador determinístico)
+
+Use o script [`scripts/cdd_counter.py`](scripts/cdd_counter.py) (somente stdlib do Python 3) para obter a contagem exata e auditável sem somar pontos de cabeça:
+```bash
+# contar classes alteradas em relação à main (plugin ou instalação portável):
+python "${CLAUDE_PLUGIN_ROOT}/skills/cognitive-complexity/scripts/cdd_counter.py" --project . --base main
+# ou em .agents/skills:
+python .agents/skills/cognitive-complexity/scripts/cdd_counter.py src/main/java --project .
+```
+Se o Python não estiver disponível no ambiente, siga o cálculo manual abaixo (e declare que a contagem foi manual):
 
 1. Ache e valide o `cdd.json` de cada arquivo do escopo.
 2. Separe as unidades e marque produção/teste.
 3. Percorra cada unidade anotando **cada ocorrência** com `arquivo:linha` (em `project-type`, a linha da primeira referência ao tipo).
 4. Some `points × ocorrências` por regra e compare com o limite: **acima** → violação; **igual** → no fio; abaixo → não aparece no relatório.
-5. **Num PR, compare com a base:** conte também a versão da base (`git show <base>:<arquivo>`). "Este PR levou a classe de 9 para 14" é o achado; "a classe já tinha 14 e continua com 14" é pré-existente.
-6. Para cada violação, aponte os **2–3 pontos de maior peso** e uma extração concreta (seção 5).
+5. **Num PR, compare com a base:** conte também a versão da base (`git show <base>:<arquivo>` ou `--base <branch>`). "Este PR levou a classe de 9 para 14" é o achado; "a classe já tinha 14 e continua com 14" é pré-existente.
+6. Para cada violação, confira os trechos apontados pelo script, destaque os **2–3 pontos de maior peso** e proponha uma extração concreta (seção 5).
 
 ### Relatório
 

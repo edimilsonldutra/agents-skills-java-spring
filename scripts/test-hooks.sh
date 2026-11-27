@@ -175,6 +175,8 @@ edit ask "$TMP/pom.xml" "<minimum>0.70</minimum>"
 edit ask "$TMP/pom.xml" "<skipTests>true</skipTests>"
 edit ask "$TMP/build.gradle.kts" "minimum = \"0.5\".toBigDecimal()"
 edit ask "$TMP/build.gradle" "jacocoTestCoverageVerification { violationRules { rule { excludes = ['*'] } } }"
+edit ask "$TMP/build.gradle.kts" "tasks.test { exclude(\"**/BookServiceTest*\") }"
+edit ask "$TMP/pom.xml" "<excludes><exclude>**/BookService.class</exclude></excludes>"
 write ask "$TMP/src/test/java/BookControllerTest.java" "class BookControllerTest { @Disabled @Test void x() {} }"
 write ask "$TMP/.env" "SECRET=1"
 
@@ -185,6 +187,9 @@ edit ok "$TMP/src/main/java/BookService.java" "return repository.findById(id);"
 edit ok "$TMP/src/test/java/BookServiceTest.java" "@Test void findsById() { assertThat(x).isNotNull(); }"
 edit ok "$TMP/src/test/java/BookServiceTest.java" "// enabled by default; see @DisplayName"          # Disabled como parte de outra palavra? não: DisplayName
 edit ok "$TMP/pom.xml" "<dependency><groupId>org.flywaydb</groupId><artifactId>flyway-core</artifactId></dependency>"
+edit ok "$TMP/pom.xml" "<exclusions><exclusion><groupId>org.eclipse.angus</groupId><artifactId>jakarta.mail</artifactId></exclusion></exclusions>"
+edit ok "$TMP/build.gradle.kts" "testImplementation(\"com.icegreen:greenmail-junit5:2.1.0\") { exclude(group = \"org.eclipse.angus\", module = \"jakarta.mail\") }"
+edit ok "$TMP/build.gradle" "testImplementation('com.icegreen:greenmail-junit5:2.1.0') { exclude group: 'org.eclipse.angus', module: 'jakarta.mail' }"
 edit ok "$TMP/.env.example" "DB_PASSWORD=change-me"
 edit ok "$TMP/docs/adr/ADR-001-x.md" "# ADR-001"
 edit ok "$TMP/README.md" "Rode git push depois"            # texto em doc não é comando
@@ -209,6 +214,26 @@ agent_write ask "squads:product-manager" "$TMP/src/main/java/BookService.java"
 agent_write ok  "squads:architect"    "$TMP/docs/adr/ADR-001-x.md"
 agent_write ok  "squads:architect"    "$TMP/docs/architecture/renovacao-aws.drawio"
 agent_write ask "squads:architect"    "$TMP/src/main/java/BookService.java"
+
+# ---------- guard-commands: escopo do Bash por papel ----------
+agent_cmd() {  # agent_cmd <esperado> <agent_type> <comando>
+  local expected=$1 agent=$2 command=$3
+  run "$COMMANDS" "$expected" "$agent → $command" \
+    "{\"agent_type\":\"$agent\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"$(esc "$command")\"}}"
+}
+agent_cmd ok  "squads:orchestrator"  'git status'
+agent_cmd ok  "squads:code-reviewer" './mvnw test -Dtest=BookServiceTest'
+agent_cmd ok  "squads:code-reviewer" 'git log --format="%h -> %s" -5'
+agent_cmd ok  "squads:tech-lead"     'git rev-parse --verify main >/dev/null 2>&1'
+agent_cmd ok  "squads:qa"            './mvnw clean verify'
+agent_cmd ok  "squads:developer"     'cp src/test/resources/a.json src/test/resources/b.json'
+agent_cmd ask "squads:orchestrator"  'echo "x" > src/main/java/BookService.java'
+agent_cmd ask "squads:code-reviewer" 'echo x > "src/main/java/BookService.java"'
+agent_cmd ask "squads:code-reviewer" 'sed -i "s/a/b/" src/main/java/BookService.java'
+agent_cmd ask "squads:tech-lead"     'tee docs/plano.md < /tmp/x'
+agent_cmd ask "squads:product-manager" 'cp /tmp/x src/main/java/Book.java'
+agent_cmd ask "squads:qa"            'python -c "open(\"src/main/java/Book.java\",\"w\").write(\"x\")"'
+agent_cmd ask "squads:architect"     'Set-Content -Path src/main/java/Book.java -Value "x"'
 
 # ---------- guard-edits: MultiEdit e caminhos relativos ----------
 run "$EDITS" ask "MultiEdit 2a edicao com @Disabled" \

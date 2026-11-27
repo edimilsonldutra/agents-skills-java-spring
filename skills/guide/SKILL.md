@@ -17,7 +17,7 @@ Skills de backend Spring Boot 4 / Java 25, um tópico por skill, todas em um ún
 
 ## Por onde começar
 
-**Ainda não tem projeto?** Comece com `scaffold` — ele faz as perguntas base (versão do Java, build tool, config file, idioma do texto voltado ao usuário) mais, uma de cada vez, se deve adicionar persistence, Flyway, exception handling, web config, Swagger e Bean Validation (cada um tem default "sim"; recusar todos gera uma API mínima vazia). Ele faz o build e verifica o projeto antes de passar o bastão.
+**Ainda não tem projeto?** Comece com `scaffold` — ele faz as perguntas base (versão do Java, build tool, config file, idioma do texto voltado ao usuário) mais, uma de cada vez, se deve adicionar persistence, Flyway, exception handling, web config, Swagger, Bean Validation e testes de arquitetura (ArchUnit). Ele faz o build e verifica o projeto antes de passar o bastão.
 
 **O projeto já existe** (gerado por scaffold aqui ou trazido de outro lugar)? Vá direto para `code-organization` — ela executa um questionário curto de preferências, uma única vez (comentários, database, posição do Swagger, mapper, estilo de injection) e define o package layout que todas as outras skills assumem; depois vá para a skill de tópico que corresponde à tarefa em mãos.
 
@@ -39,7 +39,7 @@ Antes de descrever a lista de skills, verifique o que realmente está presente e
 - **Finalize um projeto novo:** `project-claude-md` gera o `CLAUDE.md` do próprio projeto do desenvolvedor.
 - **Especificação e entendimento de código:** `design-docs` (design doc / tech spec como spec do fluxo spec-driven: critérios `CA-n`, aprovação antes do plano, rastreabilidade critério → tarefa → teste), `repository-understanding` (mapa, hotspots, riscos, aderência de um repositório desconhecido), `monolith-decomposition` (acoplamento, donos das tabelas, o que extrair primeiro), `refactoring` (passos pequenos e verdes, smells, Strangler/expand → contract).
 - **Segurança e design de código:** `application-security` (OWASP API Security Top 10: IDOR, mass assignment, limites, injeção, SSRF, headers, segredos, SBOM), `threat-modeling` (STRIDE e casos de abuso antes de construir), `solid` (princípios, coesão e quando não aplicar), `cognitive-complexity` (CDD: pontos por classe e limite combinado no `cdd.json`), `design-patterns` (padrões no Spring, auto-invocação, anti-padrões).
-- **Segurança e Java:** `authentication` (JWT + Spring Security 7), `caching` (Caffeine/Redis via `@Cacheable`), `redis` (Spring Data Redis, estruturas, Lua, locks distribuídos, rate limit, Streams/Pub-Sub, Cluster/Sentinel e Valkey/ElastiCache), `java-modern-features` (Java 17–25, virtual threads), `concurrency` (beans thread-safe, coleções concorrentes, locks × várias réplicas, `@Async`, `CompletableFuture`, parallel streams), `jvm-performance` (JVM em container, pool, queries, diagnóstico).
+- **Segurança e Java:** `authentication` (JWT + Spring Security 7), `caching` (Caffeine/Redis via `@Cacheable`), `redis` (Spring Data Redis, estruturas, Lua, locks distribuídos, rate limit, Streams/Pub-Sub, Cluster/Sentinel e Valkey/ElastiCache), `java-modern-features` (Java 17–25, virtual threads), `concurrency` (beans thread-safe, coleções concorrentes, locks × várias réplicas, `@Async`, `CompletableFuture`, parallel streams), `jvm-performance` (JVM em container, pool, queries, AOT Cache, diagnóstico), `spring-ai` (LLMs, structured outputs, anti-prompt injection, `@Tool` seguro e RAG com `pgvector`).
 - **Testes:** `testing` (unit + slice), `test-patterns`, `integration-testing` (Testcontainers + REST Assured, banco real), `test-coverage` (JaCoCo, PIT), `postman-newman` (caixa-preta e smoke pós-deploy).
 - **Docker e Kubernetes:** `docker-and-docker-compose`, `observability` (Actuator, Micrometer, probes), `kubernetes`, `helm-charts`.
 - **CI/CD e GitOps:** `github-actions` (CI genérico: build, testes, cobertura, imagem no GHCR, CodeQL, Dependabot), `github-actions-aws` (deploy na AWS com OIDC), `github-actions-cloud` (deploy no Google Cloud e no Azure com OIDC), `argocd` (GitOps: Application/AppProject/ApplicationSet, migration como PreSync hook, promoção por PR).
@@ -100,6 +100,7 @@ Antes de descrever a lista de skills, verifique o que realmente está presente e
 | Java 17–25: records, sealed, virtual threads | `java-modern-features` |
 | Estado em bean, `ConcurrentHashMap`, locks, `@Async`, `CompletableFuture` em paralelo, parallel streams | `concurrency` |
 | API lenta, tuning de JVM/pool, OOMKilled | `jvm-performance` |
+| Integrar LLMs (OpenAI, Anthropic, Bedrock…), busca semântica/RAG (`pgvector`) ou tool calling seguro | `spring-ai` |
 | Imagem no ECR, cluster EKS, ALB, IRSA | `aws-eks` |
 | RDS e senhas no Secrets Manager | `aws-rds-secrets-manager` |
 | Armazenar arquivos no S3 e processar filas SQS | `aws-s3-sqs` |

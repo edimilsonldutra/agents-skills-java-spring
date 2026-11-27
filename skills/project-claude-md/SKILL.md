@@ -113,8 +113,8 @@ Deployment usa.>
 - Java version: 25 (LTS)
 - Configuration file: YAML
 - User-facing text language: English
-- Entity/DTO mapping: Dozer
-- Dependency injection: field
+- Entity/DTO mapping: MapStruct
+- Dependency injection: constructor
 - Model profile: auto
 ````
 
