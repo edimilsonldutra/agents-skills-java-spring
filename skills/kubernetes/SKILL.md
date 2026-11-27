@@ -1,6 +1,6 @@
 ---
 name: kubernetes
-description: Deploy de Spring Boot no Kubernetes — Deployment com rolling update sem downtime, probes do Actuator, requests/limits, graceful shutdown, securityContext, Service, Ingress, ConfigMap/Secret, HPA, PDB, Kustomize por ambiente, Flyway em Job e troubleshooting com kubectl. Use quando criar manifests ou investigar CrashLoopBackOff, OOMKilled ou pods not ready.
+description: Deploy de Spring Boot no Kubernetes — Deployment com rolling update sem downtime (e Recreate, blue/green), probes do Actuator, requests/limits e classes de QoS, PriorityClass, graceful shutdown, securityContext, Service, Ingress, ConfigMap/Secret, HPA, escala de consumidores pela fila com KEDA, taints e tolerations, PDB, workers, Jobs e CronJobs, segurança do namespace (Pod Security Admission, NetworkPolicy, ServiceAccount), Kustomize por ambiente, Flyway em Job e troubleshooting com kubectl. Use quando criar manifests ou investigar CrashLoopBackOff, OOMKilled ou pods not ready
 ---
 
 Antes de aplicar este pattern, leia também [`../code-organization/SKILL.md`](../code-organization/SKILL.md) e [`../code-style/SKILL.md`](../code-style/SKILL.md) para as preferências do projeto e as convenções. Pré-requisitos: uma imagem no registry (`docker-and-docker-compose`) e as probes do Actuator (`observability`).
@@ -149,6 +149,15 @@ Por que cada escolha:
 - **`readOnlyRootFilesystem` + `emptyDir` em `/tmp`:** a JVM e o Tomcat escrevem em `/tmp`; o resto do filesystem fica imutável — uma invasão não consegue gravar binários.
 - **`runAsNonRoot`**, `drop: ALL` e `seccompProfile: RuntimeDefault`: o baseline de segurança *Pod Security Standards "restricted"*.
 
+### Estratégia de rollout
+
+- **RollingUpdate** (acima) é o padrão: exige que a versão antiga e a nova **convivam** (banco com expand → contract, contrato compatível, consumidores que toleram as duas versões de evento).
+- **Recreate** derruba todas as réplicas antes de subir as novas: há indisponibilidade, mas nenhuma convivência. Só quando as versões não podem rodar juntas (mudança incompatível fora do expand → contract, consumidor que não pode ter duas versões no mesmo grupo). **Blue/green**: dois Deployments (`-blue` e `-green`) e o Service aponta para um deles pelo seletor (`version: green`); a troca e o rollback são instantâneos, ao custo de capacidade dobrada durante a troca. Canary com porcentagem de tráfego pede ferramenta (Argo Rollouts, service mesh) ou feature flag na aplicação (`release-management`).
+
+### Classes de QoS e prioridade
+
+O Kubernetes despeja pods de um node sem memória na ordem: **BestEffort** (sem requests) → **Burstable** (requests menores que limits, ou só parte definida) → **Guaranteed** (requests == limits de CPU **e** memória em todos os contêineres). O Deployment acima, com memória igual e CPU sem limit, é **Burstable**: protegido pela memória certa, sem o throttling de CPU. Para a API não ser a primeira vítima quando um job pesado divide o node, crie uma `PriorityClass` (`scheduling.k8s.io/v1`, `value: 100000`, `globalDefault: false`) e use `priorityClassName: api-critical` no pod da API; jobs e workers descartáveis ficam com uma classe mais baixa. Prioridade alta também permite **preempção** (o scheduler remove pods de menor prioridade para encaixar o de maior): use poucas classes, com critério.
+
 ---
 
 ## Service e Ingress
@@ -263,7 +272,96 @@ spec:
 ```
 Para alta disponibilidade, espalhe as réplicas entre zonas: `topologySpreadConstraints` com `topologyKey: topology.kubernetes.io/zone` e `whenUnsatisfiable: ScheduleAnyway`.
 
+**Escalar consumidores pela fila (KEDA).** Um worker de fila fica ocioso de CPU enquanto as mensagens se acumulam: a métrica certa é a **profundidade da fila** ou o **lag** do grupo de consumidores. O KEDA cria e gerencia o HPA a partir dessas métricas:
+```yaml
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: aws-workload-identity
+  namespace: library
+spec:
+  podIdentity:
+    provider: aws
+    identityOwner: workload
 ---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: notification-worker
+  namespace: library
+spec:
+  scaleTargetRef:
+    name: notification-worker
+  minReplicaCount: 1
+  maxReplicaCount: 10
+  triggers:
+    - type: aws-sqs-queue
+      authenticationRef:
+        name: aws-workload-identity
+      metadata:
+        queueURLFromEnv: NOTIFICATION_QUEUE_URL
+        queueLength: "20"
+        awsRegion: us-east-1
+```
+- `queueLength` é quantas mensagens **uma** réplica dá conta (100 na fila e 20 por réplica → 5 réplicas); `identityOwner: workload` usa o IRSA/Pod Identity do próprio worker (`aws-eks`), que precisa também de `sqs:GetQueueAttributes`. Para Kafka, o trigger `kafka` com `bootstrapServers`, `consumerGroup`, `topic` e `lagThreshold`; réplicas acima do número de partições ficam ociosas (`kafka`).
+- **Não crie um HPA próprio** para o mesmo Deployment (o KEDA já cria o dele) e remova `replicas`; `maxReplicaCount × pool` ≤ conexões do banco (`jvm-performance`).
+- **`minReplicaCount: 0`** economiza, mas a primeira mensagem espera um pod subir (e, em Kafka, um rebalance): só para filas sem prazo curto. Confira a versão do KEDA instalada e a documentação do trigger (`library-docs`).
+
+**Separar cargas por node.** Workers e jobs tolerantes a interrupção podem rodar em nodes **Spot** (mais baratos, retomáveis pela AWS com aviso de dois minutos — `aws-eks`), e a API em nodes sob demanda. O node recebe um *taint* e só pods com a *toleration* correspondente vão para ele:
+```yaml
+      nodeSelector:
+        workload-type: batch
+      tolerations:
+        - key: workload-type
+          operator: Equal
+          value: batch
+          effect: NoSchedule
+```
+O consumidor em Spot precisa ser idempotente e ter shutdown curto; use *node affinity* preferida em vez de `nodeSelector` quando o posicionamento for preferência, não obrigação.
+
+---
+
+## Workers, Jobs e CronJobs
+
+Nem todo pod atende HTTP. Para cada tipo de trabalho em segundo plano, o recurso certo:
+
+| Trabalho | Recurso | Pontos de atenção |
+|---|---|---|
+| Consumidor contínuo de fila ou tópico | **Deployment** sem Service | Escala pela fila (KEDA, acima); `terminationGracePeriodSeconds` maior que o tempo de processar uma mensagem ou um lote; sem `preStop: sleep` (não há load balancer) |
+| Tarefa única (reindexar, corrigir dados, migration pesada) | **Job** | Idempotente (o `backoffLimit` repete); `activeDeadlineSeconds`; `ttlSecondsAfterFinished` para limpar |
+| Tarefa agendada | **CronJob** | `concurrencyPolicy: Forbid`; `timeZone`; idempotente |
+
+**Worker**: no `SIGTERM`, o Spring para os listeners (`kafka`, `aws-s3-sqs`, `rabbitmq`) e termina a mensagem em andamento antes de sair; mensagem não confirmada volta para a fila e é reprocessada, por isso o consumidor é idempotente (`idempotency`). Mantenha startup e liveness pelo Actuator na porta de gestão; a readiness só controla o avanço do rollout, já que não há tráfego.
+
+**CronJob** no lugar de `@Scheduled` quando a aplicação tem várias réplicas (o `@Scheduled` rodaria em todas — `concurrency`):
+```yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: overdue-fines
+  namespace: library
+spec:
+  schedule: "0 3 * * *"
+  timeZone: "America/Sao_Paulo"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 600
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 3600
+      template:
+        spec:
+          restartPolicy: Never
+          priorityClassName: batch-low
+          containers:
+            - name: job
+              image: 123456789012.dkr.ecr.us-east-1.amazonaws.com/library-api:1.0.0
+              args: ["--spring.main.web-application-type=none", "--app.job=overdue-fines"]
+```
+- A aplicação roda a tarefa (um `ApplicationRunner` ativado pela property) e **termina** com código de saída diferente de zero em caso de falha (`System.exit(SpringApplication.exit(context))`), senão o Job nunca falha.
+- O Kubernetes garante "aproximadamente uma vez" por horário: em casos raros, um CronJob roda duas vezes ou nenhuma. Idempotência e alarme de "não rodou" (`observability`) cobrem os dois. Use o mesmo `securityContext`, recursos e segredos do Deployment (o exemplo os omite).
+
+**Estado.** A regra do pacote é **banco e armazenamento gerenciados** (`aws-rds-secrets-manager`, `aws-s3-sqs`): a aplicação fica sem estado e escala livremente. StatefulSet com PersistentVolumeClaim só quando o próprio sistema é o armazenamento (um broker ou cache operado pelo time), com backup e restauração testados. Espaço temporário grande para processar arquivos usa **volume efêmero genérico** (um PVC criado e apagado com o pod), não o disco do node.
 
 ## Migrations do Flyway
 
@@ -312,6 +410,32 @@ spec:
 
 ---
 
+## Segurança do namespace
+
+O pod já segue o baseline *restricted*; o namespace garante que nenhum outro pod fuja dele e limita a rede:
+```yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: library
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/warn: restricted
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny
+  namespace: library
+spec:
+  podSelector: {}
+  policyTypes: ["Ingress", "Egress"]
+```
+- **Pod Security Admission** com `restricted` recusa pods com root, privilégio ou capabilities extras (`warn` avisa no `kubectl apply`).
+- **NetworkPolicy** começa negando tudo; depois, políticas que liberam o necessário: ingress do controlador de Ingress para a porta da aplicação, egress para o DNS do cluster, o banco e os serviços chamados. Só tem efeito se o CNI aplicar NetworkPolicy (no EKS, o VPC CNI com o suporte habilitado — `aws-eks`).
+- **ServiceAccount** própria por aplicação, com `automountServiceAccountToken: false`: a API não conversa com o Kubernetes e não precisa de token nem de Role. Permissões na AWS vêm do IRSA/Pod Identity (`aws-eks`), não do RBAC do cluster.
+- **Manter atualizado**: imagem base com patch (Dependabot/Renovate) e cluster na versão suportada; a atualização dos nodes drena pods respeitando o PDB.
+
 ## Kustomize (um conjunto de manifests, vários ambientes)
 
 `base/kustomization.yaml` lista os recursos; cada overlay muda só o que difere:
@@ -352,6 +476,10 @@ Diagnóstico pelo status do pod:
 | `Running` mas `0/1 Ready` | readiness falhando (database fora, porta/path errados) | `describe pod` → Readiness probe failed |
 | `Pending` | sem capacidade/node, `requests` altos demais, PVC não ligado | `describe pod` → Events |
 | `Evicted` | node sem memória/disco | `kubectl describe node` |
+| `Pending` com "untolerated taint" ou "didn't match node affinity" | regra de posicionamento que nenhum node satisfaz | `describe pod` → Events; labels e taints dos nodes (`kubectl get nodes --show-labels`) |
+| Job `BackoffLimitExceeded` | a tarefa falhou em todas as tentativas | `kubectl logs job/<nome>` e os pods do job |
+| CronJob que não roda | `suspend: true`, horário perdido além do `startingDeadlineSeconds`, execução anterior ainda ativa com `Forbid` | `kubectl get cronjob`, `get jobs` |
+| Pod recusado na criação ("violates PodSecurity") | o pod não cumpre o perfil `restricted` do namespace | os campos citados na mensagem (`runAsNonRoot`, `capabilities`, `seccompProfile`) |
 
 ---
 
@@ -365,4 +493,13 @@ Diagnóstico pelo status do pod:
 - Pod seguro: não-root, `readOnlyRootFilesystem`, `drop ALL`, `RuntimeDefault`; `emptyDir` em `/tmp`.
 - Config por variável de ambiente (relaxed binding); secrets **fora do Git** (External Secrets/Sealed Secrets).
 - HPA + PDB + `topologySpreadConstraints` para escala e disponibilidade; some `maxReplicas × pool` ≤ conexões do database.
+- Rolling update quando as versões convivem; Recreate só quando não podem; blue/green pelo seletor do Service. `PriorityClass` para a API não ser despejada antes dos jobs.
+- **Consumidores escalam pela fila** (KEDA), não pela CPU; workers e jobs tolerantes a interrupção em nodes separados (taint e toleration, Spot).
+- **Workers** como Deployment sem Service e com grace period maior que o processamento; **Jobs** idempotentes com prazo e limpeza; **CronJob** com `concurrencyPolicy: Forbid` e `timeZone` no lugar de `@Scheduled` com várias réplicas.
+- **Sem estado na aplicação**: banco e arquivos gerenciados; StatefulSet só para armazenamento operado pelo time.
+- **Namespace seguro**: Pod Security Admission `restricted`, NetworkPolicy negando tudo e liberando o necessário, ServiceAccount própria sem token montado.
 - Um overlay por ambiente (Kustomize) ou um chart (`helm-charts`).
+
+## Referências
+
+- William Denniss, *Kubernetes for Developers* (Manning, 2024): estratégias de rollout, QoS e prioridade, escala por métricas externas, seleção de nodes, workers, Jobs e CronJobs, aplicações com estado e segurança do namespace. Manifests do KEDA conferidos na documentação oficial (versão 2.22).

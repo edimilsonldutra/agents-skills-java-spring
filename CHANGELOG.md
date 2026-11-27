@@ -2,6 +2,13 @@
 
 Mudanças notáveis do plugin `squads`. A versão é a de `.claude-plugin/plugin.json`; quem já instalou só recebe uma mudança quando ela sobe.
 
+## 2.25.0 — 2026-11-26
+
+### Kubernetes para desenvolvedores (Denniss)
+- `kubernetes`: estratégias de rollout (RollingUpdate, Recreate, blue/green), classes de QoS e `PriorityClass`; escala de consumidores pela fila ou pelo lag com KEDA (`ScaledObject` com o trigger de fila SQS e identidade do workload, trigger de Kafka); separar cargas por node com taints e tolerations (Spot para workers); seção "Workers, Jobs e CronJobs" (worker sem Service, Job idempotente com prazo, CronJob com `concurrencyPolicy: Forbid` e `timeZone` no lugar de `@Scheduled` com várias réplicas, estado em serviços gerenciados e volume efêmero genérico); seção "Segurança do namespace" (Pod Security Admission, NetworkPolicy negando tudo, ServiceAccount sem token); novas linhas de troubleshooting; referências. Manifests do KEDA conferidos na documentação oficial.
+- `messaging`: o lag também é a métrica de escala dos consumidores. `code-reviewer`: achados de worker escalado por CPU, HPA junto com KEDA, CronJob sem `Forbid`, grace period curto, namespace sem NetworkPolicy ou Pod Security e `@Scheduled` com várias réplicas.
+- Eval `workers-no-kubernetes` (gatilho de `kubernetes`, sem disparar `helm-charts`). Ainda não executado.
+
 ## 2.24.0 — 2026-11-26
 
 ### Engenharia de software moderna (Farley)
