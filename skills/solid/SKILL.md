@@ -139,7 +139,7 @@ Sinal: a implementação tem métodos vazios ou que lançam "not supported"; o m
 
 A regra de negócio depende de **abstrações**; os detalhes (SMTP, S3, HTTP, banco) dependem delas e são **injetados**:
 - O Spring já faz a injeção: o service recebe `JavaMailSender`, `S3Template`, `RestClient`, repositories — **nunca** os instancia com `new` por dentro (impossível de testar e de configurar).
-- Respeite a preferência de injeção do projeto (field por padrão, constructor se escolhido — `code-organization`). A injeção por constructor deixa as dependências **visíveis** (e um constructor enorme denuncia uma violação de **S**), mas a inversão vale com qualquer uma.
+- Respeite a preferência de injeção do projeto (constructor por padrão, field em legado — `code-organization`). A injeção por constructor deixa as dependências **visíveis** (e um constructor enorme denuncia uma violação de **S**), mas a inversão vale com qualquer uma.
 - **Interface com uma única implementação não é obrigatória.** `BookService` não precisa de `BookServiceImpl`: o Mockito mocka classes, e o Spring injeta classes. Crie a interface quando houver **mais de uma implementação real**, quando ela for um **port** de um domínio hexagonal, ou quando a dependência é **externa e instável** (um parceiro, um provedor que pode ser trocado).
 - Configuração também é dependência: valores por `@Value`/`@ConfigurationProperties`, nunca constantes com URL, timeout ou credencial no código.
 - **Exija e devolva só tipos que são seus.** Classes do SDK ou da biblioteca (`S3Object`, a resposta do client do parceiro, o `Message` do SDK de chat) não circulam por services e domínio: um adapter na borda converte para records e DTOs do projeto (`service-communication`, `ddd-hexagonal`). Quando a biblioteca mudar, a mudança fica num lugar só. Não exagere: `LocalDate`, `BigDecimal` e tipos estáveis do JDK ou do Spring são tipos de base, não acoplamento a evitar.
@@ -188,6 +188,8 @@ Não é achado decidir sobre o estado da própria classe, sobre um parâmetro pr
 var bookIds = request.getItems().stream().map(LoanItemRequest::getBookId).toList();
 ```
 A derivação vai para o dono: `request.bookIds()`. Vale também para DTO de request, que pode entregar o próprio dado derivado; um método sem o prefixo `get` não vira property para o Jackson. Iterar uma variável local, um campo da própria classe ou um parâmetro que já é a coleção não é achado.
+
+**4. Coleções aninhadas sem nome (*nameless collections*).** Um service que mantém ou trafega `Map<String, Set<Loan>>` ao lado de `Map<String, BigDecimal>` (ou listas paralelas sincronizadas pelo índice) esconde um conceito de domínio sem nome (`MemberPortfolio`) cujas invariantes divergem na primeira manutenção: encapsule numa classe ou `record` com cópia defensiva (`code-style`).
 
 ### Pré-condição × regra de validação de negócio
 
@@ -250,6 +252,7 @@ Uma abstração **boa**: separa o **o quê** do **como** (quem a usa não precis
 | Service chamando `setStatus`/`setX` de estado com regra, ou `getItems().add(...)` | Coesão (estado com regra) | Qual método de negócio da entity deveria fazer essa transição? |
 | Tipo do SDK ou do parceiro em assinatura de service ou de domínio | D (tipos próprios) | Onde está o adapter que converte na borda? |
 | Conta ou `stream().map(...)` sobre os campos/coleção de outro objeto | Coesão (inveja) | O dono não deveria entregar o resultado pronto? |
+| `Map<K, Set<V>>` + mapas/listas paralelas mantendo estado correlacionado | Coesão (coleção sem nome) | Qual classe ou `record` de domínio está faltando aqui? |
 | Classe acima do limite do `cdd.json` | Carga cognitiva (`cognitive-complexity`) | Qual bloco leva os pontos para outra classe? |
 
 Achados de design são, em geral, 🟡 **Minor** — 🟠 **Major** quando já causam bug, impedem o teste ou vão se espalhar (`code-reviewer`). As severidades de coesão por layout estão em "Coesão: onde mora a regra".
@@ -273,3 +276,4 @@ Achados de design são, em geral, 🟡 **Minor** — 🟠 **Major** quando já c
 
 - Robert C. Martin, *Arquitetura Limpa* (Alta Books, 2019), caps. 7 a 11: SRP como "um motivo para mudar = um ator", duplicação verdadeira × acidental, OCP com controle direcional, LSP aplicado a interfaces e serviços, ISP e DIP com abstrações estáveis e factories.
 - Mauricio Aniche, *Simple Object-Oriented Design: Create clean, maintainable applications* (Manning, 2024): pré-condição × regra de validação, getters e setters que importam, tipos próprios nas fronteiras e quando criar uma abstração.
+- Maurice Naftalin e Philip Wadler, com Stuart Marks, *Java Generics and Collections*, 2ª ed. (O'Reilly, 2025), cap. 17: coleções aninhadas sem nome como sintoma de modelo anêmico e *ownership* de coleções.

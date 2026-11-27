@@ -88,8 +88,8 @@ Quando o diff toca uma destas áreas, **carregue o `SKILL.md` correspondente** (
 | Upload/download de arquivos | `file-upload-download` | Path traversal, validação só por extensão/`Content-Type`, IDOR no download, `getBytes()` sem limite |
 | Importação/exportação e PDF | `file-import-export`, `pdf-reports` | Template Jasper externo, zip bomb POI, formula injection em CSV/XLSX, `XSSFWorkbook` gigante |
 | E-mail | `email` | Segredo SMTP versionado, relay aberto, envio dentro da `@Transactional`/request, `th:utext`, PII no log |
-| Concorrência | `concurrency` | Lock em memória com múltiplas réplicas, estado mutável em singleton, `@Async`/`CompletableFuture` sem executor/timeout |
-| Features modernas de Java | `java-modern-features` | Record em entity/DTO do pacote, `Optional.get()`/parâmetro, preview em produção, virtual threads sem dimensionar pool |
+| Concorrência | `concurrency` | Lock em memória com múltiplas réplicas, estado mutável em singleton, `ConcurrentHashMap` com `null`, `@Async`/`CompletableFuture` sem executor/timeout |
+| Features modernas de Java | `java-modern-features` | Record em entity/DTO do pacote ou com coleção sem `copyOf`, `getFirst()` sem checar vazio, `Optional.get()`/parâmetro, preview em produção, virtual threads sem dimensionar pool |
 | Chamada a outro serviço | `service-communication`, `resilience` | Sem timeout, retry não idempotente ou em múltiplas camadas, `404` abrindo breaker, rede dentro de `@Transactional`, `RestClient` fora do builder |
 | Integração com LLM, RAG ou `@Tool` | `spring-ai` | Chamada à IA dentro de `@Transactional`, `userId`/`tenantId` aceito do modelo na `@Tool` ou sem filtro no `VectorStore`, prompt concatenado, PII logado no prompt, falta de timeout/rate limit |
 | `POST`/consumer repetível | `idempotency` | Duplicata gerando duplo efeito, chave sem escopo por cliente ou sem hash do payload |
@@ -110,7 +110,7 @@ Se o PR **introduz** um padrão estrutural (saga, CQRS, hexagonal, novo broker, 
 ## O que verificar (nesta ordem de prioridade)
 
 **1. Corretude**
-- Lógica, `null`/`Optional`, off-by-one, condições invertidas, `switch` sem caso, `equals/hashCode` inconsistentes.
+- Lógica, `null`/`Optional`, off-by-one, condições invertidas, `switch` sem caso, `equals/hashCode` inconsistentes, subtração `a - b` em `Comparator`/`compareTo` (overflow), objeto mutável em `Set`/chave de `Map`, `TreeSet`/`TreeMap` com `Comparator` parcial descartando empatados, mutação da coleção dentro de `for` (`ConcurrentModificationException`), `List<Integer>.remove(int)` vs `remove(Object)`.
 - **Transações:** `@Transactional` ausente em escrita multi-passo ou no lugar errado; chamada `this.metodo()` que ignora o proxy; rollback de checked exception; chamada externa **dentro** de transaction.
 - Concorrência: estado mutável compartilhado em bean singleton, lost update sem lock/versão (`@Version`), race em "verifica e insere".
 - Datas/fusos, dinheiro em `double` (use `BigDecimal`), `LazyInitializationException`, N+1, `equals` em entity com lazy.
@@ -137,13 +137,13 @@ Se o PR **introduz** um padrão estrutural (saga, CQRS, hexagonal, novo broker, 
 
 **5. Testes**
 - O comportamento novo e os **bordas/erros** estão cobertos? Há `assert` de verdade ou só `verify` de mock? O teste **falharia** se o código estivesse errado?
-- Teste frágil: `Thread.sleep`, `now()`, ordem, dado aleatório. Teste desabilitado/afrouxado para passar (🟠/🔴).
+- Teste frágil: `Thread.sleep`, `now()`, ordem (incluindo `Set.of`/`Map.of`, cuja ordem muda a cada JVM), dado aleatório. Teste desabilitado/afrouxado para passar (🟠/🔴).
 - Bug corrigido sem teste de regressão.
 
 **6. Design e legibilidade**
 - Responsabilidade na camada errada (regra no controller, query no service, HTTP no service), duplicação, método/classe longos, nomes ruins, abstração prematura ou desnecessária, acoplamento.
 - **Escopo do diff:** tamanho proporcional ao pedido? Toda linha alterada se liga ao pedido (sem reformatação nem refatoração de código alheio misturada)? Imports, variáveis ou métodos que a mudança deixou sem uso? Código morto **pré-existente** apagado sem pedido? Tratamento de erro para cenário impossível (ramo que nunca executa e derruba a cobertura de branch)? Com design doc: o diff cobre **todos** os `CA-n` da tarefa ou só a parte fácil?
-- **Padrão do projeto:** Lombok (🟠 — o pack proíbe), entity exposta no controller, `@Autowired` onde a preferência é constructor (ou o contrário), comentários quando a preferência é "sem", formatação fora de `code-style`, logger sem `{}`, `System.out`; 🟡 nome que não revela intenção (`process`, `handle`, `flag`, booleano negado), argumento booleano de flag (`process(id, true)`), método que devolve valor e muda estado, laço que filtra, transforma e acumula ao mesmo tempo, subclasse que recusa o que herda, método que mistura orquestração e detalhe, coleção devolvida como `null`, `List` onde a semântica é unicidade (`Set`).
+- **Padrão do projeto:** Lombok (🟠 — o pack proíbe), entity exposta no controller, `@Autowired` onde a preferência é constructor (ou o contrário), comentários quando a preferência é "sem", formatação fora de `code-style`, logger sem `{}`, `System.out`, *raw types* ou `@SuppressWarnings("unchecked")` amplo sem justificativa; 🟡 nome que não revela intenção (`process`, `handle`, `flag`, booleano negado), argumento booleano de flag (`process(id, true)`), método que devolve valor e muda estado, laço que filtra, transforma e acumula ao mesmo tempo, subclasse que recusa o que herda, método que mistura orquestração e detalhe, coleção devolvida como `null`, `List` onde a semântica é unicidade (`Set`), `LinkedList`/`Vector`/`Stack`/`Hashtable`, `HashSet`/`HashMap` para `enum` no lugar de `EnumSet`/`EnumMap`, `new HashMap<>(n)` subdimensionado no lugar de `HashMap.newHashMap(n)`, coleções aninhadas sem nome (`Map<K, Set<V>>` escondendo classe/record).
 - **Ruído de código gerado por IA:** comentário que repete a linha, comentário de changelog ("alterado para usar X", "novo método"), Javadoc inflado em método privado óbvio, código comentado, `try/catch` defensivo em caminho que não lança (ou que só relança/loga e segue), checagem de `null` em valor que nunca é nulo (parâmetro `@Valid`, retorno de `orElseThrow`), log a cada linha, constante mágica repetida, bloco copiado de outra classe com pequenas variações. Agrupe num achado só.
 
 **7. Performance e operação**

@@ -73,6 +73,8 @@ verde → (1 passo pequeno) → rodar testes → verde → commit → próximo p
 | **Anemic Domain Model** *(em domínio rico / DDD)* | Entity só com getters/setters em regra de negócio complexa; toda invariante espalhada em `*Service` *(em CRUD simples flat-by-layer de `code-organization`, não é smell)* | **Move Method** para a entity/aggregate; setters viram métodos de negócio (`ddd-hexagonal`) |
 | **Feature Envy** | Método que usa mais dados de **outra** classe que da sua | **Move Method** para a classe dos dados |
 | **Primitive Obsession** | `String email`, `double price`, `Long customerId/orderId` intercambiáveis | **Replace Primitive with Value Object** (`record Email`, `Money`, `OrderId`) |
+| **Coleções aninhadas sem nome / Listas paralelas** | `Map<String, Set<Loan>>` + `Map<String, BigDecimal>` em paralelo, ou duas `List` sincronizadas pelo índice `i` | **Extract Class** / **Encapsulate Collection** ou `record` com cópia defensiva (`code-style`) |
+| **Chave mutável ou `TreeSet` inconsistente com `equals`** | Objeto alterado depois de entrar em `Set`/`Map`, ou `TreeSet`/`TreeMap` com `Comparator` parcial descartando itens empatados | **Change Reference to Value** (`record` como chave composta) e desempatar o `Comparator` até chave única (`code-style`) |
 | **Data Clumps / Long Parameter List** | Os mesmos 3–4 parâmetros andam juntos; assinatura com 6+ | **Introduce Parameter Object** (record) |
 | **Duplicated Code** | Mesma lógica em vários lugares | **Extract Method/Class**, **Pull Up**; regra dos três |
 | **Shotgun Surgery** | Uma mudança de negócio exige editar 8 arquivos | **Move/Inline** para agrupar o que muda junto |
@@ -285,3 +287,4 @@ Refatoração que **não cabe em passos pequenos verdes** (API pública, banco, 
 
 - Martin Fowler, *Refatoração: aperfeiçoando o design de códigos existentes*, 2ª ed. (Novatec, 2019; original *Refactoring*, Addison-Wesley, 2018), com contribuições de Kent Beck: definição e princípios, os momentos de refatorar, branches e desempenho, os 24 smells e o catálogo das 61 refatorações. Reescrito com exemplos Java/Spring do pacote.
 - Os "dois chapéus" e "faça a mudança ser fácil, depois faça a mudança fácil" são de Kent Beck.
+- Maurice Naftalin e Philip Wadler, com Stuart Marks, *Java Generics and Collections*, 2ª ed. (O'Reilly, 2025), cap. 17: refatoração de coleções aninhadas sem nome, listas paralelas e chaves mutáveis.

@@ -2,6 +2,16 @@
 
 Mudanças notáveis do plugin `squads`. A versão é a de `.claude-plugin/plugin.json`; quem já instalou só recebe uma mudança quando ela sobe.
 
+## 2.27.0 — 2026-11-26
+
+### Generics e coleções (Naftalin, Wadler e Marks)
+- `code-style`: seção "Coleções e generics" ampliada com base em *Java Generics and Collections* (2ª ed., O'Reilly, 2025) — `EnumSet`/`EnumMap` para enums, `ArrayDeque` e proibição de `LinkedList`/`Vector`/`Stack`/`Hashtable`, pré-dimensionamento com `HashMap.newHashMap(n)`/`HashSet.newHashSet(n)`, *ownership* (`List.copyOf` snapshot × `Collections.unmodifiableList` view viva × `Arrays.asList`), imutabilidade de chaves em `Set`/`Map`, `TreeSet`/`TreeMap` consistente com `equals`, `Comparator` sem subtração (`Integer.compare`/`comparingInt`), `removeIf` e `toArray(T[]::new)`, *Cast-Iron Guarantee*, `@SuppressWarnings("unchecked")` em variável local, PECS e `@SafeVarargs` — mais guia completo em `skills/code-style/references/generics-and-collections.md`.
+- `java-modern-features`: cópia defensiva de coleções no compact constructor de `record`, `record` como chave composta e substituto de listas paralelas, e contratos de borda de `SequencedCollection`/`SequencedSet`/`SequencedMap` (`getFirst()` em coleção vazia, `addFirst()` em `TreeSet` e `reversed()` como view).
+- `concurrency`: rejeição de `null` e remoção ao retornar `null` em `compute`/`merge` no `ConcurrentHashMap`, `ConcurrentHashMap.newKeySet()` e `ConcurrentLinkedQueue.size()` `O(N)`.
+- `solid` e `refactoring`: coleções aninhadas sem nome (`Map<K, Set<V>>` anêmico), listas paralelas e chaves mutáveis em `Set`/`Map`.
+- `test-patterns` e `code-reviewer`: flakiness por ordem aleatória a cada JVM em `Set.of`/`Map.of` e achados de `a - b` em `Comparator`, `TreeSet` descartando empatados, `LinkedList`, `EnumSet`/`EnumMap`, `HashMap.newHashMap` e generics sem *raw types*.
+- Eval `colecoes-e-generics` (gatilho de `code-style`/`java-modern-features`, sem disparar `spring-data-jpa`). Ainda não executado.
+
 ## 2.26.0 — 2026-11-26
 
 ### Spring AI (100 skills), MapStruct, Instant, ArchUnit, AOT Cache, constructor injection e guardrails
