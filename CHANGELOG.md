@@ -2,6 +2,16 @@
 
 Mudanças notáveis do plugin `squads`. A versão é a de `.claude-plugin/plugin.json`; quem já instalou só recebe uma mudança quando ela sobe.
 
+## 2.19.0 — 2026-11-26
+
+### Microsserviços orientados a eventos (Bellemare)
+- `messaging`: princípio do escritor único, as três formas de evento (sem chave, com chave, de entidade) e regras de desenho (um tipo por stream, propósito único sem campo `action`, tipos estreitos, evento não é semáforo, envolver os consumidores).
+- `kafka`: tópico compactado para eventos de entidade com tombstone; estado materializado no consumidor (`@Payload(required = false)`, upsert por versão, reconstrução com grupo novo); grupos de consumidores, reprocessamento lado a lado, reset de offset e quebra de schema no deploy; governança de tópicos (dono, metadados, ACL, cotas).
+- `monolith-decomposition`: liberar dados do legado como eventos (por consulta, CDC nas tabelas, outbox) e seus riscos; `transactional-outbox`: CDC na outbox, não nas tabelas de domínio.
+- `code-reviewer`: achados de escritor único, tópico misturado, campo `action`, evento-semáforo, evento de entidade sem chave ou sem compactação, cópia local sem versão e CDC como contrato.
+- Eval `eventos-de-entidade` (gatilho de `kafka`/`messaging`, sem disparar `cqrs-event-sourcing`). Ainda não executado.
+- Processamento de streams com estado (janelas, tempo do evento, *state stores*) ficou fora desta versão.
+
 ## 2.18.0 — 2026-11-26
 
 ### Padrões de projeto: o catálogo GoF completo

@@ -234,7 +234,7 @@ Por que funciona e o que ele **não** garante:
 
 ### Alternativa: CDC com Debezium (sem polling)
 
-O **Debezium** (Kafka Connect) lê o **log de transações** do database (binlog MySQL / WAL PostgreSQL) e publica cada linha inserida em `outbox_event` no Kafka, usando o **Outbox Event Router** (SMT). Vantagens: latência de milissegundos, sem carga de polling, sem lock, ordem preservada pelo log. Custo: **operar Kafka Connect + Debezium**, e ficar acoplado ao Kafka e ao formato do banco. Vale para quem **já tem Kafka em escala**; para uma API pequena, o polling acima é bem mais simples. Com CDC, a aplicação **só grava** na outbox (seções 1–3) e apaga as linhas antigas por job.
+O **Debezium** (Kafka Connect) lê o **log de transações** do database (binlog MySQL / WAL PostgreSQL) e publica cada linha inserida em `outbox_event` no Kafka, usando o **Outbox Event Router** (SMT). Vantagens: latência de milissegundos, sem carga de polling, sem lock, ordem preservada pelo log. Custo: **operar Kafka Connect + Debezium**, e ficar acoplado ao Kafka e ao formato do banco. Vale para quem **já tem Kafka em escala**; para uma API pequena, o polling acima é bem mais simples. Com CDC, a aplicação **só grava** na outbox (seções 1–3) e apaga as linhas antigas por job. Aponte o CDC para a **outbox**, não para as tabelas de domínio: capturar as tabelas diretamente transforma o schema interno em contrato público (`monolith-decomposition`, "Liberar dados do legado").
 
 *Spring Modulith* também oferece um **event publication registry** com a mesma ideia (persiste publicações de eventos de aplicação e republica as incompletas) — uma opção se o projeto já usa Modulith.
 

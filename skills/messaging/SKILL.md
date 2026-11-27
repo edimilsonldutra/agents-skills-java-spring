@@ -84,6 +84,25 @@ Spring Boot tem suporte de primeira classe para **Kafka**, **RabbitMQ (AMQP)** e
 - Mensagens **pequenas** (limite do broker: SQS 256 KB; Kafka 1 MB por padrão). Payload grande → arquivo no S3 e a **referência** na mensagem (`aws-s3-sqs`).
 - **Nome de tópico/fila/exchange** padronizado e versionado: `<contexto>.<entidade>.<evento>.v1` (`library.book.created.v1`), vindo de configuração, nunca hardcoded.
 
+**Um único produtor por stream.** Cada tópico (ou exchange de eventos) tem **um** serviço que escreve nele, e esse serviço é o **dono do contrato**: decide o schema, a evolução e a retenção. Dois serviços publicando `library.loan.*` é o equivalente, em eventos, a duas aplicações escrevendo na mesma tabela: ninguém sabe qual é a verdade e ninguém pode mudar o formato. Quem precisa influenciar o dado envia um **comando** ou chama a API do dono.
+
+**Três formas de evento, pela chave:**
+| Forma | O que carrega | Uso |
+|---|---|---|
+| **Sem chave** | Um fato isolado, sem entidade dona | Medições, cliques, logs de auditoria; ordem não importa |
+| **Com chave, delta** | O que mudou numa entidade (`LoanRenewed` com a nova data) | Fluxos de negócio; ordem por chave importa (`kafka`: key = id) |
+| **De entidade** | O **estado completo** da entidade a cada mudança (`BookState`) | Outros serviços montam a **própria cópia** do dado (*event-carried state transfer*); em Kafka, num tópico **compactado** (`kafka`, "Estado materializado") |
+
+Eventos de entidade evitam que cada consumidor chame o produtor por HTTP para "completar" o evento, e permitem que um consumidor novo reconstrua o estado lendo o tópico desde o início.
+
+**Regras de desenho:**
+- **Um tipo de evento por stream.** Um tópico com `LoanCreated`, `LoanRenewed` e `PaymentReceived` misturados obriga todo consumidor a filtrar e quebra a evolução de schema. Exceção: os eventos de **um mesmo agregado** que precisam de ordem entre si podem dividir o tópico, com um schema de união explícito.
+- **Propósito único.** Nada de campo `type`/`action` que muda o significado do resto do payload (`"action": "UPDATE"` com metade dos campos opcionais): são eventos diferentes com nomes diferentes.
+- **Tipos mais estreitos possíveis:** `Instant`, enum, `BigDecimal` com escala, ids tipados; nunca `String` genérica para data, valor ou estado. O consumidor não deve adivinhar o formato.
+- **Diga a verdade inteira:** o evento descreve o que aconteceu com os dados que o explicam, não só um gatilho ("algo mudou, venha buscar").
+- **Evento não é semáforo.** `BatchFinished` ou `ReadyToProcess` ("pode começar agora") acopla produtor e consumidor no tempo e esconde um comando disfarçado. Se alguém precisa reagir a cada item, publique os itens; se precisa de um comando, envie um comando.
+- **Pequeno e com o que o consumidor precisa**, nem a entity inteira nem só o id (seção acima); **envolva os consumidores** no desenho do evento antes de publicá-lo (`contract-testing`).
+
 **Evolução de schema** (a mensagem vive mais que o deploy): só mudanças **compatíveis**: adicionar campo **opcional**, nunca renomear/remover/mudar tipo. Consumers **ignoram campos desconhecidos** (o Jackson 3 já faz isso por padrão — `web-config`). Quebra de contrato = **novo tópico/versão** (`.v2`) com período de convivência. Em Kafka em escala, use **Schema Registry** (Avro/Protobuf/JSON Schema) com regras de compatibilidade.
 
 ---
@@ -183,3 +202,7 @@ Nomes: `*Event`, `*EventPublisher`, `*EventListener`. O **service** chama o publ
 - TLS, IAM/ACL por recurso com menor privilégio, sem dado pessoal desnecessário, desserialização restrita.
 - Testes com o broker real em container, Awaitility, e casos de duplicata e DLQ.
 - **Sem Lombok** — deliberado.
+
+## Referências
+
+- Adam Bellemare, *Building Event-Driven Microservices: Leveraging Organizational Data at Scale* (O'Reilly, 2020): princípio do escritor único, formas de evento (sem chave, com chave, de entidade), estado materializado e regras de desenho de eventos.
