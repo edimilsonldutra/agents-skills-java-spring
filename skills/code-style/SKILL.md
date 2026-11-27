@@ -1,6 +1,6 @@
 ---
 name: code-style
-description: Estilo de código Java do pacote — comentários (default nenhum), var, guard clauses, quebras de linha, annotations, equals/hashCode, logger SLF4J, idioms modernos, Jackson 3 e chains do REST Assured, sem Lombok. Use ao gerar ou revisar código Java deste padrão ou quando pedirem para ajustar o estilo de uma classe.
+description: Estilo de código Java do pacote — código que comunica (valores e princípios, nomes que revelam intenção, método composto), coleções (interface pela semântica, vazia em vez de null, imutáveis, cópia de segurança), comentários (default nenhum), var, guard clauses, quebras de linha, annotations, equals/hashCode, logger SLF4J, idioms modernos, Jackson 3 e chains do REST Assured, sem Lombok. Use ao gerar ou revisar código Java deste padrão ou quando pedirem para ajustar o estilo de uma classe.
 ---
 
 # Java Code Style
@@ -8,6 +8,42 @@ description: Estilo de código Java do pacote — comentários (default nenhum),
 Baixa cerimônia, explícito, legível. Sem Lombok. Sem mágica. A indentação é de 4 espaços, nunca tabs.
 
 Leia `code-organization` primeiro: o **Step 0** dela coleta as preferências do projeto (comentários, database, posição do Swagger, build tool, mapper, injection). Se esta skill for a primeira aberta na conversa e não existir uma seção `## Project preferences` no `CLAUDE.md` do projeto, execute esse Step 0 agora — no mínimo a pergunta de comentários abaixo.
+
+---
+
+## Código que comunica
+
+Código é lido muito mais vezes do que escrito; o leitor é o próximo dev (ou você daqui a seis meses). Quando duas formas de escrever funcionam igual, os **valores** desempatam, nesta ordem: **comunicação** (o leitor entende a intenção), **simplicidade** (nada que não precise estar ali) e **flexibilidade** (só a que o código vai realmente usar). Os princípios que derivam deles:
+- **Consequências locais**: uma mudança deve afetar pouco código, perto de onde ela acontece.
+- **Minimizar repetição**: a mesma ideia em dois lugares diverge na primeira mudança (`solid`: DRY de conhecimento).
+- **Lógica e dados juntos**: a regra fica com quem tem os dados (`solid`: coesão).
+- **Simetria**: partes equivalentes escritas do mesmo jeito (se `create` valida e depois mapeia, `update` também).
+- **Expressão declarativa**: dizer o que se quer, não como (`stream().filter(...)` com nome claro, `Specification`, annotations), quando isso fica mais claro.
+- **Taxa de mudança**: o que muda no mesmo ritmo e pelo mesmo motivo fica junto; o que muda em ritmos diferentes, separado.
+
+### Nomes que revelam intenção
+
+- O nome diz **para que serve**, não o tipo nem a implementação: `overdueLoans`, não `list2` nem `loanArrayList`; `calculateLateFee`, não `process`.
+- **Booleanos como pergunta**: `isOverdue`, `hasPendingFines`, `canRenew`. Nada de `flag`, `status2` ou negações (`isNotActive` vira `isActive` com `!`).
+- **Métodos com verbo de negócio** (`renew`, `returnBook`, `chargeLateFee`), não verbos genéricos (`handle`, `doIt`, `manage`). Consulta não muda estado e se nomeia como consulta (`findActiveLoans`, `isEligible`).
+- O **tamanho do nome acompanha o escopo**: `i` num laço de 3 linhas; `pendingRenewalRequests` num campo.
+- **Mesmo conceito, mesmo nome** em todo o código (não `member`, `user` e `client` para a mesma coisa — o glossário de `requirements-engineering`). Nomes em inglês no código; mensagens ao usuário no idioma da preferência.
+- Se o nome precisa de um comentário para ser entendido, troque o nome.
+
+### Método composto
+
+Cada método trabalha num **só nível de abstração**: ou orquestra passos com nome, ou faz um passo em detalhe, nunca os dois.
+```java
+@Transactional
+public LoanDTO renew(Long id) {
+    var loan = findLoan(id);
+    ensureRenewable(loan);
+    loan.renew(clock);
+    notifyMember(loan);
+    return parseObject(repository.save(loan), LoanDTO.class);
+}
+```
+Ler o método conta a história; o detalhe de cada passo está num método privado com nome de negócio. Um método que mistura a orquestração com um laço de cálculo e a montagem de um e-mail no meio pede extração (`refactoring`, `cognitive-complexity`). Não extraia por extrair: um passo de uma linha clara não precisa de método próprio.
 
 ---
 
@@ -193,6 +229,17 @@ public void setId(Long id) {
 
 ---
 
+## Coleções
+
+- **Declare pela interface que expressa a semântica**: `List` quando a **ordem** importa ou há repetição, `Set` quando o que importa é **não repetir** (tags, ids, permissões), `Map` para **busca por chave**, `SequencedCollection` quando importa o primeiro e o último (`java-modern-features`). `List` onde a regra é unicidade esconde um bug de duplicata.
+- **Nunca devolva `null` para coleção**: devolva vazia (`List.of()`). Quem chama itera sem `if`, e o `null` não vaza para o JSON.
+- **Coleção que não deve mudar**: `List.of`, `Set.of`, `Map.of` para literais; `List.copyOf`/`Set.copyOf` para publicar uma cópia imutável (configuração carregada no startup, resultado de regra); `Stream.toList()` já devolve lista não modificável.
+- **Cópia de segurança** ao guardar ou devolver uma coleção que o outro lado pode alterar, em classes com invariantes (domínio rico, value objects, componentes com estado). Nas entities e DTOs do flat-by-layer, o Dozer precisa da coleção mutável: lá, a regra é o service não alterar coleção com regra por fora da entity (`solid`, "Estado com regra").
+- **Parâmetro coletor**: quando vários métodos contribuem para um resultado, passe a coleção que acumula (`collectViolations(loan, violations)`) em vez de criar e juntar listas em cada um.
+- Volume grande não cabe em coleção: pagine ou percorra em stream (`pagination`, `design-patterns`: Iterator).
+
+---
+
 ## Declaração do logger
 
 SLF4J em todo lugar — services, factories, components — declarado `private static final`, construído a partir da classe:
@@ -293,6 +340,8 @@ AccountCredentialsDTO credentials =
 
 ## Regras principais
 
+- **Código que comunica**: comunicação, simplicidade e flexibilidade desempatam; nomes que revelam intenção (booleanos como pergunta, verbos de negócio, mesmo conceito com o mesmo nome); método composto, com um só nível de abstração.
+- **Coleções**: interface pela semântica (`List`/`Set`/`Map`), vazia em vez de `null`, imutável quando não deve mudar, cópia de segurança em classes com invariantes.
 - **Sem comentários no código gerado**, a menos que o desenvolvedor tenha optado por eles no Step 0.
 - `var` para locais quando o tipo é óbvio — tipo explícito quando declarada antes de um branch.
 - Guard clauses de uma linha (`if (x == null) throw ...`) — sem chaves, sem nova linha.
@@ -304,3 +353,7 @@ AccountCredentialsDTO credentials =
 - Variável intermediária antes de atribuir ao campo static em testes.
 - Indentação de 4 espaços.
 - **Sem Lombok** — nunca. Esta é uma escolha deliberada.
+
+## Referências
+
+- Kent Beck, *Padrões de Implementação* (Bookman, 2013; original *Implementation Patterns*, Addison-Wesley, 2007): valores e princípios (comunicação, simplicidade, flexibilidade; consequências locais, simetria, taxa de mudança), nome revelador de intenção, método composto, parâmetro coletor, coleções e cópia de segurança. Classes anônimas, exceções verificadas e a medição de desempenho do apêndice ficaram de fora por estarem superadas no Java 25 e no padrão do pacote.

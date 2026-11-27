@@ -2,6 +2,14 @@
 
 Mudanças notáveis do plugin `squads`. A versão é a de `.claude-plugin/plugin.json`; quem já instalou só recebe uma mudança quando ela sobe.
 
+## 2.21.0 — 2026-11-26
+
+### Padrões de implementação (Kent Beck)
+- `code-style`: seção "Código que comunica" (valores comunicação, simplicidade e flexibilidade; princípios consequências locais, minimizar repetição, lógica e dados juntos, simetria, expressão declarativa e taxa de mudança), nomes que revelam intenção e método composto; seção "Coleções" (interface pela semântica, vazia em vez de `null`, imutáveis, cópia de segurança respeitando o Dozer, parâmetro coletor); referências.
+- `refactoring`: Replace Method with Method Object e nome que não revela intenção no catálogo de smells.
+- `code-reviewer`: achados de nome sem intenção, mistura de níveis de abstração, coleção `null` e `List` no lugar de `Set`.
+- Eval `codigo-que-comunica` (gatilho de `code-style`/`refactoring`, sem disparar `cognitive-complexity`). Ainda não executado.
+
 ## 2.20.0 — 2026-11-26
 
 ### Design orientado a objetos simples (Aniche)

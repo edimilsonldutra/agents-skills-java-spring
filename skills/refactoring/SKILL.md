@@ -56,6 +56,7 @@ verde → (1 passo pequeno) → rodar testes → verde → commit → próximo p
 | Smell (cheiro) | Sinal | Refatoração |
 |---|---|---|
 | **Long Method** | Método com várias responsabilidades, > ~20–30 linhas, níveis de abstração misturados | **Extract Method**; nomes que explicam o "porquê" (respeitando a preferência de comentários salva; default: sem comentários) |
+| **Long Method que não se deixa extrair** | Muitas variáveis locais compartilhadas entre os trechos; cada extração precisaria de 5 parâmetros | **Replace Method with Method Object**: o método vira uma classe, as variáveis locais viram campos, e os trechos viram métodos sem parâmetros. Depois, simplifique a classe nova |
 | **God Service / Large Class** | `*Service` com 20 métodos e 10 dependências; muda por vários motivos | **Extract Class**; **mover regra para o domínio**; separar por caso de uso |
 | **Anemic Domain Model** *(em domínio rico / DDD)* | Entity só com getters/setters em regra de negócio complexa; toda invariante espalhada em `*Service` *(em CRUD simples flat-by-layer de `code-organization`, não é smell)* | **Move Method** para a entity/aggregate; setters viram métodos de negócio (`ddd-hexagonal`) |
 | **Feature Envy** | Método que usa mais dados de **outra** classe que da sua | **Move Method** para a classe dos dados |
@@ -75,6 +76,7 @@ verde → (1 passo pequeno) → rodar testes → verde → commit → próximo p
 | **Exceptions engolidas / genéricas** | `catch (Exception e) {}`, `throw new RuntimeException` | **Replace with domain exception** + handler (`exception-handling`) |
 | **Middle Man / Speculative Generality** | Classes que só delegam; interfaces com **uma** implementação "por precaução"; flags nunca usadas | **Inline Class/Method**; **remover** a abstração sem uso |
 | **Dead Code** | Métodos/classes/flags sem referência | **Delete** (o Git guarda o histórico) — **depois** de confirmar que ninguém usa (reflection, Spring wiring, JSON, SQL) |
+| **Nome que não revela intenção** | `process`, `handle`, `data`, `flag`, `list2`; booleano negado (`isNotActive`) | **Rename** com verbo de negócio e booleano como pergunta (`code-style`, "Nomes que revelam intenção") |
 | **Comentário como desodorante** | Comentário explicando código confuso | **Rename**/**Extract Method** até o código se explicar |
 | **Estado mutável compartilhado** | Beans singleton com campos mutáveis | **Imutabilidade** (records, `final`), estado no escopo da chamada |
 | **Mensagens de erro/regra espalhadas** | Strings de mensagem duplicadas | **Centralizar** na exception/VO |
