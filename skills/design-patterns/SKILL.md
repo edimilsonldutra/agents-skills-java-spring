@@ -1,6 +1,6 @@
 ---
 name: design-patterns
-description: Padrões de projeto (os 23 do GoF e os corporativos) aplicados a Spring Boot e Java 25 no padrão do pacote — princípios do catálogo e causas de reprojeto, Strategy, Factory, Template Method, Adapter, Decorator e Proxy (AOP, @Transactional, auto-invocação), Observer com eventos do Spring, Builder, Singleton e beans sem estado, Chain of Responsibility (filtros), State com enum/sealed, Facade, Command, Composite, Mediator, Visitor como switch sobre sealed, Factory Method × Abstract Factory, o que o Java já resolve (Iterator, Flyweight, Prototype), Specification para filtros dinâmicos, Repository e DTO — com onde o próprio Spring já os usa, quando usar, quando não usar e como testar. Use ao escolher como estruturar uma solução recorrente, ao revisar design ou quando alguém propuser um padrão.
+description: Padrões de projeto (23 do GoF e corporativos) no Java 25 e Spring Boot — causas de reprojeto, Strategy, regra generalizada, Factory, Adapter, Proxy/AOP (auto-invocação em @Transactional), Observer (eventos), State, Command, Composite, Visitor como switch sobre sealed e Specification, indicando quando usar e quando evitar. Use ao escolher como estruturar uma solução recorrente, revisar design ou avaliar um padrão proposto. Não use para passos mecânicos de refatoração (refactoring).
 ---
 
 Antes de aplicar este pattern, leia também [`../solid/SKILL.md`](../solid/SKILL.md) (os princípios por trás dos padrões), [`../code-organization/SKILL.md`](../code-organization/SKILL.md) e [`../code-style/SKILL.md`](../code-style/SKILL.md). Mudar código existente: [`../refactoring/SKILL.md`](../refactoring/SKILL.md). Padrões de arquitetura distribuída: [`../microservices/SKILL.md`](../microservices/SKILL.md) e as skills citadas na seção 4.
@@ -113,8 +113,11 @@ Converte a interface de um sistema externo para o modelo do seu domínio, para q
 @Component
 public class CatalogClientAdapter implements BookCatalog {
 
-    @Autowired
-    private CatalogHttpClient client;
+    private final CatalogHttpClient client;
+
+    public CatalogClientAdapter(CatalogHttpClient client) {
+        this.client = client;
+    }
 
     @Override
     public Optional<BookInfo> findByIsbn(String isbn) {
@@ -273,8 +276,11 @@ public record ReturnLoan(Long loanId, LocalDate returnedOn) implements LoanComma
 @Service
 public class LoanCommandHandler {
 
-    @Autowired
-    private LoanService service;
+    private final LoanService service;
+
+    public LoanCommandHandler(LoanService service) {
+        this.service = service;
+    }
 
     public LoanDTO handle(LoanCommand command) {
         return switch (command) {

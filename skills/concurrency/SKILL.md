@@ -1,6 +1,6 @@
 ---
 name: concurrency
-description: Concorrência dentro da aplicação Spring Boot 4 / Java 25 — bean singleton thread-safe (campo mutável, SimpleDateFormat e HashMap compartilhados), coleções concorrentes e atômicos (ConcurrentHashMap.computeIfAbsent/merge, LongAdder), locks (synchronized, ReentrantLock com tryLock, ReadWriteLock, ordem de aquisição) e por que lock em memória não vale com várias réplicas, @Async e TaskExecutor (fila limitada, rejeição, shutdown, propagação de contexto, exceptions perdidas), CompletableFuture e scatter-gather com executor próprio e timeouts, Semaphore com virtual threads, InterruptedException, parallel streams e quando não usar, produtor-consumidor em memória × broker e testes de concorrência. Use ao escrever ou revisar código que roda em mais de uma thread ou guarda estado em bean. Não use para ligar virtual threads ou Scoped Values (java-modern-features), diagnóstico com thread dump (jvm-performance), concorrência no banco (data-modeling) nem circuit breaker e bulkhead (resilience).
+description: Concorrência na aplicação Spring Boot 4 / Java 25 — beans singleton sem estado mutável, ConcurrentHashMap atômico, locks locais vs múltiplas réplicas, @Async e TaskExecutor (fila limitada, shutdown, propagação de contexto), CompletableFuture com executor e timeout, Semaphore com virtual threads e testes de corrida. Use ao escrever ou revisar código multi-thread ou estado em bean. Não use para ligar virtual threads (java-modern-features), thread dump (jvm-performance), locks no banco (data-modeling) nem circuit breaker (resilience).
 ---
 
 Antes de aplicar este pattern, leia também [`../code-organization/SKILL.md`](../code-organization/SKILL.md), [`../code-style/SKILL.md`](../code-style/SKILL.md), [`../java-modern-features/SKILL.md`](../java-modern-features/SKILL.md) (virtual threads, Scoped Values, concorrência estruturada), [`../jvm-performance/SKILL.md`](../jvm-performance/SKILL.md) (pools, timeouts e diagnóstico) e [`../resilience/SKILL.md`](../resilience/SKILL.md) (bulkhead, timeouts e fallback). Nomes de classes e properties do Spring mudam entre versões: confirme na versão resolvida com [`../library-docs/SKILL.md`](../library-docs/SKILL.md).
@@ -140,18 +140,21 @@ Montar a página de um livro chamando três serviços **em paralelo**, com prazo
 @Service
 public class BookPageService {
 
-    @Autowired
-    private CatalogClient catalogClient;
+    private final CatalogClient catalogClient;
+    private final ReviewClient reviewClient;
+    private final LendingClient lendingClient;
+    private final Executor executor;
 
-    @Autowired
-    private ReviewClient reviewClient;
-
-    @Autowired
-    private LendingClient lendingClient;
-
-    @Autowired
-    @Qualifier("integrationExecutor")
-    private Executor executor;
+    public BookPageService(
+            CatalogClient catalogClient,
+            ReviewClient reviewClient,
+            LendingClient lendingClient,
+            @Qualifier("integrationExecutor") Executor executor) {
+        this.catalogClient = catalogClient;
+        this.reviewClient = reviewClient;
+        this.lendingClient = lendingClient;
+        this.executor = executor;
+    }
 
     public BookPageDTO findPage(Long bookId) {
         var book = CompletableFuture.supplyAsync(() -> catalogClient.findBook(bookId), executor)

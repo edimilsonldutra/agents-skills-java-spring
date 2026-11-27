@@ -34,6 +34,37 @@ S='[[:space:]]+'
 B='(^|[^[:alnum:]_./-])'   # início de palavra de comando (evita "faz " casar com "az ")
 E='([^[:alnum:]_-]|$)'     # fim de palavra
 
+# Escopo do Bash por papel: agents cujo Bash é somente leitura (ou restrito a rodar testes)
+# não podem gravar, mover ou editar arquivos pelo shell para contornar o guard-edits.
+case "$(json_string agent_type)" in
+  orchestrator|*:orchestrator|product-manager|*:product-manager|architect|*:architect|tech-lead|*:tech-lead|code-reviewer|*:code-reviewer|qa|*:qa)
+    agent_write_patterns=(
+      "${B}(sed|gsed|perl)${S}[^;&|]*-[[:alpha:]]*i"
+      "${B}(tee|mv|cp|install|touch|truncate|dd|patch)${S}"
+      "${B}(Set-Content|Add-Content|Out-File|New-Item|Copy-Item|Move-Item|Rename-Item)${E}"
+      "${B}git(${S}(-[[:alpha:]]|--[[:alnum:]-]+)(${S}[^-[:space:];&|][^;&|]*)?)*${S}(apply|am|cherry-pick|revert|stash${S}(pop|apply))${E}"
+      "${B}(python3?|py|node|ruby)${S}[^;&|]*-c${S}"
+    )
+    for wp in "${agent_write_patterns[@]}"; do
+      if [[ $command =~ $wp ]]; then
+        hit=${BASH_REMATCH[0]//\"/}
+        hit=${hit//\\/}
+        hit=${hit:0:60}
+        printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"ask","permissionDecisionReason":"squads guardrail: escrita ou alteração via Bash fora do escopo do agent (%s) — confirme antes de executar."}}\n' "$hit"
+        exit 0
+      fi
+    done
+    if [[ $command == *'>'* ]]; then
+      stripped=$(printf '%s' "$command" | sed -E "s/'[^']*'/Q/g; s/\"([^\"]|\\\\.)*\"/Q/g; s/[0-9]*>&[0-9]+//g; s/[0-9]*&?>>?[[:space:]]*(\/dev\/null|NUL|nul)([^[:alnum:]_./-]|$)/ /g")
+      redir_re='(^|[^-=>])[0-9]*>>?[[:space:]]*[^[:space:]&|;]'
+      if [[ $stripped =~ $redir_re ]]; then
+        printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"ask","permissionDecisionReason":"squads guardrail: redirecionamento de escrita em arquivo via Bash fora do escopo do agent — confirme antes de executar."}}\n'
+        exit 0
+      fi
+    fi
+    ;;
+esac
+
 patterns=(
   # Git: publica, reescreve histórico ou descarta trabalho
   "${B}git(${S}(-[[:alpha:]]|--[[:alnum:]-]+)(${S}[^-[:space:];&|][^;&|]*)?)*${S}push${E}"

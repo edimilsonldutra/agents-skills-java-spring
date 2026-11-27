@@ -54,7 +54,18 @@ spring:
 
 Importante para autoscaling e rollouts rápidos.
 - **Lazy initialization** (`spring.main.lazy-initialization=true`) acelera o start, mas **esconde erros de configuração até a primeira request** e piora a latência da primeira chamada — evite em produção com probes; ok em dev/teste.
-- **Cache AOT (Java 25, JEPs 483/514/515):** reduz drasticamente o tempo de start e o warm-up. **Gere o cache no build da imagem** (não em `/tmp` em runtime, que some a cada restart do pod): execute um *training run* no `Dockerfile` (`java -XX:AOTCacheOutput=app.aot -Dspring.context.exit=onRefresh -jar app.jar`) e consuma-o em produção (`java -XX:AOTCache=app.aot -XX:MaxRAMPercentage=75 -jar app.jar`). Confirme os pré-requisitos do Spring Boot AOT/CDS na versão resolvida (`library-docs`).
+- **Cache AOT do Project Leyden (Java 25, JEPs 483/514/515) + Spring Boot AOT:** corta 40–65% do tempo de start e do warm-up da JIT sem as restrições de GraalVM Native Image. Dois requisitos obrigatórios para funcionar em container:
+  1. **Extraia o fat JAR** (`java -Djarmode=tools -jar app.jar extract --destination application`): o AOT/CDS exige classpath previsível e mesmo layout entre treino e produção; rodar direto sobre o fat JAR desperdiça o cache das bibliotecas.
+  2. **Gere o `.aot` no build da imagem (`Dockerfile` multi-stage)**, nunca em `/tmp` no boot do pod:
+     ```dockerfile
+     # no estágio runtime (mesmo JRE 25 e mesma arquitetura da produção):
+     RUN java -XX:AOTCacheOutput=app.aot \
+              -Dspring.aot.enabled=true \
+              -Dspring.context.exit=onRefresh \
+              -jar application/app.jar
+     ENTRYPOINT ["java", "-XX:AOTCache=app.aot", "-Dspring.aot.enabled=true", "-XX:MaxRAMPercentage=75", "-jar", "application/app.jar"]
+     ```
+     No treino, desligue conexões reais que não existem durante o `docker build` (profile `aot` sem Flyway/broker ativo ou mocks de conexão) e habilite o processamento AOT do plugin (`process-aot` no `spring-boot-maven-plugin` — confirme flags exatas na versão resolvida com `library-docs`). Em JDK 24 (pré-JEP 514), o treino usa dois passos (`-XX:AOTMode=record -XX:AOTConfiguration=app.aotconf` seguido de `-XX:AOTMode=create`).
 - **Menos beans, menos autoconfiguration**: exclua o que não usa; `spring-boot-starter-*` demais carrega classes inúteis.
 - **Flyway** com muitas migrations aumenta o start — Job separado (`kubernetes`) se for grande.
 - **GraalVM native image** reduz drasticamente start e memória (ordem de dezenas de ms), ao custo de build lento, menos dinâmica (reflection/proxies precisam de hints), e pior throughput de pico que a JIT. Só vale para cenários específicos (serverless/scale-to-zero); não é o default do pack.

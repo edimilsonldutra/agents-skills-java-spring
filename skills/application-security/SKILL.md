@@ -40,7 +40,7 @@ public LoanDTO findById(Long id) {
     var userId = currentUser.id();
     var entity = repository.findByIdAndUserId(id, userId)
         .orElseThrow(() -> new ResourceNotFoundException("No records found for this ID!"));
-    return parseObject(entity, LoanDTO.class);
+    return mapper.toDto(entity);
 }
 ```
 - **Filtre pelo dono na query** (`findByIdAndUserId`), não carregue tudo e confira depois — esquecer o "confira depois" em um método é o bug.

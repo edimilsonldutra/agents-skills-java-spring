@@ -1,6 +1,6 @@
 ---
 name: spring-data-jpa
-description: Persistência com Spring Data JPA e Hibernate 7 no padrão do pacote — entities sem Lombok, relationships e fetch, transactions e N+1, repositories com queries custom e modifying, DTOs, mapper Dozer ou MapStruct e testes de repository contra banco real. Use quando criar um CRUD, uma entity ou um repository, ou investigar LazyInitializationException e N+1.
+description: Persistência com Spring Data JPA e Hibernate 7 no padrão do pacote — entities sem Lombok, relationships e fetch, transactions e N+1, repositories com queries custom e modifying, DTOs, mapper MapStruct ou Dozer e testes de repository contra banco real. Use quando criar um CRUD, uma entity ou um repository, ou investigar LazyInitializationException e N+1.
 ---
 
 Antes de aplicar este pattern, leia também [`../code-organization/SKILL.md`](../code-organization/SKILL.md) e [`../code-style/SKILL.md`](../code-style/SKILL.md) para as preferências do projeto (database, mapper, injection), o package layout base e as convenções de code style. Para decisões de modelagem de dados, consistência (CAP, PACELC, ACID/BASE), níveis de isolamento, normalização, chaves e índices, leia [`../data-modeling/SKILL.md`](../data-modeling/SKILL.md).
@@ -240,21 +240,37 @@ public class BookDTO implements Serializable {
 
 A conversão sempre passa pelo mapper escolhido no Step 0 — nunca no controller, nunca à mão em cinco lugares.
 
-**Dozer (default):** o wrapper `mapper/ObjectMapper` de `code-organization`, importado estaticamente (`import static br.com.edimilsonldutra.mapper.ObjectMapper.parseObject;`) para que nunca colida com o próprio `ObjectMapper` do Jackson.
+**MapStruct (default):** adicione `mapstruct` e o annotation processor `mapstruct-processor` (veja `maven-config`), declare uma interface por par em `mapper/` e injete-a pelo construtor. O MapStruct gera código simples de getter/setter em tempo de compilação (zero reflexão, compatível com os accessors explícitos sem Lombok):
 
+```java
+@Mapper(componentModel = "spring")
+public interface BookMapper {
+
+    BookDTO toDto(Book entity);
+
+    Book toEntity(BookDTO dto);
+
+    List<BookDTO> toDtoList(List<Book> entities);
+}
+```
 ```java
 @Service
 public class BookService {
 
     private static final Logger logger = LoggerFactory.getLogger(BookService.class);
 
-    @Autowired
-    private BookRepository repository;
+    private final BookRepository repository;
+    private final BookMapper mapper;
+
+    public BookService(BookRepository repository, BookMapper mapper) {
+        this.repository = repository;
+        this.mapper = mapper;
+    }
 
     @Transactional(readOnly = true)
     public Page<BookDTO> findAll(Pageable pageable) {
         logger.info("Finding all books!");
-        return repository.findAll(pageable).map(entity -> parseObject(entity, BookDTO.class));
+        return repository.findAll(pageable).map(mapper::toDto);
     }
 
     @Transactional(readOnly = true)
@@ -262,15 +278,15 @@ public class BookService {
         logger.info("Finding one book!");
         var entity = repository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("No records found for this ID!"));
-        return parseObject(entity, BookDTO.class);
+        return mapper.toDto(entity);
     }
 
     @Transactional
     public BookDTO create(BookDTO book) {
         if (book == null) throw new RequiredObjectIsNullException();
         logger.info("Creating one book!");
-        var entity = parseObject(book, Book.class);
-        return parseObject(repository.save(entity), BookDTO.class);
+        var entity = mapper.toEntity(book);
+        return mapper.toDto(repository.save(entity));
     }
 
     @Transactional
@@ -284,7 +300,7 @@ public class BookService {
         entity.setLaunchDate(book.getLaunchDate());
         entity.setPrice(book.getPrice());
         entity.setTitle(book.getTitle());
-        return parseObject(repository.save(entity), BookDTO.class);
+        return mapper.toDto(repository.save(entity));
     }
 
     @Transactional
@@ -297,21 +313,7 @@ public class BookService {
 }
 ```
 
-**MapStruct (alternativa):** adicione `mapstruct` e o annotation processor `mapstruct-processor` (veja `maven-config`), declare uma interface por par, e injete-a em vez de chamar `parseObject`:
-```java
-@Mapper(componentModel = "spring")
-public interface BookMapper {
-
-    BookDTO toDto(Book entity);
-
-    Book toEntity(BookDTO dto);
-}
-```
-```java
-@Autowired
-private BookMapper mapper;
-```
-O MapStruct gera código simples de getter/setter em tempo de compilação, então funciona com os accessors explícitos que este estilo exige (sem Lombok).
+**Dozer (alternativa legada):** se o projeto escolheu `Dozer` no Step 0, crie um wrapper estático `mapper/ObjectMapper` (`DozerBeanMapperBuilder.buildDefault()`) com `parseObject` e `parseListObjects`, importado estaticamente (`import static br.com.edimilsonldutra.mapper.ObjectMapper.parseObject;`) para não colidir com o `ObjectMapper` do Jackson.
 
 O `update` acima copia os campos um por um de propósito: ele mantém a entity gerenciada e seu `id`, e é explícito sobre o que um client pode alterar.
 

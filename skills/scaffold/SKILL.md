@@ -39,16 +39,17 @@ Regra fixa, espelhando `padrao-frontend:scaffold`: **todo identifier de código 
 
 ## Step 2 — Pergunte: o que adicionar
 
-Tudo abaixo é opcional. Pergunte as seis em uma rodada (`AskUserQuestion`, até quatro por chamada), nesta ordem — fundacional primeiro, polimento por último — e explique logo de início: **todo decorator tem default "yes"**, então "just use the defaults" reproduz um projeto completo pronto para CRUD exatamente como esta skill gerava antes; recuse qualquer um para obter um scaffold menor e mais focado. Recusar as seis deixa a base mínima descrita acima.
+Tudo abaixo é opcional. Pergunte os sete em uma rodada (`AskUserQuestion`, até quatro por chamada), nesta ordem — fundacional primeiro, polimento por último — e explique logo de início: **todo decorator tem default "yes"**, então "just use the defaults" reproduz um projeto completo pronto para CRUD exatamente como esta skill gerava antes; recuse qualquer um para obter um scaffold menor e mais focado. Recusar os sete deixa a base mínima descrita acima.
 
 | # | Decorator | Default | Adiciona | Pergunta(s) aninhada(s), feitas somente se este for "yes" |
 |---|---|---|---|---|
-| 1 | **Persistence** — Spring Data JPA | Yes | Uma entity, repository, DTO, mapper e service — a data layer do exemplo compartilhado abaixo. | Database (**MySQL** / PostgreSQL / SQL Server / Oracle / MariaDB); Entity ↔ DTO mapper (**Dozer** / MapStruct). |
+| 1 | **Persistence** — Spring Data JPA | Yes | Uma entity, repository, DTO, mapper e service — a data layer do exemplo compartilhado abaixo. | Database (**MySQL** / PostgreSQL / SQL Server / Oracle / MariaDB); Entity ↔ DTO mapper (**MapStruct** / Dozer). |
 | 2 | **Flyway migrations** | Yes — perguntado somente se #1 for "yes" | Propriedade do schema via SQL versionado, para que `ddl-auto: none` tenha algo em que se apoiar. | — |
 | 3 | **Exception handling** | Yes | `CustomEntityResponseHandler` + as domain exceptions genéricas. Sem dependency, sem exigir persistence. | — |
 | 4 | **Web config** | Yes | `WebConfig` (CORS). | Somente JSON (**default**) ou também XML e/ou YAML — veja `web-config`. |
 | 5 | **Swagger / OpenAPI** | Yes | Dependency springdoc + `OpenApiConfig`. | Annotations em uma interface `*ControllerDocs` separada (**default**) ou direto no controller — veja a nota de trade-off do `swagger` antes de perguntar. |
 | 6 | **Bean Validation** | Yes | `spring-boot-starter-validation` + o handler de falha de validation. | — |
+| 7 | **Architecture tests (ArchUnit)** | Yes — perguntado somente se #1 for "yes" | `archunit-junit6` + `ArchitectureTest` impondo `controllers → services → repository`, sem `@Entity` exposta em controller e sem Lombok. | — |
 
 **Flyway recusado depois de Persistence aceita** — avise antes de continuar (diga no idioma do desenvolvedor, mantendo o significado):
 
@@ -355,7 +356,7 @@ Aplique os decorators escolhidos no Step 2 **nesta ordem** — os posteriores as
 
 ### 6.1 Persistence — Spring Data JPA
 
-Se escolhido, aplique [`../spring-data-jpa/SKILL.md`](../spring-data-jpa/SKILL.md) para criar o exemplo ilustrativo compartilhado: uma entity, `Book` (`id`, `author`, `title`, `launchDate`, `price`), com seu repository, DTO, o mapper wrapper (Dozer ou MapStruct, conforme o Step 2), um `BookService` e — já que `web` está sempre na base — um `BookController` expondo `/api/book/v1`, seguindo os formatos exatos da seção Code Patterns de `code-organization`. Esta é a fatia que todo decorator abaixo estende.
+Se escolhido, aplique [`../spring-data-jpa/SKILL.md`](../spring-data-jpa/SKILL.md) para criar o exemplo ilustrativo compartilhado: uma entity, `Book` (`id`, `author`, `title`, `launchDate`, `price`), com seu repository, DTO, o mapper (MapStruct por default, ou Dozer conforme o Step 2), um `BookService` e — já que `web` está sempre na base — um `BookController` expondo `/api/book/v1`, seguindo os formatos exatos da seção Code Patterns de `code-organization`. Esta é a fatia que todo decorator abaixo estende.
 
 Se recusado, pule este step; ainda não há entity, DTO, service ou controller no projeto.
 
@@ -384,6 +385,43 @@ Sem 6.1, o Swagger UI ainda sobe — com uma superfície de API vazia, o que é 
 ### 6.6 Bean Validation
 
 Se escolhido, aplique [`../bean-validation/SKILL.md`](../bean-validation/SKILL.md) para a dependency `spring-boot-starter-validation` e os handlers de `MethodArgumentNotValidException` e `HandlerMethodValidationException`. Se 6.1 também está presente, adicione constraints ao `BookDTO` (`@NotBlank` em `author`/`title`, `@NotNull @PastOrPresent` em `launchDate`, `@NotNull @Positive` em `price`) e `@Valid` nos endpoints `create` e `update` — **atenção:** se 6.5 escolheu a interface `*ControllerDocs` (default), coloque `@Valid` e constraints de parâmetro **na interface `BookControllerDocs`**, nunca no override do `BookController`, senão o Hibernate Validator falha o controller inteiro com HTTP 500 (`HV000151`).
+
+### 6.7 Architecture tests (ArchUnit)
+
+Se escolhido (quando 6.1 também foi escolhido), adicione `com.tngtech.archunit:archunit-junit6` (`${archunit.version}`, escopo `test` — resolva a versão atual no Maven Central via `maven-config`) e crie `src/test/java/<package path>/ArchitectureTest.java` garantindo no build as invariantes do layout flat-by-layer:
+
+```java
+package {package};
+
+import com.tngtech.archunit.core.importer.ImportOption;
+import com.tngtech.archunit.junit.AnalyzeClasses;
+import com.tngtech.archunit.junit.ArchTest;
+import com.tngtech.archunit.lang.ArchRule;
+import jakarta.persistence.Entity;
+
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
+
+@AnalyzeClasses(packages = "{package}", importOptions = ImportOption.DoNotIncludeTests.class)
+class ArchitectureTest {
+
+    @ArchTest
+    static final ArchRule controllersDoNotAccessRepositories = noClasses()
+            .that().resideInAPackage("..controllers..")
+            .should().dependOnClassesThat().resideInAPackage("..repository..");
+
+    @ArchTest
+    static final ArchRule controllersNeverExposeEntities = methods()
+            .that().areDeclaredInClassesThat().resideInAPackage("..controllers..")
+            .and().arePublic()
+            .should().notHaveRawReturnType(Entity.class)
+            .andShould().notBeAnnotatedWith(Entity.class);
+
+    @ArchTest
+    static final ArchRule noLombokAnywhere = noClasses()
+            .should().dependOnClassesThat().resideInAPackage("lombok..");
+}
+```
 
 ---
 
@@ -424,6 +462,7 @@ Depois `./mvnw spring-boot:run` (Gradle: `./gradlew bootRun`). **Sem Persistence
 - Web config (CORS/content negotiation): yes, JSON only
 - Swagger/OpenAPI: yes
 - Bean Validation: yes
+- Architecture tests (ArchUnit): yes
 ```
    Um projeto Gradle diz `Gradle (Groovy DSL)` ou `Gradle (Kotlin DSL)`; uma versão não-LTS diz `26 (non-LTS)`; um decorator recusado diz `no`.
 2. **Feche com um checklist preenchido com os valores reais** — nunca placeholders genéricos: o que foi criado (liste os arquivos); o comando exato para build, para testar e para executar; se Persistence foi escolhida, o database que a aplicação espera (URL, user, a variável `DB_PASSWORD`) e como iniciar um. Liste **somente os decorators que foram recusados** como próximos passos — por exemplo, se o Swagger foi pulado: "execute `swagger` sempre que quiser documentação da API"; se tudo foi escolhido, diga isso e aponte para `project-claude-md` para fechar.
@@ -440,7 +479,7 @@ O Initializr fica inacessível atrás de alguns proxies corporativos. **Maven:**
 ## Regras principais
 
 - A application class é `Startup`, o teste é `StartupTests` — sempre. Nunca deixe uma `<Artifact>Application` para trás, e delete todo teste gerado que ainda aponte para ela.
-- **Nada além da base é adicionado a não ser que o desenvolvedor tenha escolhido no Step 2.** Seis decorators independentes, cada um com default "yes" para que "use the defaults" reproduza um projeto completo — mas um desenvolvedor que recusa os seis recebe exatamente `Startup` mais uma web layer vazia.
+- **Nada além da base é adicionado a não ser que o desenvolvedor tenha escolhido no Step 2.** Sete decorators independentes, cada um com default "yes" para que "use the defaults" reproduza um projeto completo — mas um desenvolvedor que recusa os sete recebe exatamente `Startup` mais uma web layer vazia.
 - Persistence é o que cria o exemplo compartilhado `Book`; todo outro decorator estende esse mesmo exemplo quando ele existe, e conecta somente infraestrutura genérica e funcional quando não existe.
 - O Flyway só pode ser perguntado se Persistence foi escolhida; recusá-lo depois de aceitar Persistence exige primeiro o aviso de propriedade do schema.
 - Identifiers são sempre em inglês; o texto voltado ao usuário (mensagens de validation/exception, texto do Swagger) segue o idioma escolhido no Step 1 — veja `bean-validation`, `exception-handling` e `swagger` para exatamente quais strings isso cobre.

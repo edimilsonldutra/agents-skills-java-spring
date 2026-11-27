@@ -16,7 +16,7 @@ Crie ou atualize o CLAUDE.md deste projeto com as preferências abaixo, lendo o 
 - Build tool: <Maven | Gradle>
 - Java version: <25 (LTS) | ...>
 - Configuration file: <YAML | properties>
-- Entity/DTO mapping: <Dozer | MapStruct>
+- Entity/DTO mapping: <MapStruct | Dozer>
 - Dependency injection: <constructor | field>
 - User-facing text language: <English | Portuguese>
 - Model profile: <auto | economico | equilibrado | qualidade-maxima>

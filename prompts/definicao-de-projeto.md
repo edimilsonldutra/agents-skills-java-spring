@@ -39,7 +39,7 @@ Projeto médio ou grande, com dados pessoais ou integrações: no passo 3, peça
 - Injeção de dependência: <construtor | field>
 - Persistência (Spring Data JPA): <sim | não>
   - Banco: <MySQL | PostgreSQL | SQL Server | Oracle | MariaDB>
-  - Mapeamento entity/DTO: <Dozer | MapStruct>
+  - Mapeamento entity/DTO: <MapStruct | Dozer>
   - Flyway: <sim | não>
 - Exception handling (`ExceptionResponse`): <sim | não>
 - Web config (CORS e formatos): <só JSON | JSON + XML | JSON + YAML | JSON + XML + YAML>

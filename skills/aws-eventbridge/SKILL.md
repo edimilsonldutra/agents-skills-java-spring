@@ -53,11 +53,15 @@ public class EventBridgeEventPublisher implements EventPublisher {
 
     private static final Logger logger = LoggerFactory.getLogger(EventBridgeEventPublisher.class);
 
-    @Autowired
-    private EventBridgeClient client;
+    private final EventBridgeClient client;
+    private final String eventBus;
 
-    @Value("${app.aws.eventbus}")
-    private String eventBus;
+    public EventBridgeEventPublisher(
+            EventBridgeClient client,
+            @Value("${app.aws.eventbus}") String eventBus) {
+        this.client = client;
+        this.eventBus = eventBus;
+    }
 
     @Override
     public void publish(String key, String eventType, String eventId, String payload) {

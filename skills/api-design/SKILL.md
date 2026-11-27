@@ -1,6 +1,6 @@
 ---
 name: api-design
-description: Desenho de APIs REST por padrões no Spring Boot 4 — visibilidade e tipo de integração como decisão (pública, de parceiros, interna; frontend × backend), papéis de endpoint (processamento, dado operacional, mestre e de referência, link lookup, transferência de dados), responsabilidades de operação (criação, consulta, transição de estado, função de cálculo), estrutura de mensagens e papéis dos elementos (dado, metadado, id, link, contexto), entidade embutida × link, campos escolhidos pelo cliente, request bundle, requisição condicional (ETag, If-None-Match → 304, If-Match → 412/428), garantias de ciclo de vida e checklist de revisão. Use antes de criar endpoints além do CRUD, ao modelar uma API pública ou entre serviços, ou ao revisar um contrato. Não use para a mecânica de versão (api-versioning), paginação (pagination), links HAL (hateoas) nem OpenAPI (swagger, swagger-advanced).
+description: Desenho de APIs REST além do CRUD no Spring Boot 4 — visibilidade (pública, parceiros, interna), papéis de endpoint, transição de estado como ação, entidade embutida vs link, request/response separados, concorrência otimista com ETag/If-Match (304, 412, 428) e garantias de ciclo de vida. Use antes de criar endpoints além do CRUD, modelar API pública/entre serviços ou revisar um contrato. Não use para mecânica de versão (api-versioning), paginação (pagination), links HAL (hateoas) nem OpenAPI (swagger, swagger-advanced).
 ---
 
 Antes de aplicar este pattern, leia também [`../code-organization/SKILL.md`](../code-organization/SKILL.md) (controller, DTO e service do pacote), [`../code-style/SKILL.md`](../code-style/SKILL.md), [`../exception-handling/SKILL.md`](../exception-handling/SKILL.md) (status de erro), [`../api-versioning/SKILL.md`](../api-versioning/SKILL.md), [`../pagination/SKILL.md`](../pagination/SKILL.md), [`../idempotency/SKILL.md`](../idempotency/SKILL.md) e [`../application-security/SKILL.md`](../application-security/SKILL.md). Domínio rico por trás da API: [`../ddd-hexagonal/SKILL.md`](../ddd-hexagonal/SKILL.md).
@@ -71,7 +71,7 @@ public LoanDTO renew(Long id) {
     var loan = repository.findById(id)
         .orElseThrow(() -> new ResourceNotFoundException("No records found for this ID!"));
     loan.renew(clock);
-    return parseObject(repository.save(loan), LoanDTO.class);
+    return mapper.toDto(repository.save(loan));
 }
 ```
 A regra mora no domínio (`loan.renew(clock)` — `ddd-hexagonal`, ou no service no flat-by-layer); transição inválida lança uma exception de domínio mapeada para **409 Conflict** (`exception-handling`). Cada ação vira um teste e uma linha no OpenAPI, e o `hateoas` pode anunciar só as ações possíveis no estado atual. Ação que o cliente pode repetir por timeout precisa de `Idempotency-Key` (`idempotency`).
@@ -177,7 +177,7 @@ public BookDTO update(Long id, Long expectedVersion, BookDTO book) {
     if (!entity.getVersion().equals(expectedVersion)) throw new PreconditionFailedException();
     entity.setTitle(book.getTitle());
     entity.setPrice(book.getPrice());
-    return parseObject(repository.save(entity), BookDTO.class);
+    return mapper.toDto(repository.save(entity));
 }
 ```
 - `PreconditionFailedException` → **412 Precondition Failed** (a versão mudou: o cliente relê e reaplica); `PreconditionRequiredException` → **428 Precondition Required** (a API exige `If-Match`). Ambas como as outras exceptions de domínio, com `@ResponseStatus` e handler (`exception-handling`).

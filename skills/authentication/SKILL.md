@@ -160,23 +160,20 @@ public class JwtTokenProvider {
 
     private static final Logger logger = LoggerFactory.getLogger(JwtTokenProvider.class);
 
-    @Value("${security.jwt.token.secret-key}")
-    private String secretKey;
+    private final long accessValidity;
+    private final long refreshValidity;
+    private final UserDetailsService userDetailsService;
+    private final Algorithm algorithm;
 
-    @Value("${security.jwt.token.expire-length}")
-    private long accessValidity;
-
-    @Value("${security.jwt.token.refresh-length}")
-    private long refreshValidity;
-
-    @Autowired
-    private UserDetailsService userDetailsService;
-
-    private Algorithm algorithm;
-
-    @PostConstruct
-    void init() {
-        algorithm = Algorithm.HMAC256(secretKey.getBytes(StandardCharsets.UTF_8));
+    public JwtTokenProvider(
+            @Value("${security.jwt.token.secret-key}") String secretKey,
+            @Value("${security.jwt.token.expire-length}") long accessValidity,
+            @Value("${security.jwt.token.refresh-length}") long refreshValidity,
+            UserDetailsService userDetailsService) {
+        this.accessValidity = accessValidity;
+        this.refreshValidity = refreshValidity;
+        this.userDetailsService = userDetailsService;
+        this.algorithm = Algorithm.HMAC256(secretKey.getBytes(StandardCharsets.UTF_8));
     }
 
     public TokenDTO createTokens(String username, List<String> roles) {
@@ -256,7 +253,7 @@ public class JwtTokenFilter extends OncePerRequestFilter {
     }
 }
 ```
-**Armadilha do filter registrado duas vezes.** O filter **não** leva `@Component`: o Spring Boot registraria automaticamente todo bean `Filter` na chain do servlet **além** da security chain, e ele rodaria duas vezes por request. Como não é bean, a injection é por constructor (a exceção justificada à preferência de field injection) e a instância é criada no `SecurityConfig`.
+**Armadilha do filter registrado duas vezes.** O filter **não** leva `@Component`: o Spring Boot registraria automaticamente todo bean `Filter` na chain do servlet **além** da security chain, e ele rodaria duas vezes por request. A instância é criada diretamente no `SecurityConfig` recebendo o `JwtTokenProvider` pelo construtor.
 
 ---
 
@@ -270,8 +267,11 @@ Spring Security 7: configuração **somente em lambda DSL** (`and()` e a configu
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    @Autowired
-    private JwtTokenProvider tokenProvider;
+    private final JwtTokenProvider tokenProvider;
+
+    public SecurityConfig(JwtTokenProvider tokenProvider) {
+        this.tokenProvider = tokenProvider;
+    }
 
     @Bean
     PasswordEncoder passwordEncoder() {
@@ -329,14 +329,18 @@ Como `Permission#getAuthority` devolve a `description` crua, use `hasAuthority('
 @Service
 public class AuthService {
 
-    @Autowired
-    private AuthenticationManager authenticationManager;
+    private final AuthenticationManager authenticationManager;
+    private final JwtTokenProvider tokenProvider;
+    private final UserRepository repository;
 
-    @Autowired
-    private JwtTokenProvider tokenProvider;
-
-    @Autowired
-    private UserRepository repository;
+    public AuthService(
+            AuthenticationManager authenticationManager,
+            JwtTokenProvider tokenProvider,
+            UserRepository repository) {
+        this.authenticationManager = authenticationManager;
+        this.tokenProvider = tokenProvider;
+        this.repository = repository;
+    }
 
     public TokenDTO signIn(AccountCredentialsDTO credentials) {
         var authentication = authenticationManager.authenticate(
@@ -354,8 +358,11 @@ public class AuthService {
 @Tag(name = "Authentication", description = "Endpoints for authentication")
 public class AuthController {
 
-    @Autowired
-    private AuthService service;
+    private final AuthService service;
+
+    public AuthController(AuthService service) {
+        this.service = service;
+    }
 
     @PostMapping("/signin")
     public ResponseEntity<TokenDTO> signIn(@RequestBody AccountCredentialsDTO credentials) {

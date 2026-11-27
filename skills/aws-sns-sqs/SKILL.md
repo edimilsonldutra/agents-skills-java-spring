@@ -104,11 +104,15 @@ A `Condition` restringe ao **seu** topic (evita o *confused deputy*). Se o topic
 @Component
 public class BookEventPublisher {
 
-    @Autowired
-    private SnsTemplate snsTemplate;
+    private final SnsTemplate snsTemplate;
+    private final String topic;
 
-    @Value("${app.aws.sns.topic}")
-    private String topic;
+    public BookEventPublisher(
+            SnsTemplate snsTemplate,
+            @Value("${app.aws.sns.topic}") String topic) {
+        this.snsTemplate = snsTemplate;
+        this.topic = topic;
+    }
 
     public void bookCreated(BookCreatedEvent event) {
         var notification = SnsNotification.builder(event)
@@ -140,8 +144,11 @@ public class BookEventListener {
 
     private static final Logger logger = LoggerFactory.getLogger(BookEventListener.class);
 
-    @Autowired
-    private BookIndexService service;
+    private final BookIndexService service;
+
+    public BookEventListener(BookIndexService service) {
+        this.service = service;
+    }
 
     @SqsListener("${app.aws.sqs.queue}")
     public void onBookEvent(BookCreatedEvent event, @Header("eventId") String eventId) {

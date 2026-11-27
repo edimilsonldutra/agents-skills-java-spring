@@ -256,7 +256,7 @@ public class LoanService implements StartLoanUseCase, ReturnBookUseCase {
     }
 }
 ```
-- **Constructor injection** aqui (campos `final`): o núcleo precisa ser **instanciado em teste sem Spring** (`new LoanService(fakeRepo, ...)`). **Isto é uma exceção justificada** à preferência "field `@Autowired`" do pack para este estilo arquitetural — registre-a no `CLAUDE.md` (`project-claude-md`).
+- **Constructor injection** aqui (campos `final`), alinhada ao padrão do pacote: o núcleo é **instanciado em teste sem Spring** (`new LoanService(fakeRepo, ...)`), sem reflexão nem container.
 - **Chamada externa fora da transaction:** `catalog.isAvailable(bookId)` (HTTP) roda **antes** do `TransactionTemplate` (ou em um coordenador não transacional), nunca dentro de `@Transactional` — segurar conexão do banco esperando rede esgota o pool (`service-communication`, `jvm-performance`). Quando o use case só toca o banco local, `@Transactional` direto no método basta.
 - O **use case** orquestra: carrega o aggregate, chama o método de **negócio**, persiste, publica eventos. **A regra mora no domínio**, não aqui; o service fica **fino**.
 - **`@Transactional` no use case** (fronteira de transaction — `spring-data-jpa`), nunca no controller nem no domínio. Uma transaction = um aggregate.
@@ -312,7 +312,7 @@ public class LoanPersistenceAdapter implements LoanRepository {
 
 ### O custo do mapeamento — e a variante pragmática
 
-Manter **dois modelos** (domínio puro + entity JPA) dá independência total, mas exige **mapear** (Dozer/MapStruct/à mão — `spring-data-jpa`) e custa código. Duas escolhas honestas:
+Manter **dois modelos** (domínio puro + entity JPA) dá independência total, mas exige **mapear** (MapStruct/à mão — `spring-data-jpa`) e custa código. Duas escolhas honestas:
 1. **Hexagonal "pura":** domínio sem nenhuma annotation; `LoanJpaEntity` separada no adapter. Máxima proteção; mais código. Para domínios complexos e longevos.
 2. **Hexagonal pragmática:** as **annotations JPA ficam no próprio aggregate** (aceitando o acoplamento ao `jakarta.persistence`), sem mapeamento. Menos código, o domínio ainda não depende de Spring/web/mensageria. **Documente a escolha** (ADR) e o ArchUnit abaixo adapta a regra (`jakarta.persistence` permitido).
 **Em ambos** continua valendo: **a entity/aggregate nunca é exposta pelo controller** (DTO de borda), **sem Lombok**, e `equals/hashCode` por identidade.
@@ -428,7 +428,7 @@ Pedido de **revisão** ("está bom?") → só diagnostique e pergunte antes de r
 - Domain events no passado, coletados no aggregate e publicados **após o commit** via **outbox**; separe evento de **domínio** de evento de **integração**.
 - **Regra de dependência para dentro**: `domain` puro → `application` (use cases, `@Transactional`) → `adapters`; repository é **port** do domínio.
 - Controller fino; **DTO de borda** (aggregate/entity nunca exposta); exceptions de domínio traduzidas no adapter web.
-- Constructor injection **justificada** neste estilo (núcleo testável sem Spring) — registre no `CLAUDE.md`; decida **pura × pragmática** (JPA no domínio) em ADR.
+- Constructor injection sem framework no núcleo (testável com `new` e fakes sem Spring); decida **pura × pragmática** (JPA no domínio) em ADR.
 - **Limite parcial** (pular o último passo, limite unidimensional, fachada) quando a fronteira completa ainda não se paga, registrado em ADR.
 - **ArchUnit** impõe a regra de dependência no build; domínio testado sem Spring, use cases com fakes.
 - **Sem Lombok** — deliberado.

@@ -1,6 +1,6 @@
 ---
 name: testing
-description: Unit tests e slice tests no Spring Boot 4 — service com JUnit 5, Mockito e AssertJ (sem Spring), controller com @WebMvcTest, MockMvc e @MockitoBean, @ParameterizedTest, ArgumentCaptor, naming Given-When-Then e o que testar ou não. Use quando escrever testes de service ou de controller. Não use para testes contra banco real ou a aplicação rodando (integration-testing) nem para cobertura (test-coverage).
+description: Unit tests e slice tests no Spring Boot 4 — service com JUnit 6 (Jupiter), Mockito e AssertJ (sem Spring), controller com @WebMvcTest, MockMvc e @MockitoBean, @ParameterizedTest, ArgumentCaptor, naming Given-When-Then e o que testar ou não. Use quando escrever testes de service ou de controller. Não use para testes contra banco real ou a aplicação rodando (integration-testing) nem para cobertura (test-coverage).
 ---
 
 Antes de aplicar este pattern, leia também [`../code-organization/SKILL.md`](../code-organization/SKILL.md) e [`../code-style/SKILL.md`](../code-style/SKILL.md) para as preferências do projeto, o package layout base e as convenções de code style.
@@ -29,7 +29,7 @@ No Boot 4 as annotations de slice mudaram de package junto com os starters (`@We
 
 ## Unit test de service (o teste mais comum)
 
-`@ExtendWith(MockitoExtension.class)`, sem `@SpringBootTest`. `@Mock` para as dependencies externas (repository), `@InjectMocks` para a classe sob teste — funciona com injection por field ou por constructor. O mapper (Dozer) é uma classe estática simples: use o real, não faça mock.
+`@ExtendWith(MockitoExtension.class)`, sem `@SpringBootTest`. `@Mock` para as dependencies externas (repository) e o mapper real gerado pelo MapStruct (`Mappers.getMapper(BookMapper.class)`, sem mockar código gerado sem I/O — em legado com Dozer, o wrapper estático real também roda sem mock), instanciando o service no `@BeforeEach` (ou com `@Spy` + `@InjectMocks`):
 
 ```java
 @ExtendWith(MockitoExtension.class)
@@ -38,8 +38,14 @@ class BookServiceTest {
     @Mock
     private BookRepository repository;
 
-    @InjectMocks
+    private final BookMapper mapper = Mappers.getMapper(BookMapper.class);
+
     private BookService service;
+
+    @BeforeEach
+    void setUp() {
+        service = new BookService(repository, mapper);
+    }
 
     @Test
     void findByIdReturnsTheBookWhenItExists() {

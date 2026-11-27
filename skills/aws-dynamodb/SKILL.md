@@ -184,7 +184,6 @@ public class BookRepository {
     }
 }
 ```
-(Constructor injection aqui porque o campo `table` é montado no construtor — exceção justificada à preferência de field injection, como em `observability`.)
 - O **nome da tabela vem de configuração** (`app.dynamodb.books-table`), diferente por ambiente (`books-dev`, `books-prod`).
 - `getItem` devolve `null` quando não existe → `Optional`; o **service** lança `ResourceNotFoundException` (`exception-handling`).
 - **`createIfAbsent`**: escrita **condicional** — `attribute_not_exists(id)` impede sobrescrever; lança `ConditionalCheckFailedException` (→ 409). É também o jeito de fazer **idempotência** (`messaging`): grave o `eventId` com condição de ausência.

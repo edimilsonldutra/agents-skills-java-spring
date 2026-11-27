@@ -76,11 +76,15 @@ public class EmailSender {
 
     private static final Logger logger = LoggerFactory.getLogger(EmailSender.class);
 
-    @Autowired
-    private JavaMailSender mailSender;
+    private final JavaMailSender mailSender;
+    private final String from;
 
-    @Value("${mail.from}")
-    private String from;
+    public EmailSender(
+            JavaMailSender mailSender,
+            @Value("${mail.from}") String from) {
+        this.mailSender = mailSender;
+        this.from = from;
+    }
 
     public void send(String to, String subject, String htmlBody, List<File> attachments) {
         try {
@@ -118,8 +122,11 @@ public class EmailSender {
 @Component
 public class EmailTemplates {
 
-    @Autowired
-    private SpringTemplateEngine templateEngine;
+    private final SpringTemplateEngine templateEngine;
+
+    public EmailTemplates(SpringTemplateEngine templateEngine) {
+        this.templateEngine = templateEngine;
+    }
 
     public String render(String template, Map<String, Object> variables) {
         var context = new Context(Locale.forLanguageTag("pt-BR"));
@@ -143,20 +150,22 @@ public record UserRegisteredEvent(Long userId, String email, String name) {}
 ```java
 @Transactional
 public UserDTO register(UserDTO user) {
-    var saved = repository.save(parseObject(user, User.class));
+    var saved = repository.save(mapper.toEntity(user));
     publisher.publishEvent(new UserRegisteredEvent(saved.getId(), saved.getEmail(), saved.getName()));
-    return parseObject(saved, UserDTO.class);
+    return mapper.toDto(saved);
 }
 ```
 ```java
 @Component
 public class WelcomeEmailListener {
 
-    @Autowired
-    private EmailSender emailSender;
+    private final EmailSender emailSender;
+    private final EmailTemplates templates;
 
-    @Autowired
-    private EmailTemplates templates;
+    public WelcomeEmailListener(EmailSender emailSender, EmailTemplates templates) {
+        this.emailSender = emailSender;
+        this.templates = templates;
+    }
 
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)

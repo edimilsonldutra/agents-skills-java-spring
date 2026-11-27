@@ -69,7 +69,7 @@ public class BookDTO extends RepresentationModel<BookDTO> implements Serializabl
 ```
 - `@Relation(collectionRelation = "books")` define `_embedded.books` nas listas. Sem ele, a chave vira `bookDTOList` — feia e acoplada ao nome da classe.
 - `RepresentationModel` já implementa `equals`/`hashCode` sobre os links; chamar `super` mantém a comparação consistente (dois DTOs com os mesmos campos e links diferentes **não** são iguais).
-- Sem Lombok, sem `@XmlRootElement` (`web-config`). O mapper (Dozer/MapStruct) ignora `links`: a entity não tem esse campo, e os links são adicionados **depois** do mapeamento.
+- Sem Lombok, sem `@XmlRootElement` (`web-config`). O mapper (MapStruct/Dozer) ignora `links`: a entity não tem esse campo, e os links são adicionados **depois** do mapeamento.
 - **Request bodies:** o mesmo DTO aceita JSON com `_links` sem quebrar, mas os links enviados pelo client são **ignorados** — nunca leia `getLinks()` de uma request.
 
 ---
@@ -95,7 +95,7 @@ public BookDTO findById(Long id) {
     logger.info("Finding one book!");
     var entity = repository.findById(id)
         .orElseThrow(() -> new ResourceNotFoundException("No records found for this ID!"));
-    var dto = parseObject(entity, BookDTO.class);
+    var dto = mapper.toDto(entity);
     addHateoasLinks(dto);
     return dto;
 }

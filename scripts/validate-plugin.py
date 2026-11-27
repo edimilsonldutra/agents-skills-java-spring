@@ -14,12 +14,18 @@ import re
 import sys
 from pathlib import Path
 
+try:
+    import tomllib
+except ModuleNotFoundError:  # pragma: no cover - Python < 3.11
+    tomllib = None
+
 ROOT = Path(__file__).resolve().parent.parent
 
 KEBAB = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 FRONTMATTER = re.compile(r"\A---\r?\n(.*?)\r?\n---\r?\n", re.S)
 TRIGGER = re.compile(r"\bUse (quando|ao|após|para|antes|depois|em|sempre)\b", re.I)
 SKILL_LINK = re.compile(r"\.\./([a-z0-9-]+)/SKILL\.md")
+INTERNAL_ASSET_LINK = re.compile(r"\]\(((?:references|templates|scripts)/[A-Za-z0-9_./-]+|\.\./SKILL\.md)\)")
 BACKTICK_KEBAB = re.compile(r"`([a-z][a-z0-9]*(?:-[a-z0-9]+)+)`")
 SQUADS_REF = re.compile(r"squads:([a-z0-9-]+)")
 
@@ -202,6 +208,10 @@ def check_links(skills, agents):
         for target in SKILL_LINK.findall(read(skill_md)):
             if target not in skills:
                 error(rel(skill_md), f"link para skill inexistente ../{target}/SKILL.md")
+        for md_doc in [skill_md] + sorted(skill_md.parent.glob("references/*.md")):
+            for asset in INTERNAL_ASSET_LINK.findall(read(md_doc)):
+                if not (md_doc.parent / asset).is_file():
+                    error(rel(md_doc), f"link interno quebrado para '{asset}'")
 
     documents = (
         list(ROOT.glob("agents/*/*.md"))
@@ -447,6 +457,11 @@ def check_portable():
             error(relative, "arquivo gerado ausente (rode `python scripts/portable.py build`)")
         elif read(path) != content:
             error(relative, "defasado em relação aos agents (rode `python scripts/portable.py build`)")
+        if tomllib is not None and relative.endswith(".toml"):
+            try:
+                tomllib.loads(content)
+            except Exception as exc:
+                error(relative, f"TOML inválido: {exc}")
 
 
 def main():

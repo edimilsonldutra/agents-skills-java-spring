@@ -1,6 +1,6 @@
 ---
 name: library-docs
-description: Confirmar como uma biblioteca funciona na versão que o projeto usa, sem responder de memória — nome de starter e artifact, package e nome de classe, prefixo de property, linha de versão compatível com o Boot e última release. Fontes em ordem — o jar que o build resolveu (javap, metadata de configuração do Spring Boot), Context7 (MCP na sessão principal, API REST por curl nos agents), maven-metadata.xml do Maven Central e documentação oficial — com a fonte declarada em cada fato e "não confirmado" quando nenhuma responde. Use antes de escrever código ou revisar um upgrade que dependa de um nome ou versão que mudou entre gerações (Boot 3 → 4, Jackson 2 → 3), ou quando uma skill disser "confirme na versão resolvida".
+description: Confirmar classes, packages, starters, properties e linhas de versão na versão real do projeto, sem responder de memória — usando em ordem o jar resolvido (javap, spring-configuration-metadata.json), Context7 (MCP ou API REST), maven-metadata.xml e documentação oficial, declarando a fonte ou "não confirmado". Use antes de codar ou revisar upgrades entre gerações (Boot 3 para 4, Jackson 2 para 3) ou quando uma skill pedir confirmação na versão resolvida.
 ---
 
 Antes de aplicar, leia também [`../maven-config/SKILL.md`](../maven-config/SKILL.md) (o que o BOM gerencia e como fixar versão fora dele).

@@ -102,11 +102,15 @@ MessageConverter jacksonJmsMessageConverter(JsonMapper jsonMapper) {
 @Component
 public class BookEventPublisher {
 
-    @Autowired
-    private JmsTemplate jmsTemplate;
+    private final JmsTemplate jmsTemplate;
+    private final String queue;
 
-    @Value("${app.jms.queues.book-created}")
-    private String queue;
+    public BookEventPublisher(
+            JmsTemplate jmsTemplate,
+            @Value("${app.jms.queues.book-created}") String queue) {
+        this.jmsTemplate = jmsTemplate;
+        this.queue = queue;
+    }
 
     public void bookCreated(BookCreatedEvent event) {
         jmsTemplate.convertAndSend(queue, event, message -> {
@@ -129,8 +133,11 @@ public class BookEventListener {
 
     private static final Logger logger = LoggerFactory.getLogger(BookEventListener.class);
 
-    @Autowired
-    private BookIndexService service;
+    private final BookIndexService service;
+
+    public BookEventListener(BookIndexService service) {
+        this.service = service;
+    }
 
     @JmsListener(destination = "${app.jms.queues.book-created}", concurrency = "2-6")
     public void onBookCreated(BookCreatedEvent event) {

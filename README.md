@@ -1,13 +1,13 @@
 # Squads — Agents & Skills para Claude Code
 
-![version](https://img.shields.io/badge/version-2.25.0-blue)
+![version](https://img.shields.io/badge/version-2.26.0-blue)
 ![Java](https://img.shields.io/badge/Java-25-orange)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4-6DB33F)
 ![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin-D97757)
-![skills](https://img.shields.io/badge/skills-99-informational)
+![skills](https://img.shields.io/badge/skills-100-informational)
 ![agents](https://img.shields.io/badge/agents-7-informational)
 
-Plugin para o [Claude Code](https://claude.com/claude-code) — e, pelo formato aberto Agent Skills, também para **Gemini CLI, Codex, GitHub Copilot e qualquer LLM** ([como](#outras-ferramentas-gemini-cli-codex-github-copilot-e-qualquer-llm)) — que leva um **time de agents especialistas** e **99 skills** para o desenvolvimento de APIs REST com **Java 25 e Spring Boot 4**. Os agents planejam, implementam, testam e revisam; as skills definem o padrão que todos seguem — do layout de packages ao deploy — para que o código gerado por IA saia consistente, testado e seguro em qualquer projeto do time.
+Plugin para o [Claude Code](https://claude.com/claude-code) — e, pelo formato aberto Agent Skills, também para **Gemini CLI, Codex, GitHub Copilot e qualquer LLM** ([como](#outras-ferramentas-gemini-cli-codex-github-copilot-e-qualquer-llm)) — que leva um **time de agents especialistas** e **100 skills** para o desenvolvimento de APIs REST com **Java 25 e Spring Boot 4**. Os agents planejam, implementam, testam e revisam; as skills definem o padrão que todos seguem — do layout de packages ao deploy — para que o código gerado por IA saia consistente, testado e seguro em qualquer projeto do time.
 
 **Sumário:** [Visão geral](#visão-geral) · [Início rápido](#início-rápido) · [Como funciona](#como-funciona) · [Agents](#agents) · [Fluxo completo](#fluxo-completo-de-uma-feature) · [Fluxos individuais](#fluxo-individual-de-cada-agent) · [Skills](#skills) · [Outras ferramentas](#outras-ferramentas-gemini-cli-codex-github-copilot-e-qualquer-llm) · [Atualização](#atualização) · [Estrutura](#estrutura-do-repositório) · [Contribuindo](#contribuindo)
 
@@ -18,7 +18,7 @@ Plugin para o [Claude Code](https://claude.com/claude-code) — e, pelo formato 
 | | |
 |---|---|
 | **Agents** | 7 — `orchestrator`, `product-manager`, `architect`, `tech-lead`, `developer`, `qa`, `code-reviewer` |
-| **Skills** | 99 — Spring Boot, API, arquivos e e-mail, especificação, segurança, design de código, testes, mensageria, microsserviços, CI/CD, Kubernetes, AWS e produto |
+| **Skills** | 100 — Spring Boot, IA generativa, API, arquivos e e-mail, especificação, segurança, design de código, testes, mensageria, microsserviços, CI/CD, Kubernetes, AWS e produto |
 | **Stack** | Java 25 (LTS), Spring Boot 4, Spring Framework 7, Spring Security 7, Hibernate 7, Jackson 3, Maven ou Gradle |
 | **Databases** | MySQL (padrão), PostgreSQL, SQL Server, Oracle, MariaDB |
 | **Plataformas** | Docker, Kubernetes, Helm, Argo CD, AWS (EKS, ECS, Lambda, RDS, S3, SQS/SNS…), Google Cloud e Azure via GitHub Actions |
@@ -27,7 +27,7 @@ Plugin para o [Claude Code](https://claude.com/claude-code) — e, pelo formato 
 - Layout **flat-by-layer** (`controllers`, `services`, `repository`, `model`, `data/dto`, `exception`, `config`) sob `br.com.edimilsonldutra`; **sem Lombok**; entities nunca expostas.
 - Schema versionado com **Flyway**; contrato de erro único (`ExceptionResponse` / `ProblemDetail`); OpenAPI com **springdoc 3**.
 - Autenticação **JWT** (ou Cognito), **autorização por objeto** e as práticas do **OWASP API Security Top 10**.
-- Testes com **JUnit 5, Mockito, Testcontainers** (banco real, nunca H2) e **REST Assured**; cobertura mínima de **90%** de linha e branch.
+- Testes com **JUnit 6 (Jupiter), Mockito, Testcontainers** (banco real, nunca H2) e **REST Assured**; cobertura mínima de **90%** de linha e branch.
 - CI/CD com **OIDC** (sem chaves de longa duração), imagens imutáveis e rollback automático.
 - Fluxo **spec-driven**: PRD → design doc com critérios de aceite numerados → plano → implementação → um teste por critério → revisão contra a spec.
 
@@ -66,7 +66,7 @@ O plugin tem duas camadas: **agents** (quem faz, com papel e permissões) e **sk
 flowchart LR
     U(["Você"]) -->|"pedido"| O["orchestrator"]
     O -->|"brief + skills"| A["Agents especialistas<br/>product-manager · architect · tech-lead<br/>developer · qa · code-reviewer"]
-    A -->|"carregam"| S[("99 skills<br/>o padrão do projeto")]
+    A -->|"carregam"| S[("100 skills<br/>o padrão do projeto")]
     A -->|"entregas"| O
     O -->|"verifica e pede aprovação"| U
 ```
@@ -152,6 +152,7 @@ flowchart TD
 | Planejamento / estimativa | *(se falta escopo)* `product-manager` → `tech-lead` | Plano |
 | Plano de testes / cobertura | `qa` | — |
 | Entender um repositório | `architect` (grava o mapa) ou `tech-lead` (mapa no relatório) | Gravar o mapa |
+| Auditoria de segurança / LGPD | `architect` + `code-reviewer` + `product-manager` em paralelo → *(opcional)* `developer` + `qa` por achado | Relatório · escopo da correção · commit |
 | Prontidão para lançamento | `product-manager` + `tech-lead` + `qa` + `code-reviewer` em paralelo | Go/no-go |
 
 ### Fluxo individual de cada agent
@@ -216,7 +217,7 @@ flowchart LR
     F --> G["Plano + matriz critério → tarefa"]
     G --> H["Handoff: developer"]
 ```
-- **Skills:** atribui a skill certa a cada tarefa (mapa completo de 99); usa `design-docs`, `repository-understanding`, `refactoring`, `backlog-refinement` e `test-coverage` (DoD com 90%).
+- **Skills:** atribui a skill certa a cada tarefa (mapa completo de 100); usa `design-docs`, `repository-understanding`, `refactoring`, `backlog-refinement` e `test-coverage` (DoD com 90%).
 - **Entrega:** plano acionável, sem escrever código. Decisões estruturais vão para o `architect`; o escopo é do `product-manager`.
 
 #### `developer`
@@ -270,7 +271,7 @@ flowchart LR
 
 ## Skills
 
-99 skills em 12 grupos. A lista completa, com descrição e exemplo de prompt de cada uma, está no [guia de referência](docs/guide.md#catálogo-de-skills).
+100 skills em 12 grupos. A lista completa, com descrição e exemplo de prompt de cada uma, está no [guia de referência](docs/guide.md#catálogo-de-skills).
 
 | Grupo | Skills |
 |---|---|
@@ -278,7 +279,7 @@ flowchart LR
 | **API** (5) | `api-design`, `pagination`, `hateoas`, `api-versioning`, `swagger-advanced` |
 | **Arquivos e e-mail** (4) | `file-upload-download`, `file-import-export`, `pdf-reports`, `email` |
 | **Especificação, segurança e design** (6) | `design-docs`, `application-security`, `threat-modeling`, `solid`, `cognitive-complexity`, `design-patterns` |
-| **Java, Kubernetes e AWS** (15) | `authentication`, `testing`, `caching`, `redis`, `java-modern-features`, `concurrency`, `jvm-performance`, `observability`, `docker-and-docker-compose`, `kubernetes`, `helm-charts`, `aws-eks`, `aws-rds-secrets-manager`, `aws-s3-sqs`, `github-actions-aws` |
+| **Java, Kubernetes e AWS** (16) | `authentication`, `testing`, `caching`, `redis`, `java-modern-features`, `concurrency`, `jvm-performance`, `spring-ai`, `observability`, `docker-and-docker-compose`, `kubernetes`, `helm-charts`, `aws-eks`, `aws-rds-secrets-manager`, `aws-s3-sqs`, `github-actions-aws` |
 | **Mensageria** (6) | `messaging`, `kafka`, `rabbitmq`, `activemq-artemis`, `aws-sns-sqs`, `transactional-outbox` |
 | **AWS** (13) | `aws-sdk-java`, `localstack`, `aws-dynamodb`, `aws-keyspaces`, `aws-lambda`, `aws-ecs-fargate`, `aws-cognito`, `aws-parameter-store`, `aws-ses`, `aws-eventbridge`, `aws-observability`, `aws-terraform`, `aws-architecture-diagram` |
 | **CI/CD e GitOps** (3) | `github-actions`, `github-actions-cloud`, `argocd` |
@@ -338,7 +339,7 @@ agents-skills-java-spring/
 │   ├── developer/developer.md
 │   ├── qa/qa.md
 │   └── code-reviewer/code-reviewer.md
-├── skills/                     # 99 skills (<nome>/SKILL.md)
+├── skills/                     # 100 skills (<nome>/SKILL.md)
 ├── prompts/                    # prompts reutilizáveis por fluxo (feature, bug, revisão, ADR…)
 ├── docs/
 │   └── guide.md                # guia de referência

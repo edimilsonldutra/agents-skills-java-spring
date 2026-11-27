@@ -1,6 +1,6 @@
 ---
 name: jpa-advanced-mapping
-description: Mapeamento JPA além do CRUD com Hibernate 7, Jakarta Persistence 3.2 e Spring Data JPA 4 — auditoria (@CreatedDate, @LastModifiedBy, AuditorAware, DateTimeProvider com Clock) e callbacks (@PrePersist), value objects com @Embeddable (record) e AttributeConverter (enum com código estável), herança (@MappedSuperclass, SINGLE_TABLE, JOINED, TABLE_PER_CLASS) × composição, @ElementCollection, @OrderBy e @OrderColumn, relacionamento bidirecional sincronizado nos dois lados, cascade e orphanRemoval, persist × merge, getReferenceById, escrita em lote (IDENTITY × SEQUENCE com allocationSize, flush e clear), lock pessimista no repository com timeout, @SoftDelete e cache de segundo nível. Use quando o mapeamento básico de spring-data-jpa não basta. Não use para o CRUD básico, N+1 e testes de repository (spring-data-jpa), decisões de modelagem e isolamento (data-modeling) nem para o schema (flyway-migrations).
+description: Mapeamento JPA avançado com Hibernate 7 e Spring Data JPA 4 — auditoria (@CreatedDate, AuditorAware, Clock), @Embeddable (record) e AttributeConverter, herança vs composição, @ElementCollection, bidirecional sincronizado, cascade/orphanRemoval, persist vs merge, escrita em lote, lock pessimista com timeout, @SoftDelete e cache L2. Use quando o CRUD básico de spring-data-jpa não basta. Não use para CRUD/N+1/testes de repository (spring-data-jpa), escolha de banco/isolamento (data-modeling) nem SQL de schema (flyway-migrations).
 ---
 
 Antes de aplicar este pattern, leia também [`../spring-data-jpa/SKILL.md`](../spring-data-jpa/SKILL.md) (o padrão de entity, repository e transação que esta skill estende), [`../data-modeling/SKILL.md`](../data-modeling/SKILL.md) (consistência, locking e soft delete como decisão), [`../flyway-migrations/SKILL.md`](../flyway-migrations/SKILL.md) (toda coluna nova nasce numa migration), [`../code-style/SKILL.md`](../code-style/SKILL.md) e [`../library-docs/SKILL.md`](../library-docs/SKILL.md) (confirme anotações e properties na versão resolvida).
@@ -85,7 +85,7 @@ private Money fine;
 ```
 - Colunas na própria tabela, sem join; `@AttributeOverride` quando a entity tem dois do mesmo tipo.
 - Usar no **flat-by-layer** só quando há regra no valor; o padrão do pacote para preço segue `BigDecimal` simples (`spring-data-jpa`). Em domínio rico, é o caminho natural (`ddd-hexagonal`).
-- O **Dozer** depende de construtor vazio e setters e não mapeia record: com value objects, mapeie para o DTO à mão ou com MapStruct.
+- O **MapStruct** (default do pacote) mapeia records e value objects nativamente; em projetos legados com **Dozer** (que exige construtor vazio e setters), mapeie value objects à mão.
 
 **`AttributeConverter`** mapeia um tipo para **uma** coluna. O caso típico é enum com **código estável**, quando o nome da constante pode mudar ou o banco legado usa códigos:
 ```java
@@ -168,7 +168,7 @@ public void removeReview(BookReview review) {
 ## 6. `persist` × `merge`, referências e escrita em lote
 
 - O `save()` do Spring Data faz `persist` quando a entity é nova (id ou `@Version` nulos) e `merge` caso contrário. O `merge` **devolve a instância gerenciada**: use o retorno, não o objeto passado.
-- **Nunca faça `merge` de uma entity montada a partir do DTO** (`parseObject(dto, Book.class)` com id): o que não veio no DTO vira `null` no banco e o `@Version` do cliente é ignorado. Carregue, altere e salve, como no `update` do pacote.
+- **Nunca faça `merge` de uma entity montada a partir do DTO** (`mapper.toEntity(dto)` com id): o que não veio no DTO vira `null` no banco e o `@Version` do cliente é ignorado. Carregue, altere e salve, como no `update` do pacote.
 - **`getReferenceById(id)`** devolve um proxy **sem `SELECT`**, para apontar uma FK: `loan.setBook(bookRepository.getReferenceById(bookId))`. Se o id não existir, o erro só aparece no flush (violação de FK) ou ao acessar o proxy. Com id vindo do cliente, valide existência **e dono** antes (`application-security`: IDOR).
 
 **Escrita em lote** (importação de milhares de linhas — `file-import-export`):
@@ -239,7 +239,7 @@ Configuração: dependência `org.hibernate.orm:hibernate-jcache` com um provide
 ## Regras principais
 
 - **Auditoria com Spring Data** (`@EnableJpaAuditing`, `AuditorAware` sem usuário anônimo, `DateTimeProvider` com `Clock`); campos explícitos ou `@Embeddable`, nunca `BaseEntity` genérica; `@Modifying` seta auditoria na query; callbacks só normalizam o próprio estado.
-- **Value objects** como `@Embeddable` record com validação no construtor e `@AttributeOverride` para repetições; `AttributeConverter` para enum com código estável; Dozer não mapeia record.
+- **Value objects** como `@Embeddable` record com validação no construtor e `@AttributeOverride` para repetições; `AttributeConverter` para enum com código estável; MapStruct mapeia records (Dozer legado não).
 - **Composição antes de herança**; se herdar, `SINGLE_TABLE` com `CHECK` na migration, `JOINED` para subtipos grandes, nunca `TABLE_PER_CLASS`.
 - **`@ElementCollection` com `Set`** e só para valores pequenos; ordem estável com `@OrderBy` ou `@OrderColumn`.
 - **Bidirecional sincronizado** por `add`/`remove` na entity dona da coleção; cascade e `orphanRemoval` só em composição; nunca cascade em `@ManyToOne`.

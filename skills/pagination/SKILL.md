@@ -75,20 +75,29 @@ O repository já pagina: `JpaRepository.findAll(Pageable)` e qualquer query com 
 @Transactional(readOnly = true)
 public Page<BookDTO> findAll(Pageable pageable) {
     logger.info("Finding all books!");
-    return repository.findAll(pageable).map(entity -> parseObject(entity, BookDTO.class));
+    return repository.findAll(pageable).map(mapper::toDto);
 }
 ```
 
 **Com HATEOAS (HAL)** — o `PagedResourcesAssembler` monta `_embedded`, os links `first/prev/self/next/last` e o bloco `page`:
 ```java
-@Autowired
-private PagedResourcesAssembler<BookDTO> assembler;
+private final BookMapper mapper;
+private final PagedResourcesAssembler<BookDTO> assembler;
+
+public BookService(
+        BookRepository repository,
+        BookMapper mapper,
+        PagedResourcesAssembler<BookDTO> assembler) {
+    this.repository = repository;
+    this.mapper = mapper;
+    this.assembler = assembler;
+}
 
 @Transactional(readOnly = true)
 public PagedModel<EntityModel<BookDTO>> findAll(Pageable pageable) {
     logger.info("Finding all books!");
     var books = repository.findAll(pageable).map(entity -> {
-        var dto = parseObject(entity, BookDTO.class);
+        var dto = mapper.toDto(entity);
         addHateoasLinks(dto);
         return dto;
     });

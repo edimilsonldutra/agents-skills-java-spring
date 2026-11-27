@@ -118,7 +118,7 @@ case "$match_path" in
     fi
     ;;
   */pom.xml|*/build.gradle|*/build.gradle.kts|*/gradle.properties|*/maven.config|*/.mvn/*)
-    re='<skipTests>|skipTests=|-DskipTests|maven\.test\.skip|jacoco\.skip|<minimum>|minimum[[:space:]]*=|<haltOnFailure>false|ignoreFailures|<testFailureIgnore>true|excludes?[[:space:]]*[=(>]'
+    re='<skipTests>|skipTests=|-DskipTests|maven\.test\.skip|jacoco\.skip|<minimum>|minimum[[:space:]]*=|<haltOnFailure>false|ignoreFailures|<testFailureIgnore>true|<excludes?>|excludes[[:space:]]*[=(.]|exclude[[:space:]]*:|exclude\([[:space:]]*["'"'"']'
     if [[ $new =~ $re ]]; then
       ask "build pulando testes, afrouxando o piso de cobertura ou excluindo classes do JaCoCo"
     fi
