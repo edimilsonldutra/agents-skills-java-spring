@@ -1,6 +1,6 @@
 ---
 name: refactoring
-description: Refatoração segura de Java/Spring Boot — refatorar × mudar comportamento, quando não refatorar, rede de segurança com characterization tests, passos pequenos e verdes, catálogo de smells e refatorações, Parallel Change, Branch by Abstraction, Strangler Fig, expand → contract e revisão do PR. Use quando melhorar a estrutura de um código sem mudar o comportamento. Não use quando a mudança altera comportamento (é feature ou correção) nem para entender um código desconhecido (repository-understanding).
+description: Refatoração segura de Java/Spring Boot — refatorar × mudar comportamento, quando não refatorar, rede de segurança com characterization tests, passos pequenos e verdes, os 24 smells e o índice das 61 refatorações do catálogo de Fowler (separar em fases, substituir laço por pipeline, remover argumento de flag, caso especial…), tipos de refatoração por momento, branches e desempenho, Parallel Change, Branch by Abstraction, Strangler Fig, expand → contract e revisão do PR. Use quando melhorar a estrutura de um código sem mudar o comportamento. Não use quando a mudança altera comportamento (é feature ou correção) nem para entender um código desconhecido (repository-understanding).
 ---
 
 Antes de aplicar este pattern, leia também [`../code-organization/SKILL.md`](../code-organization/SKILL.md) e [`../code-style/SKILL.md`](../code-style/SKILL.md) (o estado-alvo do código), [`../testing/SKILL.md`](../testing/SKILL.md), [`../test-patterns/SKILL.md`](../test-patterns/SKILL.md) (characterization tests), [`../test-coverage/SKILL.md`](../test-coverage/SKILL.md) (cobertura do trecho e mutation score), [`../repository-understanding/SKILL.md`](../repository-understanding/SKILL.md) (achar hotspots e entender antes de mexer) e [`../technical-product-management/SKILL.md`](../technical-product-management/SKILL.md) (dívida técnica como decisão de produto).
@@ -28,6 +28,18 @@ Em qualquer momento você usa **um** chapéu:
 | Para **remover código morto**/complexidade acidental | Para **"padronizar por gosto"** ou aplicar um design pattern **sem problema real** |
 
 **Refatore o que você está prestes a mudar**, não o repositório inteiro: refatoração **a serviço de uma mudança** tem retorno claro; refatoração "geral" sem objetivo é desperdício e risco.
+
+**Os momentos de refatorar** (quase toda refatoração é **oportunista**, feita no meio do trabalho):
+- **Preparatória**: antes da feature, para que ela fique fácil ("faça a mudança ser fácil, depois faça a mudança fácil").
+- **Para compreensão**: renomear e extrair enquanto lê, para entender o código; mesmo que você descarte depois, o entendimento fica.
+- **Catar o lixo**: viu algo ruim no caminho, deixe melhor do que encontrou; se for grande, anote e volte.
+- **Planejada**: uma tarefa só de refatoração. Deve ser rara; se for frequente, a refatoração do dia a dia está faltando.
+- **De longo prazo**: substituir uma biblioteca ou um módulo inteiro, em passos que deixam o sistema funcionando a cada semana (Branch by Abstraction, seção 6).
+- **No code review**: o revisor sugere, e o autor refatora junto, enquanto o contexto está fresco.
+
+**Branches e integração contínua.** Refatorar numa branch que vive semanas é pedir conflito de merge: renomear e mover arquivos colide com o trabalho de todos. Integre na branch principal **pelo menos uma vez por dia**, com feature flags para o que ainda não está pronto (`release-management`, `github-actions`). Quanto mais longa a branch, mais o time evita refatorar.
+
+**Refatoração e desempenho.** Refatorar às vezes deixa o código um pouco mais lento (um laço dividido em dois, uma consulta extraída). Não se preocupe antes de medir: o tempo de execução se concentra numa parte pequena do código. Escreva claro, **meça com profiler** (JFR, teste de carga — `jvm-performance`) e otimize só o trecho quente; código bem fatorado é mais fácil de otimizar.
 
 ## 2. A rede de segurança vem PRIMEIRO
 
@@ -80,8 +92,30 @@ verde → (1 passo pequeno) → rodar testes → verde → commit → próximo p
 | **Comentário como desodorante** | Comentário explicando código confuso | **Rename**/**Extract Method** até o código se explicar |
 | **Estado mutável compartilhado** | Beans singleton com campos mutáveis | **Imutabilidade** (records, `final`), estado no escopo da chamada |
 | **Mensagens de erro/regra espalhadas** | Strings de mensagem duplicadas | **Centralizar** na exception/VO |
+| **Dados globais** | Campo `static` mutável, singleton com estado, configuração alterada em runtime | **Encapsulate Variable** e depois restrinja o escopo; estado vai para bean injetado ou para o banco (`concurrency`) |
+| **Dados mutáveis** | O mesmo objeto alterado em vários lugares, efeito que ninguém prevê | **Split Variable**, **Separate Query from Modifier**, **Change Reference to Value** (record), **Remove Setting Method** |
+| **Laços** | `for` que filtra, transforma e acumula ao mesmo tempo | **Split Loop** e **Replace Loop with Pipeline** (`stream().filter().map()`, com nomes claros) |
+| **Elemento ocioso** | Classe ou método que não faz quase nada (sobra de uma generalização ou de uma refatoração) | **Inline Function**/**Inline Class**, **Collapse Hierarchy** |
+| **Campo temporário** | Campo preenchido só em alguns fluxos, `null` no resto | **Extract Class** com o campo e o código que o usa; **Introduce Special Case** |
+| **Cadeias de mensagens** | `a.getB().getC().getD()` | **Hide Delegate** ou **Extract Function** + **Move Function** (`solid`, Demeter) |
+| **Trocas escusas** | Dois módulos trocando dados internos "por baixo" | **Move Function/Field**, um módulo intermediário, ou **Replace Subclass with Delegate** quando é herança (`modular-monolith`) |
+| **Classes alternativas com interfaces diferentes** | Duas classes que fazem a mesma coisa com nomes de métodos diferentes | **Change Function Declaration** até coincidirem; depois **Extract Superclass** ou uma interface comum |
+| **Herança recusada** | Subclasse que ignora ou lança exception para o que herdou | **Push Down Method/Field**; se a subclasse recusa a interface, **Replace Superclass with Delegate** (`solid`, Liskov) |
+| **Classe de dados** *(fora do flat-by-layer)* | Só getters e setters, com a regra sobre ela espalhada em outras classes | **Encapsulate Record**, **Remove Setting Method**, **Move Function** para dentro dela; no flat-by-layer isso é o padrão, não smell (`solid`) |
 
 ### Exemplos curtos
+
+**Separar em fases (Split Phase)**: um método que lê, valida e grava ao mesmo tempo vira três fases que conversam por uma estrutura intermediária:
+```java
+public ImportResult importCopies(InputStream csv) {
+    var rows = parser.parse(csv);
+    var validation = validator.validate(rows);
+    if (validation.hasErrors()) return ImportResult.rejected(validation.errors());
+    repository.saveAll(validation.validRows().stream().map(this::toEntity).toList());
+    return ImportResult.imported(validation.validRows().size());
+}
+```
+`parser` só sabe CSV e devolve `List<CopyRow>` (record); `validator` só sabe regra; o service só orquestra e persiste. Cada fase é testada sozinha, e trocar CSV por XLSX muda só a primeira (`file-import-export`). É a refatoração que mais transforma código procedural longo.
 
 **Extract Method + guard clauses**
 ```java
@@ -152,6 +186,89 @@ public Fee lateFee(Loan loan, Clock clock) {
 }
 ```
 Testável com `Clock.fixed(...)`; **sem** `LocalDate.now()` escondido (`test-patterns`).
+
+## 4b. Índice do catálogo
+
+As 61 refatorações do catálogo de Fowler, nos grupos do livro. Cada uma é um passo mecânico, pequeno e seguro; os nomes em inglês são os que a IDE e a literatura usam.
+
+**Primeiro conjunto**
+| Refatoração | Quando |
+|---|---|
+| Extract Function / Inline Function | Separar a intenção da implementação / desfazer indireção que não ajuda |
+| Extract Variable / Inline Variable | Dar nome a uma expressão / remover nome que não diz mais que a expressão |
+| Change Function Declaration | Renomear ou mudar parâmetros (com migração gradual se é API pública) |
+| Encapsulate Variable | Antes de mexer em dado de escopo amplo: acesso por métodos |
+| Rename Variable | O nome não revela a intenção (`code-style`) |
+| Introduce Parameter Object | Grupo de parâmetros que anda junto vira record |
+| Combine Functions into Class | Várias funções sobre os mesmos dados viram métodos de uma classe |
+| Combine Functions into Transform | Derivações de um dado concentradas numa transformação (um mapper que enriquece) |
+| **Split Phase** | Código que faz duas coisas em sequência (ler e calcular, calcular e formatar) |
+
+**Encapsulamento**
+| Refatoração | Quando |
+|---|---|
+| Encapsulate Record | Estrutura de dados exposta vira classe ou record com acesso controlado |
+| **Encapsulate Collection** | Getter de coleção mutável: devolva cópia imutável e ofereça `add`/`remove` (`jpa-advanced-mapping`, com a ressalva do Dozer) |
+| Replace Primitive with Object | `String isbn`, `BigDecimal` com moeda: value object (record) |
+| Replace Temp with Query | Variável calculada uma vez e usada adiante vira método de consulta |
+| Extract Class / Inline Class | Classe faz duas coisas / classe não faz quase nada |
+| Hide Delegate / Remove Middle Man | Esconder a cadeia de navegação / remover o delegador que só repassa |
+| Substitute Algorithm | Trocar um algoritmo inteiro por um mais claro (com os mesmos testes) |
+
+**Mover recursos**
+| Refatoração | Quando |
+|---|---|
+| Move Function / Move Field | A função ou o dado está na classe errada (inveja de recursos) |
+| Move Statements into Function / to Callers | Código que sempre acompanha a chamada entra na função / o que varia por chamador sai dela |
+| Replace Inline Code with Function Call | O trecho já existe como função (inclusive do JDK: `Collections.max`, `String.join`) |
+| Slide Statements | Aproximar linhas relacionadas antes de extrair |
+| **Split Loop** | Um laço faz duas coisas: dois laços (meça só se o volume justificar) |
+| **Replace Loop with Pipeline** | Laço que filtra e transforma vira `stream()` |
+| Remove Dead Code | Código sem uso, conferido também em reflexão e configuração |
+
+**Organizar dados**
+| Refatoração | Quando |
+|---|---|
+| Split Variable | Uma variável reaproveitada para dois propósitos |
+| Rename Field | O nome do campo não diz o que é (em entity, cuidado com JSON e JPQL) |
+| **Replace Derived Variable with Query** | Campo que só guarda um cálculo de outros campos vira método |
+| **Change Reference to Value** | Objeto pequeno sem identidade vira record imutável |
+| Change Value to Reference | Muitas cópias do mesmo dado que precisam mudar juntas viram uma referência (entity) |
+
+**Simplificar lógicas condicionais**
+| Refatoração | Quando |
+|---|---|
+| Decompose Conditional | Condição e ramos extraídos para métodos com nome |
+| Consolidate Conditional Expression | Vários `if` com o mesmo resultado viram um, com nome |
+| Replace Nested Conditional with Guard Clauses | `if` aninhado vira guarda de uma linha (`code-style`) |
+| Replace Conditional with Polymorphism | `switch` por tipo repetido vira Strategy ou `switch` sobre `sealed` (`design-patterns`) |
+| **Introduce Special Case** | `if (x == null)` espalhado vira um objeto de caso especial (`Member.UNKNOWN`, `Optional`) |
+| Introduce Assertion | Explicitar uma premissa: no pacote, guarda que lança exception, não `assert` (`test-patterns`, contratos) |
+
+**Refatorar APIs**
+| Refatoração | Quando |
+|---|---|
+| **Separate Query from Modifier** | Método que devolve valor **e** muda estado vira dois (`code-style`: consulta não muda estado) |
+| Parameterize Function | Funções quase iguais que diferem num valor viram uma com parâmetro |
+| **Remove Flag Argument** | `process(id, true)` vira dois métodos com nome (`renew`, `renewWithoutFee`) |
+| **Preserve Whole Object** | Extrair três campos de um objeto para passar adiante: passe o objeto |
+| Replace Parameter with Query / Query with Parameter | O chamado consegue obter o valor sozinho / tirar uma dependência escondida (o `Clock` vira parâmetro) |
+| Remove Setting Method | Campo que não deve mudar depois da criação perde o setter (fora do mapeamento do Dozer) |
+| Replace Constructor with Factory Function | Nome que diz a intenção (`Loan.start(...)`) ou escolha do tipo concreto |
+| Replace Function with Command / Command with Function | Função complexa vira objeto (o objeto método do Beck) / comando simples volta a ser função |
+
+**Lidar com herança**
+| Refatoração | Quando |
+|---|---|
+| Pull Up Method / Field / Constructor Body | Duplicação entre subclasses sobe para a superclasse |
+| Push Down Method / Field | O que só uma subclasse usa desce para ela |
+| Replace Type Code with Subclasses | Código de tipo com comportamento diferente (prefira `sealed` + records) |
+| Remove Subclass / Collapse Hierarchy | Subclasse que não diferencia mais / hierarquia que não se paga |
+| Extract Superclass | Duas classes com comportamento comum (antes, considere composição) |
+| **Replace Subclass with Delegate** | Herança usada para variar comportamento vira composição |
+| **Replace Superclass with Delegate** | A subclasse não é "um" da superclasse (herança recusada) |
+
+---
 
 ## 5. Refatorações específicas de Spring/Java
 
@@ -231,6 +348,8 @@ Refatoração que **não cabe em passos pequenos verdes** (API pública, banco, 
 - **Refatorar = mudar a estrutura, não o comportamento.** **Dois chapéus, nunca juntos**: refatoração, feature e bug em **commits/PRs separados**.
 - **Rede de segurança primeiro**: testes verdes antes, **characterization tests** se não houver, **cobertura do trecho dentro dos 90%** (e mutation score nas regras críticas).
 - **Passos pequenos, verdes a cada passo**, commits `refactor:`; **vermelho → desfaça o último passo**; prefira **refatorações automáticas da IDE** e o **compilador** como rede; **escopo e critério de parada** definidos antes.
+- **Refatore no momento certo**: preparatória, para compreensão, catando o lixo, no review; planejada é exceção. **Integre na branch principal todo dia** e **meça antes de otimizar**.
+- **Use o índice do catálogo** (61 refatorações, cada uma um passo mecânico); as mais transformadoras: **Split Phase**, **Replace Loop with Pipeline**, **Separate Query from Modifier**, **Remove Flag Argument**, **Introduce Special Case**, **Replace Subclass/Superclass with Delegate**.
 - **Use o catálogo de smells** (Long Method, God Service, Anemic Model, Primitive Obsession, N+1, switch por tipo…) e **a refatoração correspondente**; **records/`Clock`/sealed + pattern switch** quando couber.
 - **Cuidado com o que o compilador não vê** (reflexão, wiring, SpEL, JPQL, JSON, YAML): **busque** nesses textos e confirme com testes de integração.
 - **Mudanças grandes sem big bang**: **Parallel Change (expand → contract)**, Branch by Abstraction, Strangler Fig, banco **expand → contract**, comparação em sombra; **evite reescrever do zero**.
@@ -238,3 +357,8 @@ Refatoração que **não cabe em passos pequenos verdes** (API pública, banco, 
 - **No PR de refatoração**: nenhum comportamento escondido, **testes existentes sem alteração**, cobertura mantida, escopo respeitado; **mais abstrato sem problema real = over-engineering**.
 - **Field injection é o padrão do pacote**: só troque por constructor se a **preferência do projeto** disser; **Lombok** (proibido) sai por **delombok**, por módulo.
 - **Sem Lombok** — deliberado.
+
+## Referências
+
+- Martin Fowler, *Refatoração: aperfeiçoando o design de códigos existentes*, 2ª ed. (Novatec, 2019; original *Refactoring*, Addison-Wesley, 2018), com contribuições de Kent Beck: definição e princípios, os momentos de refatorar, branches e desempenho, os 24 smells e o catálogo das 61 refatorações. Reescrito com exemplos Java/Spring do pacote.
+- Os "dois chapéus" e "faça a mudança ser fácil, depois faça a mudança fácil" são de Kent Beck.

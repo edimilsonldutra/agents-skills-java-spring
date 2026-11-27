@@ -2,6 +2,13 @@
 
 Mudanças notáveis do plugin `squads`. A versão é a de `.claude-plugin/plugin.json`; quem já instalou só recebe uma mudança quando ela sobe.
 
+## 2.23.0 — 2026-11-26
+
+### Refatoração: o catálogo de Fowler completo
+- `refactoring` com base em Martin Fowler, *Refatoração* (2ª ed.): os momentos de refatorar (preparatória, para compreensão, catar o lixo, planejada, de longo prazo, no review), branches e integração diária, refatoração e desempenho; a tabela de smells completa com os 24 do livro (dados globais e mutáveis, laços, elemento ocioso, campo temporário, trocas escusas, classes alternativas, herança recusada, classe de dados fora do flat-by-layer); exemplo de Split Phase; índice das 61 refatorações nos 7 grupos com notas Java/Spring; referências.
+- `code-reviewer`: achados de argumento de flag, consulta que modifica estado, laço que faz várias coisas e herança recusada. `developer` aponta para o catálogo ao refatorar.
+- Eval `catalogo-de-refatoracao` (gatilho de `refactoring`, sem disparar `file-import-export`). Ainda não executado.
+
 ## 2.22.0 — 2026-11-26
 
 ### Nova skill: DDD estratégico
