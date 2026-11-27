@@ -98,6 +98,14 @@ ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75", "-jar", "app.jar"]
 - Imagem **JRE**, não JDK, em runtime: menor e menos superfície de ataque.
 - Nunca coloque segredo em `ENV`/`ARG` no Dockerfile — ficam no histórico da imagem. Segredos entram em runtime (compose `env_file`/Secrets, Kubernetes Secret, Secrets Manager).
 - Escaneie a imagem no CI (Trivy/Grype, ou o scan do ECR — veja `aws-eks`).
+- **`COPY`, nunca `ADD`**, para arquivos locais: o `ADD` também baixa URLs e extrai `.tar` implicitamente, o que esconde o que entra na imagem.
+- **Segredo necessário no build** (credencial de um repositório Maven privado) entra por **montagem de segredo do BuildKit**, que não fica em nenhuma camada:
+  ```dockerfile
+  RUN --mount=type=secret,id=maven_settings,target=/root/.m2/settings.xml \
+      ./mvnw -q dependency:go-offline
+  ```
+  Build com `docker build --secret id=maven_settings,src=$HOME/.m2/settings.xml .` (no GitHub Actions, a opção `secret-files` da action de build — `github-actions`). Repita a montagem em todo `RUN` que precise do repositório. Uma montagem de cache (`--mount=type=cache,target=/root/.m2/repository`) acelera builds repetidos sem pôr o repositório local na imagem.
+- **Labels OCI** ligam a imagem ao código: `org.opencontainers.image.source` (o repositório), `.revision` (o commit) e `.version`. No CI, a action de metadados já os gera (`github-actions`); num build manual, passe o commit por `--build-arg` e declare `LABEL org.opencontainers.image.revision="${REVISION}"`.
 
 ---
 
@@ -138,6 +146,26 @@ services:
 volumes:
   db-data:
 ```
+Para rodar o compose num ambiente compartilhado (homologação num servidor, demonstração), endureça o serviço da aplicação como no Kubernetes (`kubernetes`):
+```yaml
+  app:
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 768M
+```
+- `read_only` deixa o filesystem imutável; a JVM e o Tomcat escrevem em `/tmp`, por isso o `tmpfs`.
+- Sem capabilities nem escalada de privilégio: a aplicação não precisa de nenhuma.
+- O **limite de memória** é o que o `-XX:MaxRAMPercentage` usa para dimensionar o heap (seção anterior); sem limite, a JVM enxerga a memória do host inteiro.
+
 - A URL usa o **nome do serviço** (`db`), não `localhost` — dentro da rede do compose, `localhost` é o próprio container da app.
 - O Spring converte `SPRING_DATASOURCE_URL` em `spring.datasource.url` (relaxed binding): o `application.yml` não muda entre local, compose e Kubernetes.
 - O `docker compose` moderno ignora a chave `version:` — não a escreva.
@@ -162,7 +190,8 @@ Variáveis: PostgreSQL `POSTGRES_PASSWORD`/`POSTGRES_DB`; MariaDB `MARIADB_ROOT_
 
 - Pergunte simples vs multi-stage; o default é multi-stage com layers (`-Djarmode=tools extract --layers`).
 - `.dockerignore` sempre; `pom.xml` copiado antes de `src` para cachear dependencies.
-- Imagem JRE, usuário **não-root**, tag fixa (nunca `latest`), sem segredo em `ENV`/`ARG`.
+- Imagem JRE, usuário **não-root**, tag fixa (nunca `latest`), sem segredo em `ENV`/`ARG`; segredo de build só por `--mount=type=secret`; `COPY` em vez de `ADD`; labels OCI com repositório e commit.
+- Compose fora da máquina do dev: `read_only` + `tmpfs` em `/tmp`, `cap_drop: ALL`, `no-new-privileges` e limite de memória e CPU.
 - `-XX:MaxRAMPercentage=75` em vez de `-Xmx` fixo.
 - Gradle: nunca copie o `-plain.jar`.
 - Compose: `healthcheck` + `depends_on: service_healthy`; URL com o nome do serviço, não `localhost`; sem `version:`.

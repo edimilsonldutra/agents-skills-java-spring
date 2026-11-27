@@ -2,6 +2,11 @@
 
 Mudanças notáveis do plugin `squads`. A versão é a de `.claude-plugin/plugin.json`; quem já instalou só recebe uma mudança quando ela sobe.
 
+## 2.23.1 — 2026-11-26
+
+### Docker: endurecimento e build
+- `docker-and-docker-compose`: `COPY` em vez de `ADD`; segredo de build por montagem de segredo do BuildKit (com cache do repositório Maven); labels OCI ligando a imagem ao repositório e ao commit; endurecimento do serviço no compose (`read_only` com `tmpfs`, `cap_drop: ALL`, sem escalada de privilégio, limites de CPU e memória ligados ao `MaxRAMPercentage`). Baseado na documentação oficial do Docker; o livro *Docker for Developers* (Packt, 2020) foi avaliado e não usado.
+
 ## 2.23.0 — 2026-11-26
 
 ### Refatoração: o catálogo de Fowler completo
