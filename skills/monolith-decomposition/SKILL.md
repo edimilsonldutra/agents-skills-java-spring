@@ -126,7 +126,7 @@ O 🔴 é o problema que bloqueia a extração. Volatilidade estimada sem Git fi
 
 ## 5. Agrupamento em domínios e donos das tabelas
 
-Agrupe os componentes em **domínios candidatos** (bounded contexts — `ddd-hexagonal` §1) usando, juntos:
+Agrupe os componentes em **domínios candidatos** (bounded contexts — `strategic-ddd`) usando, juntos:
 1. **Linguagem**: os termos do glossário do mapa; sinônimos conflitantes (`Member` × `User`) indicam fronteira.
 2. **Acoplamento**: o que tem força alta e volatilidade alta **fica junto** (seção 4).
 3. **Dados**: **cada tabela tem um único componente que escreve nela**. Monte o mapa:

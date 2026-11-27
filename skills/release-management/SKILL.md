@@ -17,7 +17,7 @@ Antes de aplicar este pattern, leia também [`../prd-writing/SKILL.md`](../prd-w
 | Quem decide | Engenharia (técnico, frequente, de baixo risco) | **Produto** (de negócio, deliberado) |
 | Como separar | Código novo entra **desligado** atrás de uma **feature flag** | Liga-se a flag para um público, gradualmente |
 
-Separar os dois muda tudo: **o deploy deixa de ser um evento de risco** (feito várias vezes ao dia, o código está "dormente"), e o **lançamento vira uma decisão de produto reversível** (ligar/desligar a flag, **sem novo deploy**). É a base de lançar **pequeno, frequente e seguro** (`agile-delivery`: DORA).
+Separar os dois muda tudo: **o deploy deixa de ser um evento de risco** (feito várias vezes ao dia, o código está "dormente"), e o **lançamento vira uma decisão de produto reversível** (ligar/desligar a flag, **sem novo deploy**). É a base de lançar **pequeno, frequente e seguro** (`agile-delivery`: DORA): deploys pequenos e frequentes reduzem a **taxa de falha de mudança** (menos coisa muda de cada vez) e o **tempo de restauração** (reverter um deploy pequeno é rápido e óbvio), além de encurtar o lead time.
 
 ## 2. Feature flags
 

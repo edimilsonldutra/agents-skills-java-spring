@@ -139,6 +139,19 @@ updates:
 
 ---
 
+## Pipeline como máquina de feedback
+
+O pipeline não é só automação de build: é o experimento que **tenta provar que a mudança não pode ir para produção**. Se ele não encontra motivo, a mudança está pronta. Para cumprir esse papel:
+- **Estágio de commit rápido**: compilar, testes unitários e de slice, análise estática, em **menos de ~10 minutos**. Acima disso, o time para de esperar o resultado e acumula mudanças em cima de uma base que talvez esteja quebrada. Testes lentos vão para um job paralelo ou para o estágio seguinte (seção 5).
+- **Estágio de aceitação sobre o mesmo artefato**: testes de integração com Testcontainers, testes de API de caixa-preta e contratos (`integration-testing`, `postman-newman`, `contract-testing`) rodam contra a **imagem** gerada no estágio de commit, não contra um rebuild. Cada estágio que passa aumenta a confiança no **mesmo** candidato a release.
+- **Um artefato, promovido**: a imagem com tag = SHA vai de staging a produção sem ser reconstruída (seção 6, `argocd`).
+- **A `main` está sempre liberável**: qualquer commit nela pode ir para produção. Funcionalidade inacabada entra desligada atrás de flag (`release-management`), não numa branch paralela.
+- **Branches de vida curta** (horas, no máximo um ou dois dias) e **PRs pequenos**: integrar todo dia na `main` é o que torna a integração contínua de fato contínua; branch de semanas é integração adiada (`refactoring`).
+- **Build vermelho na `main` para a linha**: consertar ou reverter vem antes de qualquer trabalho novo. Reverter primeiro e investigar depois é legítimo; deixar vermelho "até amanhã" não é.
+- **Medir o próprio pipeline**: duração de cada estágio e taxa de falha intermitente. Um pipeline lento ou instável piora o lead time de mudança e a confiança do time (DORA — `agile-delivery`).
+
+---
+
 ## 4. Proteção da branch principal
 
 Nas configurações do repositório (*Rules/Branch protection*) da `main`:
@@ -216,4 +229,9 @@ Leitura primeiro, correção só depois de aprovação. Os comandos `gh` abaixo 
 - `main` protegida: PR obrigatório, status checks obrigatórios, sem push direto.
 - `timeout-minutes` nos jobs; `concurrency` cancelando só execuções de PR.
 - O deploy usa a imagem que passou no CI, com a skill do destino.
+- **Pipeline como máquina de feedback**: estágio de commit em menos de ~10 minutos, aceitação sobre a mesma imagem, `main` sempre liberável, branches de vida curta e PRs pequenos, build vermelho na `main` para a linha.
 - Check vermelho: log do job que falhou, causa classificada, reprodução local, plano aprovado e correção da causa — nunca teste desligado, piso baixado, `continue-on-error` ou re-run até passar.
+
+## Referências
+
+- David Farley, *Modern Software Engineering* (Addison-Wesley, 2022): pipeline de deploy como ferramenta de feedback, estágios de commit e de aceitação, `main` sempre liberável e integração contínua de verdade.

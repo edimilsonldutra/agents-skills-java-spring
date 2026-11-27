@@ -98,6 +98,8 @@ public class CatalogGateway implements BookCatalog {
 - `5xx` e `ResourceAccessException` (timeout/conexão recusada) são **falha técnica** → `...UnavailableException`, que o `@ControllerAdvice` converte em **`503`** com mensagem clara (`exception-handling`) — **nunca** `500` com stack trace do outro serviço, e **nunca vaze** o corpo de erro do downstream ao client final.
 - Nunca engula a falha e devolva "dados vazios" como se tudo estivesse bem, a menos que haja um **fallback decidido e seguro** (`resilience`).
 
+**Tradução com estado.** Às vezes a ACL não traduz chamada por chamada: ela precisa **acumular ou combinar** o que vem de fora antes de entregar ao domínio (juntar os eventos de vários sistemas num só, agrupar atualizações frequentes em lotes, montar um modelo local a partir de vários eventos). Aí a ACL tem **armazenamento próprio** (uma tabela ou a cópia local de `kafka`, "Estado materializado"), é idempotente e tem dono, como qualquer componente com estado. Se a tradução não precisa de estado, mantenha-a sem estado.
+
 ---
 
 ## 3. Autenticação serviço-a-serviço (zero trust)

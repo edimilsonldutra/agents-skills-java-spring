@@ -76,6 +76,22 @@ Muitos times usam **Scrumban** (cadência de planejamento do Scrum + WIP/fluxo d
 
 **Lei de Little:** `Cycle time médio ≈ WIP / Throughput` — **reduzir o WIP reduz o tempo de entrega** (sem trabalhar mais rápido). **Use métricas para melhorar o sistema, nunca para avaliar pessoas.** Medir indivíduos gera manipulação e destrói a colaboração. Complemente com as métricas **DORA** de entrega (frequência de deploy, lead time de mudança, taxa de falha de mudança, tempo de restauração — `github-actions-aws`, `argocd`, `observability`): times que entregam **pequeno e frequente** com **qualidade** têm menos falhas, não mais.
 
+### Estabilidade e vazão (DORA)
+
+As métricas acima medem o fluxo do **trabalho**; estas medem a **entrega de software**. São quatro, em dois pares:
+| Par | Métrica | Definição operacional | De onde vem o dado |
+|---|---|---|---|
+| **Vazão** | **Frequência de deploy** | Deploys em produção por dia/semana | Eventos de deploy do pipeline (`github-actions-aws`, `github-actions-cloud`) ou syncs do `argocd` |
+| **Vazão** | **Lead time de mudança** | Do commit (ou do merge na `main`) até estar em produção | Timestamp do commit × timestamp do deploy da mesma imagem (tag = SHA) |
+| **Estabilidade** | **Taxa de falha de mudança** | % dos deploys que geram incidente, rollback, revert ou hotfix | Deploys marcados como revertidos ou seguidos de hotfix; incidentes ligados a um deploy |
+| **Estabilidade** | **Tempo de restauração** | Da detecção da falha em produção até o serviço normalizado | Abertura e fechamento do incidente; alarme disparado e resolvido (`observability`) |
+
+- **As duas famílias andam juntas.** Os dados do *Accelerate* mostram que os times que entregam com mais frequência também falham menos e se recuperam mais rápido: lotes pequenos têm menos risco e são mais fáceis de reverter. Trocar estabilidade por velocidade, ou o contrário, costuma piorar as duas.
+- **Meça do pipeline, não de planilha**: cada deploy registra o SHA, o ambiente e o horário; cada incidente aponta o deploy que o causou. Sem isso, os números viram opinião.
+- **Tendência, não meta**: acompanhe a evolução do próprio time por trimestre. As faixas de referência dos relatórios anuais servem de contexto, não de alvo; meta sobre DORA produz deploys vazios e incidentes não registrados (lei de Goodhart, como na cobertura — `test-coverage`).
+- **Nunca por pessoa**: são métricas do sistema de entrega (pipeline, arquitetura, processo), como as de fluxo.
+- **Quando pioram, o que olhar**: lead time alto → PR grande, fila de revisão, pipeline lento, deploy manual (`github-actions`, "Pipeline como máquina de feedback"); falha alta → lotes grandes, poucos testes de integração, sem entrega progressiva (`release-management`); restauração lenta → sem rollback rápido, sem alarme acionável, sem runbook (`observability`, `aws-observability`).
+
 ## 6. Dupla trilha: descoberta e entrega
 
 (`product-discovery`) Enquanto a engenharia **entrega o que já foi validado**, PM + design + um engenheiro **descobrem o próximo**:
@@ -141,9 +157,15 @@ O motor da melhoria. Formato simples (60 min): **o que foi bem · o que não foi
 - **Sprint Goal** é uma frase de **valor**, não lista de tarefas; **o time puxa** o que cabe na **capacidade real** (com buffer para bugs/dívida); **o PM não empurra** itens.
 - **Refinamento contínuo** com PM + tech lead + QA: histórias **prontas (DoR)**, critérios de aceite, fatiadas, dependências mapeadas; ~2 sprints à frente.
 - **Estimativa é previsão incerta**: intervalos/P-M-G, **pontos não medem produtividade nem são meta**; prefira **forecast por vazão (Monte Carlo)** com **faixas e probabilidades**; itens **pequenos** tornam tudo mais previsível; **negocie escopo, não estimativa**.
-- **Métricas de fluxo** (lead/cycle time com percentis, throughput, WIP, aging, defeitos) para melhorar **o sistema**, **nunca avaliar pessoas**; **reduzir WIP** reduz o tempo de entrega (Lei de Little); acompanhe também **DORA**.
+- **Métricas de fluxo** (lead/cycle time com percentis, throughput, WIP, aging, defeitos) para melhorar **o sistema**, **nunca avaliar pessoas**; **reduzir WIP** reduz o tempo de entrega (Lei de Little).
+- **Estabilidade e vazão (DORA)**: frequência de deploy, lead time de mudança, taxa de falha de mudança e tempo de restauração, medidas a partir do pipeline e dos incidentes; as duas famílias melhoram juntas; tendência do time, nunca meta nem métrica de pessoa.
 - **Dupla trilha**: só entra no backlog de entrega o que foi **validado** (`product-discovery`); reserve capacidade para descoberta.
 - **Interrupções existem**: buffer, severidade clara (P1/P2/P3), canal único, rotação de suporte, **ações de post-mortem priorizadas**.
 - **Dependências**: mapear cedo, reduzir por design (contratos, fatias verticais), combinar contrato antes de codar, escalar cedo.
 - **Retrospectiva** com 1–3 ações (dono e prazo) **acompanhadas**; segurança psicológica; foco no sistema.
 - **Parceria PM ↔ tech lead**: o PM define **o quê/por quê**, o tech lead **como/viabilidade e saúde técnica**; acordos explícitos de prioridade, DoR/DoD, capacidade para dívida e estimativa.
+
+## Referências
+
+- Nicole Forsgren, Jez Humble e Gene Kim, *Accelerate* (IT Revolution, 2018), origem das métricas DORA.
+- David Farley, *Modern Software Engineering* (Addison-Wesley, 2022): estabilidade e vazão como a medida de uma abordagem de engenharia.

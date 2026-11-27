@@ -351,7 +351,7 @@ Um teste **flaky** passa e falha **sem mudança de código**. Corrói a confian�
 
 - **Pirâmide clássica** (muitos unit, alguns integration, poucos e2e): ótima para **serviços com regra de negócio rica**.
 - **"Honeycomb"/troféu** (poucos unit, **muitos testes de integração do serviço**, poucos e2e): serve melhor a **microsserviços "finos"** (muita cola e integração, pouca regra), onde o **risco está nas fronteiras** (banco, mensageria, HTTP). Aqui o foco é **integração do serviço com dependências reais** (`integration-testing`) + **contratos** entre serviços (`contract-testing`) — e **pouquíssimos** e2e.
-**Escolha pelo onde mora o risco**, não por religião. Em qualquer formato: **regra de negócio em unit tests rápidos**, **integração com o real nas fronteiras**, **contratos entre serviços**, **e2e só de fumaça**.
+Pela árvore de decisão de `strategic-ddd`: **Transaction Script** (o flat-by-layer de CRUD) pede **pirâmide invertida** (a lógica vive junto do banco, então a integração prova mais); **Active Record** pede o **diamante**/honeycomb; **Domain Model** pede a **pirâmide**. **Escolha pelo onde mora o risco**, não por religião. Em qualquer formato: **regra de negócio em unit tests rápidos**, **integração com o real nas fronteiras**, **contratos entre serviços**, **e2e só de fumaça**.
 | O que provar | Nível |
 |---|---|
 | Regra de negócio, cálculo, validação | **Unit** (puro, sem Spring) |

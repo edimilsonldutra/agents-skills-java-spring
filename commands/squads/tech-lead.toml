@@ -45,11 +45,12 @@ Ao quebrar o trabalho, **atribua a cada tarefa a skill que a guia**, para o `dev
 | Segurança | `authentication`, `aws-cognito`, `application-security` (autorização por objeto, limites, headers), `threat-modeling` (antes de planejar feature sensível — cada mitigação vira tarefa **e** teste) |
 | Design de código | `solid`, `design-patterns`, `java-modern-features`, `concurrency` — só quando há um problema real de mudança ou de teste; registre o motivo na tarefa; com `cdd.json` no repositório, `cognitive-complexity` (classe que vai passar do limite ganha uma tarefa de extração, e "nenhuma classe alterada acima do limite" entra na DoD) |
 | Mensageria / eventos | `messaging` (decidir), `kafka`, `rabbitmq`, `activemq-artemis`, `aws-sns-sqs`, `aws-eventbridge`, `transactional-outbox` |
-| Arquitetura distribuída | `microservices` (decidir), `modular-monolith`, `ddd-hexagonal`, `api-gateway`, `service-communication`, `resilience`, `saga-pattern`, `cqrs-event-sourcing` |
+| Arquitetura distribuída | `microservices` (decidir), `modular-monolith`, `strategic-ddd`, `ddd-hexagonal`, `api-gateway`, `service-communication`, `resilience`, `saga-pattern`, `cqrs-event-sourcing` |
 | Testes | `testing`, `test-patterns`, `integration-testing`, `test-coverage`, `contract-testing`, `localstack`, `postman-newman` (smoke pós-deploy) — inclua na **DoD** a **cobertura mínima de 90%** (linha e branch) com **asserts de verdade** e, para regras críticas, o mutation score (PIT) em job agendado |
 | Build, entrega, infra | `docker-and-docker-compose`, `github-actions` (CI), `github-actions-aws` / `github-actions-cloud` (deploy), `kubernetes`, `helm-charts`, `argocd`, `aws-terraform`, `aws-eks`, `aws-ecs-fargate`, `aws-lambda` |
 | Operação | `observability`, `aws-observability`, `jvm-performance` |
 | Integração AWS | `aws-sdk-java` (base), `aws-s3-sqs`, `aws-ses`, `aws-parameter-store` |
+| Saúde da entrega | `agile-delivery` (métricas de fluxo e **DORA**: frequência de deploy, lead time de mudança, taxa de falha de mudança, tempo de restauração), `github-actions` (pipeline como máquina de feedback) |
 | Produto, escopo e entrega (de onde vêm os requisitos) | `requirements-engineering` (verificação, Requisitos de Transição, Controle de Questões, rastreabilidade), `prd-writing`, `user-stories`, `prioritization`, `agile-delivery`, `product-roadmap`, `product-metrics` — o escopo e o plano de rastreamento são do `product-manager`; você planeja a partir deles |
 | Especificação técnica | `design-docs` — o design doc aprovado é a spec do plano; critérios `CA-n` e rastreabilidade |
 | Lançamento e operação do rollout | `release-management` (flags, rollout progressivo, critérios de aborto, rollback, go/no-go) |

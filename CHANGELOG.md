@@ -2,6 +2,62 @@
 
 Mudanças notáveis do plugin `squads`. A versão é a de `.claude-plugin/plugin.json`; quem já instalou só recebe uma mudança quando ela sobe.
 
+## 2.25.0 — 2026-11-26
+
+### Kubernetes para desenvolvedores (Denniss)
+- `kubernetes`: estratégias de rollout (RollingUpdate, Recreate, blue/green), classes de QoS e `PriorityClass`; escala de consumidores pela fila ou pelo lag com KEDA (`ScaledObject` com o trigger de fila SQS e identidade do workload, trigger de Kafka); separar cargas por node com taints e tolerations (Spot para workers); seção "Workers, Jobs e CronJobs" (worker sem Service, Job idempotente com prazo, CronJob com `concurrencyPolicy: Forbid` e `timeZone` no lugar de `@Scheduled` com várias réplicas, estado em serviços gerenciados e volume efêmero genérico); seção "Segurança do namespace" (Pod Security Admission, NetworkPolicy negando tudo, ServiceAccount sem token); novas linhas de troubleshooting; referências. Manifests do KEDA conferidos na documentação oficial.
+- `messaging`: o lag também é a métrica de escala dos consumidores. `code-reviewer`: achados de worker escalado por CPU, HPA junto com KEDA, CronJob sem `Forbid`, grace period curto, namespace sem NetworkPolicy ou Pod Security e `@Scheduled` com várias réplicas.
+- Eval `workers-no-kubernetes` (gatilho de `kubernetes`, sem disparar `helm-charts`). Ainda não executado.
+
+## 2.24.0 — 2026-11-26
+
+### Engenharia de software moderna (Farley)
+- `agile-delivery`: "Estabilidade e vazão (DORA)" com as quatro métricas, definição operacional, fonte do dado no pipeline e nos incidentes, a relação entre vazão e estabilidade, uso como tendência (nunca meta nem por pessoa) e o que olhar quando pioram.
+- `github-actions`: "Pipeline como máquina de feedback" (estágio de commit em menos de ~10 minutos, aceitação sobre a mesma imagem, artefato único promovido, `main` sempre liberável, branches curtas, build vermelho para a linha, medir o próprio pipeline).
+- `release-management`: deploys pequenos ligados à taxa de falha e ao tempo de restauração. `tech-lead` e `product-manager` passam a citar DORA.
+- Eval `estabilidade-e-vazao` (gatilho de `agile-delivery`/`github-actions`, sem disparar `product-metrics`). Ainda não executado.
+
+## 2.23.1 — 2026-11-26
+
+### Docker: endurecimento e build
+- `docker-and-docker-compose`: `COPY` em vez de `ADD`; segredo de build por montagem de segredo do BuildKit (com cache do repositório Maven); labels OCI ligando a imagem ao repositório e ao commit; endurecimento do serviço no compose (`read_only` com `tmpfs`, `cap_drop: ALL`, sem escalada de privilégio, limites de CPU e memória ligados ao `MaxRAMPercentage`). Baseado na documentação oficial do Docker; o livro *Docker for Developers* (Packt, 2020) foi avaliado e não usado.
+
+## 2.23.0 — 2026-11-26
+
+### Refatoração: o catálogo de Fowler completo
+- `refactoring` com base em Martin Fowler, *Refatoração* (2ª ed.): os momentos de refatorar (preparatória, para compreensão, catar o lixo, planejada, de longo prazo, no review), branches e integração diária, refatoração e desempenho; a tabela de smells completa com os 24 do livro (dados globais e mutáveis, laços, elemento ocioso, campo temporário, trocas escusas, classes alternativas, herança recusada, classe de dados fora do flat-by-layer); exemplo de Split Phase; índice das 61 refatorações nos 7 grupos com notas Java/Spring; referências.
+- `code-reviewer`: achados de argumento de flag, consulta que modifica estado, laço que faz várias coisas e herança recusada. `developer` aponta para o catálogo ao refatorar.
+- Eval `catalogo-de-refatoracao` (gatilho de `refactoring`, sem disparar `file-import-export`). Ainda não executado.
+
+## 2.22.0 — 2026-11-26
+
+### Nova skill: DDD estratégico
+- Nova skill `strategic-ddd` (fundamentada em Vlad Khononov, *Learning Domain-Driven Design*): identificação de subdomínios (Core, Supporting, Generic) por vantagem competitiva, complexidade e volatilidade; linguagem ubíqua; bounded contexts × subdomínios; context map com as 7 relações (Partnership, Shared Kernel, Customer–Supplier, Conformist, ACL, Open-Host Service, Separate Ways) e diagrama Mermaid; EventStorming em 10 passos; árvore de decisão tática (Transaction Script, Active Record, Domain Model, event sourcing → camadas, ports & adapters, CQRS → pirâmide invertida, diamante, pirâmide); evolução das decisões (mudança de tipo de subdomínio, migração entre padrões com evento de migração, mudanças de organização).
+- `ddd-hexagonal`: a seção estratégica passa para `strategic-ddd`; fica um resumo do que chega ao código.
+- `saga-pattern`: saga × process manager. `service-communication`: tradução com estado na ACL. `test-patterns`: forma da suíte pela lógica de negócio. `requirements-engineering`: EventStorming entre as técnicas de elicitação.
+- Encadeada em `microservices`, `monolith-decomposition`, `guide`, `README.md`, `docs/guide.md`, `architect`, `orchestrator`, `tech-lead` e `code-reviewer`.
+- Eval `subdominios-e-context-map` (gatilho de `strategic-ddd`, sem disparar `microservices`). Ainda não executado.
+- 99 skills.
+
+## 2.21.0 — 2026-11-26
+
+### Padrões de implementação (Kent Beck)
+- `code-style`: seção "Código que comunica" (valores comunicação, simplicidade e flexibilidade; princípios consequências locais, minimizar repetição, lógica e dados juntos, simetria, expressão declarativa e taxa de mudança), nomes que revelam intenção e método composto; seção "Coleções" (interface pela semântica, vazia em vez de `null`, imutáveis, cópia de segurança respeitando o Dozer, parâmetro coletor); referências.
+- `refactoring`: Replace Method with Method Object e nome que não revela intenção no catálogo de smells.
+- `code-reviewer`: achados de nome sem intenção, mistura de níveis de abstração, coleção `null` e `List` no lugar de `Set`.
+- Eval `codigo-que-comunica` (gatilho de `code-style`/`refactoring`, sem disparar `cognitive-complexity`). Ainda não executado.
+
+## 2.20.0 — 2026-11-26
+
+### Design orientado a objetos simples (Aniche)
+- `solid`: tipos próprios nas fronteiras (sem classes de SDK em services e domínio); pré-condição × regra de validação de negócio como componente próprio; estado com regra muda só por método de negócio da entity, mantendo os setters do flat-by-layer para o Dozer (sem setter e com coleção imutável só em contexto DDD); quando **criar** uma abstração e o que a torna boa; novas linhas na tabela de revisão.
+- `design-patterns`: regra generalizada, com a regra no código e os valores em dado (`ExtendedLoanPromotion`), e quando usar Strategy em vez dela.
+- `ddd-hexagonal`: usar a infraestrutura por inteiro atrás de operações com nome de negócio, contrapeso ao "banco é detalhe".
+- `modular-monolith`: módulos profundos (interface pequena sobre funcionalidade complexa), compatibilidade, pontos de extensão, dono e acoplamento acidental documentado.
+- `exception-handling`: exceptions de infraestrutura traduzidas no adapter para exceptions de domínio.
+- `code-reviewer`: achados de setter de estado chamado pelo service, tipo de SDK circulando e regra repetida com valores diferentes.
+- Eval `design-simples` (gatilho de `solid`/`design-patterns`, sem disparar `ddd-hexagonal`). Ainda não executado.
+
 ## 2.19.0 — 2026-11-26
 
 ### Microsserviços orientados a eventos (Bellemare)

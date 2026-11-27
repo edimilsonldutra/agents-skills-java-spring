@@ -35,6 +35,8 @@ Pedido criado ─► Reservar estoque ─► Cobrar pagamento ─► Confirmar p
 | Risco | Difícil **ver/depurar o fluxo**; dependências cíclicas; "quem faz o quê?" | O orquestrador vira ponto central (mantenha **sem regra de negócio dos participantes**) |
 | Observar o estado | Reconstruir a partir de eventos | Consulta direta ao estado da saga |
 
+**Saga × Process Manager.** Na terminologia de DDD, *saga* é o coordenador simples que **reage a eventos emitindo comandos** (um mapeamento evento → comando, com compensação), e *process manager* é o coordenador **com estado e decisão central**: guarda em que passo o processo está e escolhe caminhos com ramificação, prazos e repetição. O orquestrador da seção 3.2 é, nesses termos, um process manager. Use o nome que o time entende, mas saiba qual dos dois você está construindo: se há ramificação e estado de processo, é um process manager e merece estado persistido, testes de cada caminho e observabilidade.
+
 **Regra prática:** **coreografia para fluxos curtos e lineares; orquestração assim que houver > 3–4 passos, ramificação ou prazos.** A maioria dos sistemas reais com compensação acaba **orquestrando**.
 
 ---

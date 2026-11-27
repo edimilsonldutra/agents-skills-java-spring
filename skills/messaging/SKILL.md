@@ -139,7 +139,7 @@ Eventos de entidade evitam que cada consumidor chame o produtor por HTTP para "c
 ## 6. Observabilidade
 
 Monitore o **atraso**, não só se o processo está de pé:
-- **Lag** do consumer (Kafka `records-lag-max`; SQS `ApproximateAgeOfOldestMessage`; RabbitMQ `messages_ready`) — o alerta mais importante.
+- **Lag** do consumer (Kafka `records-lag-max`; SQS `ApproximateAgeOfOldestMessage`; RabbitMQ `messages_ready`) — o alerta mais importante. No Kubernetes, é também a métrica para **escalar** os consumidores (KEDA — `kubernetes`), não a CPU.
 - **Profundidade da fila e da DLQ**, taxa de publicação × consumo, taxa de erro, tempo de processamento (`Timer` Micrometer — `observability`).
 - **Trace e correlation id** propagados nos *headers* da mensagem (o Micrometer Tracing instrumenta Kafka/RabbitMQ/JMS quando `observation` está habilitada).
 - Logue `eventId`/`eventType`/chave a cada processamento (sem payload sensível).

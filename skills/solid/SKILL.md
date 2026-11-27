@@ -132,6 +132,7 @@ A regra de negócio depende de **abstrações**; os detalhes (SMTP, S3, HTTP, ba
 - Respeite a preferência de injeção do projeto (field por padrão, constructor se escolhido — `code-organization`). A injeção por constructor deixa as dependências **visíveis** (e um constructor enorme denuncia uma violação de **S**), mas a inversão vale com qualquer uma.
 - **Interface com uma única implementação não é obrigatória.** `BookService` não precisa de `BookServiceImpl`: o Mockito mocka classes, e o Spring injeta classes. Crie a interface quando houver **mais de uma implementação real**, quando ela for um **port** de um domínio hexagonal, ou quando a dependência é **externa e instável** (um parceiro, um provedor que pode ser trocado).
 - Configuração também é dependência: valores por `@Value`/`@ConfigurationProperties`, nunca constantes com URL, timeout ou credencial no código.
+- **Exija e devolva só tipos que são seus.** Classes do SDK ou da biblioteca (`S3Object`, a resposta do client do parceiro, o `Message` do SDK de chat) não circulam por services e domínio: um adapter na borda converte para records e DTOs do projeto (`service-communication`, `ddd-hexagonal`). Quando a biblioteca mudar, a mudança fica num lugar só. Não exagere: `LocalDate`, `BigDecimal` e tipos estáveis do JDK ou do Spring são tipos de base, não acoplamento a evitar.
 
 ---
 
@@ -178,6 +179,30 @@ var bookIds = request.getItems().stream().map(LoanItemRequest::getBookId).toList
 ```
 A derivação vai para o dono: `request.bookIds()`. Vale também para DTO de request, que pode entregar o próprio dado derivado; um método sem o prefixo `get` não vira property para o Jackson. Iterar uma variável local, um campo da própria classe ou um parâmetro que já é a coleção não é achado.
 
+### Pré-condição × regra de validação de negócio
+
+São coisas diferentes e moram em lugares diferentes:
+- **Pré-condição** é o mínimo para o método funcionar ("não nulo", "quantidade positiva"): checada no próprio método ou no construtor, com guard clause (`code-style`), e na borda pela Bean Validation (`bean-validation`).
+- **Regra de validação de negócio** depende de outros dados ("o sócio não pode ter mais de 3 empréstimos ativos", "não pode renovar com multa pendente"): vira um **componente próprio** (`LoanLimitRule`, ou uma lista de regras combináveis — `design-patterns`, Composite), chamado pelo service **antes** da ação. O chamador não precisa saber que a validação existe; o service garante a ordem.
+
+Assim a entity não precisa de repository para se validar, e cada regra tem um teste.
+
+### Estado com regra muda só por método de negócio
+
+No flat-by-layer, a entity tem getter e setter para todos os campos, porque o mapper (Dozer) os usa (`code-organization`). Isso continua. O que muda é **quem chama** os setters dos campos de **estado com regra** (status, contadores, datas de ciclo de vida, coleções):
+```java
+// ❌ o service decide a transição campo a campo
+loan.setStatus(LoanStatus.RENEWED);
+loan.setRenewals(loan.getRenewals() + 1);
+loan.setDueDate(loan.getDueDate().plusDays(14));
+```
+```java
+loan.renew(clock);
+```
+- Setter é para atributo **descritivo** (título, descrição, observação) e para o mapper. Campo de estado muda por um **método de negócio** da entity, que aplica a regra e as invariantes num lugar só.
+- Coleção com regra (itens do empréstimo) muda por `addItem`/`removeItem` na entity (`jpa-advanced-mapping`), nunca por `getItems().add(...)` no service.
+- Em contexto com DDD decidido (`ddd-hexagonal`) vale o passo seguinte: sem setter público nos campos de estado e getter de coleção devolvendo lista imutável. No flat-by-layer, o Dozer precisa dos setters e da coleção mutável; não aplique ali.
+
 **Severidade depende do layout do projeto.** No flat-by-layer do pacote, entities com getters/setters e regras no service **são o padrão** (`code-organization`): o service lendo campos da entity para mapear, persistir ou montar o DTO de resposta não é achado. Ali, os três sinais são 🟡 **Minor** (sugestão de mover a regra para a entity ou para uma policy), e passam a 🟠 **Major** quando a **mesma regra aparece em dois lugares** (conhecimento duplicado, que diverge na primeira mudança). Em contexto com DDD decidido (`ddd-hexagonal`), regra de negócio fora do aggregate dono é 🟠 desde a primeira vez. Navegação longa só para **ler e reexpor** (DTO de saída, log, e-mail) é no máximo 🔵 **Nit**: sugira um acessor delegado (`loan.memberCity()`) ou traga o dado pronto no DTO.
 
 ---
@@ -188,6 +213,16 @@ A derivação vai para o dono: `request.bookIds()`. Vale também para DTO de req
 - **Código que não muda:** o benefício do SOLID aparece na mudança. Uma classe estável, testada e feia pode ficar como está (`refactoring`: quando não refatorar).
 - **Abstrair antes da segunda variação real.** Com uma implementação, você ainda não sabe qual é a abstração certa.
 - **Por estética.** "Não está SOLID" não é motivo de mudança; "precisei tocar cinco arquivos para adicionar um formato" é.
+
+### E quando **criar** uma abstração
+
+O YAGNI evita a abstração especulativa, mas há casos em que ela se paga desde o primeiro dia:
+- **Muitas variações** do mesmo comportamento, já conhecidas ou claramente a caminho (regras de multa por tipo de sócio).
+- **Combinação**: variações que se montam de formas diferentes por cliente ou por contexto (regras de renovação — `design-patterns`, Composite).
+- **Mudança esperada** num ponto específico, sabida pelo negócio, não imaginada.
+- **Decisão a esconder** do resto do sistema (o banco, o parceiro, o SDK).
+
+Uma abstração **boa**: separa o **o quê** do **como** (quem a usa não precisa conhecer as implementações); tem **contrato enxuto** (pede só o que usa, promete o que entrega); é **estável** (muda pouco, por isso acoplar a ela é barato); e é **fácil de implementar e de usar** (uma implementação nova não exige ler a dos outros). Uma abstração que todo mundo contorna, ou que muda a cada implementação nova, está errada: ajuste-a cedo, enquanto há poucos clientes.
 
 ---
 
@@ -202,6 +237,8 @@ A derivação vai para o dono: `request.bookIds()`. Vale também para DTO de req
 | Interface + `Impl` com uma implementação, sem port nem dependência externa | D (excesso) | Que problema essa abstração resolve hoje? |
 | Cadeia `a.getB().getC().getD()` | Demeter | Qual objeto deveria responder isso? |
 | `if` comparando com um campo lido de outro objeto | Coesão (tell, don't ask) | Essa regra é de quem? Ela já existe em outro lugar? |
+| Service chamando `setStatus`/`setX` de estado com regra, ou `getItems().add(...)` | Coesão (estado com regra) | Qual método de negócio da entity deveria fazer essa transição? |
+| Tipo do SDK ou do parceiro em assinatura de service ou de domínio | D (tipos próprios) | Onde está o adapter que converte na borda? |
 | Conta ou `stream().map(...)` sobre os campos/coleção de outro objeto | Coesão (inveja) | O dono não deveria entregar o resultado pronto? |
 | Classe acima do limite do `cdd.json` | Carga cognitiva (`cognitive-complexity`) | Qual bloco leva os pontos para outra classe? |
 
@@ -225,3 +262,4 @@ Achados de design são, em geral, 🟡 **Minor** — 🟠 **Major** quando já c
 ## Referências
 
 - Robert C. Martin, *Arquitetura Limpa* (Alta Books, 2019), caps. 7 a 11: SRP como "um motivo para mudar = um ator", duplicação verdadeira × acidental, OCP com controle direcional, LSP aplicado a interfaces e serviços, ISP e DIP com abstrações estáveis e factories.
+- Mauricio Aniche, *Simple Object-Oriented Design: Create clean, maintainable applications* (Manning, 2024): pré-condição × regra de validação, getters e setters que importam, tipos próprios nas fronteiras e quando criar uma abstração.

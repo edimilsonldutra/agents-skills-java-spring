@@ -1,9 +1,9 @@
 ---
 name: ddd-hexagonal
-description: DDD tático e arquitetura hexagonal no Spring Boot — bounded contexts e context map, intensidade de DDD por subdomínio (Core, Supporting, Generic), entities, value objects como records, aggregates e invariantes, domain events, ports e adapters (regra da dependência da Arquitetura Limpa, banco e framework como detalhes), limites parciais, mapeamento domínio ↔ JPA, ArchUnit, diagnóstico e refatoração de modelo anêmico e quando NÃO usar (CRUD). Use quando modelar um domínio rico ou avaliar sair do layout flat-by-layer. Não use para CRUD nem para decidir a divisão em serviços (microservices).
+description: DDD tático e arquitetura hexagonal no Spring Boot — implementa o Domain Model decidido em strategic-ddd: linguagem ubíqua no código, um modelo por bounded context, entities, value objects como records, aggregates e invariantes, domain events, ports e adapters (regra da dependência da Arquitetura Limpa, banco e framework como detalhes), limites parciais, mapeamento domínio ↔ JPA, ArchUnit, diagnóstico e refatoração de modelo anêmico e quando NÃO usar (CRUD). Use quando modelar um domínio rico ou avaliar sair do layout flat-by-layer. Não use para CRUD, para classificar subdomínios ou desenhar o context map (strategic-ddd) nem para decidir a divisão em serviços (microservices).
 ---
 
-Antes de aplicar este pattern, leia também [`../code-organization/SKILL.md`](../code-organization/SKILL.md), [`../code-style/SKILL.md`](../code-style/SKILL.md), [`../spring-data-jpa/SKILL.md`](../spring-data-jpa/SKILL.md) e [`../microservices/SKILL.md`](../microservices/SKILL.md) (onde os bounded contexts viram serviços). Esta skill **estende** `code-organization` para domínios complexos; ela **não** substitui o layout flat-by-layer para serviços simples.
+Antes de aplicar este pattern, leia também [`../code-organization/SKILL.md`](../code-organization/SKILL.md), [`../code-style/SKILL.md`](../code-style/SKILL.md), [`../spring-data-jpa/SKILL.md`](../spring-data-jpa/SKILL.md) e [`../microservices/SKILL.md`](../microservices/SKILL.md) (onde os bounded contexts viram serviços) e [`../strategic-ddd/SKILL.md`](../strategic-ddd/SKILL.md) (subdomínios, context map e quanto DDD cada parte merece). Esta skill **estende** `code-organization` para domínios complexos; ela **não** substitui o layout flat-by-layer para serviços simples.
 
 # DDD tático + Arquitetura Hexagonal
 
@@ -29,34 +29,13 @@ Todo limite parcial tende a se degradar sem verificação: registre a escolha em
 
 ---
 
-## 1. Estratégico: linguagem, bounded contexts, context map
+## 1. Estratégico (as decisões vêm de `strategic-ddd`)
 
-- **Ubiquitous language:** o código usa os **mesmos termos do negócio** (`Loan`, `returnBook`, `overdue`), em inglês nos identificadores (regra do pack), com um **glossário** compartilhado com os especialistas. Se o negócio diz "empréstimo" e o código diz `Rental`, há ruído.
-- **Bounded context:** a fronteira onde um **modelo e uma linguagem são consistentes**. "Book" no `catalog` (título, ISBN, autor) ≠ "Book" no `lending` (exemplar físico emprestável). **Não** crie um `Book` universal. Cada contexto vira, tipicamente, **um serviço** (ou um módulo — `modular-monolith`).
-- **Context map** — como os contextos se relacionam:
-  | Relação | Significado |
-  |---|---|
-  | **Customer–Supplier** | O contexto *upstream* (fornecedor) atende às necessidades do *downstream* (cliente) |
-  | **Conformist** | O downstream aceita o modelo do upstream como está (sem poder de negociação) |
-  | **Anti-Corruption Layer (ACL)** | O downstream **traduz** o modelo do upstream para o seu, **isolando-se** dele — essencial ao integrar com **legado** ou modelo "sujo" de terceiros |
-  | **Open Host Service / Published Language** | O upstream publica uma API/esquema **estável e documentado** para muitos consumidores (`contract-testing`) |
-  | **Shared Kernel** | Pequeno modelo **compartilhado** entre dois contextos (use com muito cuidado: acoplamento) |
-
-  O **ACL** é o padrão mais útil na prática: um adapter que chama o sistema externo e converte para tipos do **seu** domínio.
-
-### Intensidade por subdomínio — quanto DDD cada contexto merece
-
-DDD não é sim ou não para o sistema inteiro: a decisão é **por bounded context**, pelo tipo de subdomínio.
-
-| Subdomínio | O que é | Exemplo | Intensidade tática | Layout |
-|---|---|---|---|---|
-| **Core** | Onde o negócio se diferencia; regra rica e que muda muito | `lending` (políticas de empréstimo, multa, reserva) | **Completa**: aggregates com invariantes, VOs, domain events, testes de domínio puros | Hexagonal (pura ou pragmática) |
-| **Supporting** | Específico do negócio, mas sem diferencial; pouca regra | `member` (cadastro de sócios) | **Moderada**: VOs onde há validação (`Email`, `Cpf`), métodos de negócio onde há estado | Flat-by-layer, com os VOs que se pagam |
-| **Generic** | Problema resolvido que todo mundo tem | `notification`, identidade, auditoria | **Mínima**: CRUD ou produto pronto (build × buy — `technical-product-management`) | Flat-by-layer ou serviço gerenciado (`aws-cognito`, `aws-ses`) |
-
-- **Forçar modelo rico onde não há invariante é over-engineering**; tratar o Core como CRUD é o erro oposto (as regras vazam para os services e se duplicam).
-- A classificação é uma **decisão de arquitetura**: registre-a no ADR do `architect`, por contexto. Em monolito existente, ela sai da análise de `monolith-decomposition` (seção 5).
-- **Core não é "o mais importante"** (pagamento é crítico, mas costuma ser Generic): é onde está a **vantagem competitiva** e a **regra que muda**.
+Antes do código vêm as decisões estratégicas, em `strategic-ddd`: quais são os subdomínios e o tipo de cada um (Core, Supporting, Generic), os bounded contexts, o context map e, pela árvore de decisão tática, **quanto DDD cada contexto merece**. Esta skill implementa o caso **Domain Model** (Core com regra rica). O que das decisões estratégicas chega ao código:
+- **Linguagem ubíqua nos identificadores** (em inglês), com os termos do glossário: se o negócio diz "renovação", o método é `renew`, não `extend`.
+- **Um modelo por bounded context**: o `Book` do `catalog` e o `Book` do `lending` são classes diferentes; nada de `Book` universal.
+- **Intensidade**: Core → esta skill completa; Supporting → flat-by-layer com os VOs e métodos de negócio que se pagam; Generic → CRUD ou produto pronto.
+- **ACL** é a relação do context map que mais aparece no código: um adapter que traduz o modelo de fora para os tipos do domínio (seção 3, `service-communication`).
 
 ---
 
@@ -196,6 +175,8 @@ Só carrega/salva **aggregates inteiros pelo root**. Consultas de leitura sofist
 **A regra de dependência:** tudo aponta **para dentro**. É a mesma regra da *Arquitetura Limpa*, com outros nomes: o círculo de **Entities** corresponde a `domain`, o de **Use Cases** a `application`, o de **Interface Adapters** aos `adapter`s e o de **Frameworks and Drivers** ao Spring, ao JPA, ao Kafka e ao banco. Neste pacote usamos os nomes do hexagonal. `domain` não depende de nada (nem Spring, nem JPA, nem Jackson). `application` depende de `domain`. `adapter` depende de `application`/`domain`. **Nunca** o contrário.
 
 **Banco, web e framework são detalhes.** O que o sistema **é** (as regras de empréstimo) não deveria mudar porque o banco virou DynamoDB, a entrada virou um listener SQS ou o Spring subiu de versão. Por isso o domínio não importa `jakarta.persistence`, `org.springframework` nem Jackson na variante pura: o casamento com um framework é **assimétrico** (você se compromete com ele, ele não se compromete com você), e o custo aparece na próxima versão major. Na prática do pacote, o Spring é aceito em `application` e nos adapters; o domínio fica limpo, ou aceita só JPA na variante pragmática (abaixo).
+
+**Mas use a infraestrutura por inteiro.** "Detalhe" não quer dizer "ignore o que ele oferece". Carregar 100 mil linhas para somar em Java, para não "sujar o domínio" com um `SUM` ou um `UPDATE` em massa, é pagar caro por uma troca de banco que quase nunca acontece. Use o recurso do banco ou do framework **atrás de uma operação com nome de negócio** (`LoanReport.finesByMemberInMonth(...)`, implementada com SQL de agregação no adapter): o domínio continua sem saber como, e o sistema usa o que a infraestrutura faz bem. Não brigue com o framework (proxy, transação, mapeamento): trabalhe com ele e isole só o que muda de fato. Se um `UPDATE` direto pularia uma invariante do aggregate, reveja o desenho (o objeto precisa mesmo estar no aggregate? a invariante é real?) antes de contorná-la.
 
 **Os dados que cruzam a fronteira** são estruturas simples (records de comando e de resultado, eventos), nunca a entity JPA nem o DTO HTTP: o use case recebe um `StartLoanCommand` e devolve um `LoanStarted`, e o adapter web os traduz de e para o JSON.
 
@@ -455,3 +436,4 @@ Pedido de **revisão** ("está bom?") → só diagnostique e pergunte antes de r
 ## Referências
 
 - Robert C. Martin, *Arquitetura Limpa* (Alta Books, 2019), caps. 17 a 24 e 30 a 32: fronteiras, regra da dependência, modelos de requisição e resposta, limites parciais e banco, web e frameworks como detalhes. As ideias foram mapeadas para o vocabulário hexagonal do pacote.
+- Mauricio Aniche, *Simple Object-Oriented Design: Create clean, maintainable applications* (Manning, 2024), caps. 3 e 6: consistência e agregados, separar infraestrutura do domínio sem deixar de usá-la por inteiro, e não brigar com o framework.
