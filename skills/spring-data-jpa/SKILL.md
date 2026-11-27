@@ -7,6 +7,8 @@ Antes de aplicar este pattern, leia também [`../code-organization/SKILL.md`](..
 
 # Spring Data JPA
 
+Auditoria, value objects (`@Embeddable`, `AttributeConverter`), herança, `@ElementCollection`, bidirecional sincronizado, escrita em lote, lock pessimista, `@SoftDelete` e cache de segundo nível: `jpa-advanced-mapping`.
+
 JPA direto ao ponto, com mapeamentos de coluna explícitos, sem BaseEntity, sem value objects para IDs. Primary keys auto-increment via `IDENTITY`. Schema gerenciado pelo Flyway — nunca pelo Hibernate. Os exemplos usam MySQL; quando o Step 0 escolheu outro database, mantenha os mesmos mapeamentos e troque somente o que é específico do database (driver, URL, SQL nativo, tipos de coluna nas migrations).
 
 ---

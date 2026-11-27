@@ -2,6 +2,16 @@
 
 Mudanças notáveis do plugin `squads`. A versão é a de `.claude-plugin/plugin.json`; quem já instalou só recebe uma mudança quando ela sobe.
 
+## 2.17.0 — 2026-11-26
+
+### Novas skills: Concorrência e Mapeamento JPA avançado
+- Nova skill `concurrency`: bean singleton thread-safe (campo mutável, `SimpleDateFormat`/`HashMap` compartilhados), `ConcurrentHashMap` com `computeIfAbsent`/`merge`, `AtomicLong` × `LongAdder`, locks (`synchronized`, `ReentrantLock` com `tryLock`, `ReadWriteLock`, ordem de aquisição, `InterruptedException`) e por que lock em memória não vale com várias réplicas; `@Async` com `spring.task.execution.*` (fila e concorrência limitadas, rejeição, shutdown, propagação de contexto, executor por tipo de trabalho, exceptions de `@Async void`); `CompletableFuture` e scatter-gather com executor explícito, `orTimeout`/`completeOnTimeout` e `CompletionException`; `Semaphore` com virtual threads; parallel streams; produtor-consumidor em memória × broker; `@Scheduled`; testes de corrida; checklist.
+- Nova skill `jpa-advanced-mapping`: auditoria do Spring Data (`AuditorAware`, `DateTimeProvider` com `Clock`) e callbacks; `@Embeddable` record e `AttributeConverter`; herança (`@MappedSuperclass`, `SINGLE_TABLE`, `JOINED`, `TABLE_PER_CLASS`) × composição; `@ElementCollection`, `@OrderBy`/`@OrderColumn`; bidirecional sincronizado, cascade e `orphanRemoval`; `persist` × `merge`, `getReferenceById`; escrita em lote (`IDENTITY` × `SEQUENCE` com `allocationSize`, `flush`/`clear`); lock pessimista com timeout; `@SoftDelete`; cache de segundo nível.
+- Fontes: documentação do JDK 25, Spring Framework 7, Spring Boot 4, Hibernate 7 e Jakarta Persistence 3.2; properties e anotações conferidas nos jars do Maven Central (Spring Boot 4.2.0, Spring Framework 7.1.0, Spring Data JPA 4.2.0, Hibernate 7.4.17). Os livros de Jay Wang (*Java Concurrency and Parallelism*) e Nisha Kurur (*Mastering JPA*) foram avaliados e não usados; *Java Coding Problems* (Anghel Leonard) entrou só como apoio em virtual threads.
+- Encadeadas em `java-modern-features`, `jvm-performance`, `spring-data-jpa`, `data-modeling`, `test-patterns`, `guide`, `README.md`, `docs/guide.md`, `orchestrator`, `tech-lead`, `developer`, `qa` e `code-reviewer`.
+- Evals `estado-em-bean` (gatilho de `concurrency`, sem disparar `jvm-performance`) e `auditoria-e-lote` (gatilho de `jpa-advanced-mapping`, sem disparar `data-modeling`). Ainda não executados.
+- 98 skills.
+
 ## 2.16.0 — 2026-11-26
 
 ### Nova skill: Desenho de API

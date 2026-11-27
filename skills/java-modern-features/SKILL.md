@@ -36,7 +36,7 @@ public record Money(BigDecimal amount, String currency) {
     }
 }
 ```
-**Não use para:** entities JPA (o Hibernate precisa de no-arg constructor, campos mutáveis e proxies) e os DTOs de entidade deste pack (o Dozer/MapStruct e o Jackson com `RepresentationModel` esperam classe com setters — `code-organization`). Para uma **projection** de leitura, porém, um record é ótimo: `SELECT new com.x.BookSummary(b.id, b.title) FROM Book b`.
+**Não use para:** entities JPA (o Hibernate precisa de no-arg constructor, campos mutáveis e proxies) e os DTOs de entidade deste pack (o Dozer/MapStruct e o Jackson com `RepresentationModel` esperam classe com setters — `code-organization`). Como **`@Embeddable`** (value object embutido na entity), o Jakarta Persistence 3.2 aceita record (`jpa-advanced-mapping`). Para uma **projection** de leitura, porém, um record é ótimo: `SELECT new com.x.BookSummary(b.id, b.title) FROM Book b`.
 
 ## Sealed interfaces + pattern matching em switch
 
@@ -85,6 +85,8 @@ Regras de `var` e `instanceof` com pattern já estão em `code-style`. `Optional
 ---
 
 ## Virtual threads (Java 21+)
+
+Aqui, como ligar e as armadilhas da própria virtual thread. Limitar a concorrência por recurso (`Semaphore`), executors, `@Async` e scatter-gather estão em `concurrency`.
 
 Threads baratas gerenciadas pela JVM: milhares de requests bloqueadas em I/O (database, HTTP, SQS) sem esgotar o pool de threads de plataforma. No Spring Boot:
 ```yaml

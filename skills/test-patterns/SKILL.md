@@ -304,6 +304,7 @@ class MoneyProperties {
 - **Assíncrono:** **Awaitility** (`await().atMost(...).untilAsserted(...)`) — **nunca `Thread.sleep`** (lento **e** flaky).
 - **Concorrência:** `ExecutorService` + `CountDownLatch`/`CyclicBarrier` para **largada simultânea** e `assert` no resultado (`idempotency`: N requests concorrentes → um efeito); **repita** o teste várias vezes localmente (`@RepeatedTest(50)`) para provocar a corrida — se **falha às vezes**, **é bug do código** (ou do teste), não "flaky inevitável".
 - **Tempo:** `Clock` injetado; **nunca** `sleep` para "esperar passar o tempo".
+- **Thread-safety de beans, `@Async`, `CompletableFuture` e timeouts**: o que testar está em `concurrency`, seção 9.
 - **Executores determinísticos** em unit tests (executar a tarefa na thread chamadora) para testar a lógica sem threads.
 
 ## 11. Test smells — o que cheira mal

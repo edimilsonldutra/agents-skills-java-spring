@@ -1,6 +1,6 @@
-# squads — Agents & Skills para Java 25 / Spring Boot 4 (v2.16.0)
+# squads — Agents & Skills para Java 25 / Spring Boot 4 (v2.17.0)
 
-Extensão do Gemini CLI com 96 skills no formato Agent Skills e 7 agents como comandos. As skills são descobertas automaticamente (`/skills list`); cada uma diz na `description` quando usá-la. Antes de gerar ou revisar código Spring Boot, ative `code-organization` e `code-style`, depois a skill do tema (`guide` é o índice). Nunca descreva uma skill de memória: ative-a.
+Extensão do Gemini CLI com 98 skills no formato Agent Skills e 7 agents como comandos. As skills são descobertas automaticamente (`/skills list`); cada uma diz na `description` quando usá-la. Antes de gerar ou revisar código Spring Boot, ative `code-organization` e `code-style`, depois a skill do tema (`guide` é o índice). Nunca descreva uma skill de memória: ative-a.
 
 Padrão aplicado: layout flat-by-layer sob `br.com.edimilsonldutra`, sem Lombok, entities nunca expostas, Flyway dono do schema, `ExceptionResponse`/`ProblemDetail`, OpenAPI com springdoc, autorização por objeto, JUnit 5 + Mockito + Testcontainers (nunca H2), cobertura mínima de 90%.
 

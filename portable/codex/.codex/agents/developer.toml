@@ -47,6 +47,8 @@ Além de `code-organization` e `code-style` (sempre), **leia o `SKILL.md` da ár
 | Repositório com `cdd.json` | `cognitive-complexity` — antes de entregar, conte as classes que você alterou; se alguma passou do limite, extraia levando os pontos para outra classe (ou relate o motivo) |
 | Modelagem de dados, entity, repository, migration | `data-modeling` (CAP/PACELC, ACID × BASE, isolamento, normalização, chaves e índices), `spring-data-jpa`, `flyway-migrations` (e `aws-dynamodb`/`aws-keyspaces` se for NoSQL) |
 | Records, sealed, pattern matching, virtual threads | `java-modern-features` (inclusive o que **não** usar em entities/DTOs) |
+| Código em mais de uma thread, estado em bean, `@Async`, chamadas em paralelo | `concurrency` (nada mutável em bean singleton, `computeIfAbsent`/`merge`, executor configurado, `CompletableFuture` com executor e timeout, nunca lock em memória entre réplicas) |
+| Auditoria, `@Embeddable`, converter, herança, lote, lock pessimista, soft delete | `jpa-advanced-mapping` (carregar-alterar-salvar, bidirecional sincronizado, cascade só em composição) |
 | Endpoint, validação, erros, docs | `bean-validation`, `exception-handling`, `swagger`, `web-config` (OpenAPI como contrato, grupos, exemplos: `swagger-advanced`) |
 | Endpoint além do CRUD (ação de negócio, concorrência, API pública) | `api-design` (transição de estado como `POST /{id}/<ação>`, `If-Match` + `@Version` → 412/428, DTOs de request e response separados) |
 | Listagem, links | `pagination` (limite de `size`, ordenação permitida), `hateoas` (links montados **no service**) |

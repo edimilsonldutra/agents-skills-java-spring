@@ -67,7 +67,7 @@ O CAP fala apenas de **quando há partição**. O **PACELC** (Daniel Abadi) comp
    - **Solução padrão:** **optimistic locking** (`@Version` na entity JPA — `spring-data-jpa`; `@DynamoDbVersionAttribute` — `aws-dynamodb`), mapeando `ObjectOptimisticLockingFailureException` para **409 Conflict** (`exception-handling`).
 2. **Write Skew (invariante sobre um conjunto de linhas):** ex. *"um leitor pode ter no máximo 3 empréstimos ativos"*. Duas requisições concorrentes do mesmo leitor executam `COUNT(*) WHERE member_id = ? AND status = 'ACTIVE'`, ambas veem `2` (mesmo em `REPEATABLE READ` com MVCC!), e ambas inserem o 3º e o 4º empréstimo!
    - **Soluções práticas (da mais simples para a mais forte):**
-     1. **Pessimistic lock no agregado/pai** (`@Lock(LockModeType.PESSIMISTIC_WRITE)` → `SELECT ... FOR UPDATE` na linha do `Member` ou `Book` antes de contar e inserir): serializa apenas as operações **daquele** sócio/livro, sem travar a tabela inteira.
+     1. **Pessimistic lock no agregado/pai** (repository com `@Lock` e timeout em `jpa-advanced-mapping`) (`@Lock(LockModeType.PESSIMISTIC_WRITE)` → `SELECT ... FOR UPDATE` na linha do `Member` ou `Book` antes de contar e inserir): serializa apenas as operações **daquele** sócio/livro, sem travar a tabela inteira.
      2. **Constraint única (ou única parcial)** no banco quando a invariante é de unicidade (ex.: um só empréstimo ativo por exemplar físico: `CREATE UNIQUE INDEX uq_active_loan_copy ON loans (copy_id) WHERE status = 'ACTIVE'`).
      3. **`@Transactional(isolation = Isolation.SERIALIZABLE)`** com **retry limitado** para `CannotAcquireLockException`/`ObjectOptimisticLockingFailureException` (só quando não há um registro-pai natural para travar).
 

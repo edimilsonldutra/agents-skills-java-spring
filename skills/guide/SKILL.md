@@ -32,14 +32,14 @@ Antes de descrever a lista de skills, verifique o que realmente está presente e
 ## Como as skills se agrupam
 
 - **Projeto novo e fundação (lida por todas as outras):** `scaffold` (criar projeto do zero), `code-organization` (package layout, o questionário de preferências compartilhado), `code-style` (formatação, comentários, logging).
-- **Construa a data layer:** `maven-config` (dependencies/build file), `library-docs` (confirmar classe, starter, property e versão na versão resolvida, com a fonte), `data-modeling` (CAP, PACELC, ACID × BASE, níveis de isolamento, normalização, chaves, índices, particionamento e escolha SQL × NoSQL), `spring-data-jpa` (entities, repositories, DTOs), `flyway-migrations` (schema como SQL versionado).
+- **Construa a data layer:** `maven-config` (dependencies/build file), `library-docs` (confirmar classe, starter, property e versão na versão resolvida, com a fonte), `data-modeling` (CAP, PACELC, ACID × BASE, níveis de isolamento, normalização, chaves, índices, particionamento e escolha SQL × NoSQL), `spring-data-jpa` (entities, repositories, DTOs), `jpa-advanced-mapping` (auditoria, `@Embeddable`, converters, herança, lote, lock pessimista, `@SoftDelete`, cache de segundo nível), `flyway-migrations` (schema como SQL versionado).
 - **Deixe a API sólida:** `api-design` (papéis de endpoint, transição de estado como ação, mensagens, ETag/`If-Match`, visibilidade e garantias de ciclo de vida), `exception-handling` (um contrato de erro), `web-config` (CORS + JSON/XML/YAML), `bean-validation` (rejeitar input ruim com 400), `pagination` (listas paginadas com limite), `hateoas` (links HAL nas respostas), `api-versioning` (v1 → v2 sem quebrar clients; versionamento nativo do Spring 7).
 - **Documente:** `swagger` (springdoc/OpenAPI), `swagger-advanced` (grupos por versão, erros comuns, exemplos, OpenAPI como contrato no CI, geração de clients).
 - **Arquivos e e-mail:** `file-upload-download` (upload/download seguro), `file-import-export` (XLSX/CSV, criação em massa), `pdf-reports` (JasperReports 7, QR code), `email` (Spring Mail/SMTP, assíncrono depois do commit; na AWS, `aws-ses`).
 - **Finalize um projeto novo:** `project-claude-md` gera o `CLAUDE.md` do próprio projeto do desenvolvedor.
 - **Especificação e entendimento de código:** `design-docs` (design doc / tech spec como spec do fluxo spec-driven: critérios `CA-n`, aprovação antes do plano, rastreabilidade critério → tarefa → teste), `repository-understanding` (mapa, hotspots, riscos, aderência de um repositório desconhecido), `monolith-decomposition` (acoplamento, donos das tabelas, o que extrair primeiro), `refactoring` (passos pequenos e verdes, smells, Strangler/expand → contract).
 - **Segurança e design de código:** `application-security` (OWASP API Security Top 10: IDOR, mass assignment, limites, injeção, SSRF, headers, segredos, SBOM), `threat-modeling` (STRIDE e casos de abuso antes de construir), `solid` (princípios, coesão e quando não aplicar), `cognitive-complexity` (CDD: pontos por classe e limite combinado no `cdd.json`), `design-patterns` (padrões no Spring, auto-invocação, anti-padrões).
-- **Segurança e Java:** `authentication` (JWT + Spring Security 7), `caching` (Caffeine/Redis via `@Cacheable`), `redis` (Spring Data Redis, estruturas, Lua, locks distribuídos, rate limit, Streams/Pub-Sub, Cluster/Sentinel e Valkey/ElastiCache), `java-modern-features` (Java 17–25, virtual threads), `jvm-performance` (JVM em container, pool, queries, diagnóstico).
+- **Segurança e Java:** `authentication` (JWT + Spring Security 7), `caching` (Caffeine/Redis via `@Cacheable`), `redis` (Spring Data Redis, estruturas, Lua, locks distribuídos, rate limit, Streams/Pub-Sub, Cluster/Sentinel e Valkey/ElastiCache), `java-modern-features` (Java 17–25, virtual threads), `concurrency` (beans thread-safe, coleções concorrentes, locks × várias réplicas, `@Async`, `CompletableFuture`, parallel streams), `jvm-performance` (JVM em container, pool, queries, diagnóstico).
 - **Testes:** `testing` (unit + slice), `test-patterns`, `integration-testing` (Testcontainers + REST Assured, banco real), `test-coverage` (JaCoCo, PIT), `postman-newman` (caixa-preta e smoke pós-deploy).
 - **Docker e Kubernetes:** `docker-and-docker-compose`, `observability` (Actuator, Micrometer, probes), `kubernetes`, `helm-charts`.
 - **CI/CD e GitOps:** `github-actions` (CI genérico: build, testes, cobertura, imagem no GHCR, CodeQL, Dependabot), `github-actions-aws` (deploy na AWS com OIDC), `github-actions-cloud` (deploy no Google Cloud e no Azure com OIDC), `argocd` (GitOps: Application/AppProject/ApplicationSet, migration como PreSync hook, promoção por PR).
@@ -60,6 +60,7 @@ Antes de descrever a lista de skills, verifique o que realmente está presente e
 | Configurar dependencies, BOM, plugins Maven ou Gradle | `maven-config` |
 | Modelar tabelas/entidades, escolher SQL × NoSQL, definir consistência (CAP, PACELC, ACID, BASE), isolamento e índices | `data-modeling` |
 | CRUD para uma entity | `spring-data-jpa` |
+| Auditoria, value object embutido, enum com código, herança, importação em lote, lock pessimista, soft delete, cache de segundo nível | `jpa-advanced-mapping` |
 | Schema migrations | `flyway-migrations` |
 | Responses de erro limpas e consistentes | `exception-handling` |
 | CORS, ou XML/YAML além de JSON | `web-config` |
@@ -97,6 +98,7 @@ Antes de descrever a lista de skills, verifique o que realmente está presente e
 | Cache (Caffeine/Redis/ElastiCache) | `caching` |
 | Usar Redis/Valkey além de `@Cacheable` (estruturas, Lua, lock distribuído, rate limit, Streams/Pub-Sub, Cluster, ElastiCache) | `redis` |
 | Java 17–25: records, sealed, virtual threads | `java-modern-features` |
+| Estado em bean, `ConcurrentHashMap`, locks, `@Async`, `CompletableFuture` em paralelo, parallel streams | `concurrency` |
 | API lenta, tuning de JVM/pool, OOMKilled | `jvm-performance` |
 | Imagem no ECR, cluster EKS, ALB, IRSA | `aws-eks` |
 | RDS e senhas no Secrets Manager | `aws-rds-secrets-manager` |
