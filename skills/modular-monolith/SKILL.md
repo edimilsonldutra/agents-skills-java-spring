@@ -1,6 +1,6 @@
 ---
 name: modular-monolith
-description: Monolito modular com Spring Modulith — módulos por capacidade de negócio, API pública e internals encapsulados, verificação da estrutura em teste, eventos entre módulos com publication registry, @ApplicationModuleTest, dados por módulo e extração para microsserviço. Use quando organizar uma aplicação em módulos por domínio sem pagar o custo distribuído. Não use para decidir se vale dividir (microservices) nem para medir o acoplamento de um monolito existente (monolith-decomposition).
+description: Monolito modular com Spring Modulith — módulos por capacidade de negócio, API pública e internals encapsulados, verificação da estrutura em teste, eventos entre módulos com publication registry, coesão e acoplamento entre módulos (fechamento comum, dependências na direção da estabilidade), @ApplicationModuleTest, dados por módulo e extração para microsserviço. Use quando organizar uma aplicação em módulos por domínio sem pagar o custo distribuído. Não use para decidir se vale dividir (microservices) nem para medir o acoplamento de um monolito existente (monolith-decomposition).
 ---
 
 Antes de aplicar este pattern, leia também [`../code-organization/SKILL.md`](../code-organization/SKILL.md), [`../code-style/SKILL.md`](../code-style/SKILL.md) e [`../microservices/SKILL.md`](../microservices/SKILL.md) (a decisão monolito × microsserviços). Para o modelo de domínio dentro de cada módulo, veja `ddd-hexagonal`. Para modularizar um monolito **existente**, comece pela análise de `monolith-decomposition` (quais componentes formam cada módulo e quem é dono de cada tabela).
@@ -204,7 +204,25 @@ Se (e **só se**) um módulo precisar de **escala/deploy independentes** (`micro
 4. Consumidores passam a depender de **contrato** (`contract-testing`), não de código em memória.
 Um monolito modular **bem feito** torna esse passo uma **semana de trabalho**, não uma reescrita. Um monolito **sem módulos** torna-o um projeto de meses.
 
-## 8. Armadilhas
+## 8. Coesão e acoplamento entre módulos
+
+O `verify()` impede ciclos e acesso a internals, mas não diz **o que pôr em cada módulo** nem **quem pode depender de quem**. Para isso servem os princípios de componentes:
+
+**O que fica junto (coesão):**
+- **Fechamento comum**: classes que mudam **pelo mesmo motivo e ao mesmo tempo** ficam no mesmo módulo. É o SRP aplicado a módulos (`solid`): uma mudança de regra de empréstimo deveria tocar só `lending`.
+- **Reúso comum**: não force um módulo a depender de outro por causa de uma classe só. Se `billing` usa uma única classe de `lending`, talvez ela esteja no módulo errado, ou seja um tipo de `shared/`.
+- **Reúso e versão andam juntos**: o que é publicado como API (o package raiz do módulo, um evento) muda com cuidado e de forma compatível; o resto fica em `internal/`.
+
+Os três puxam em direções opostas: priorizar o fechamento comum gera módulos maiores e mais fáceis de mudar; priorizar o reúso gera módulos menores e mais fáceis de extrair. No começo de um projeto, prefira o **fechamento comum**; quando um módulo for candidato a extração (seção 7), revise pelo reúso.
+
+**Quem depende de quem (acoplamento):**
+- **Sem ciclos**: o `verify()` já garante. Ciclo se quebra com **evento** (o dependente reage ao fato) ou invertendo a dependência com uma interface no módulo que precisa dela.
+- **Dependa na direção da estabilidade**: um módulo que muitos usam e que depende de pouco (`catalog`) é **estável** e difícil de mudar; um que depende de muitos e de quem ninguém depende (um módulo de relatórios) é **instável** e fácil de mudar. O instável depende do estável, nunca o contrário: se `catalog` passar a depender de `reports`, toda mudança em relatórios ameaça o núcleo.
+- **Módulo estável expõe abstração**: quanto mais usado, mais a API pública deve ser interfaces, records e eventos, e menos classes concretas cheias de detalhe. Módulo muito usado e cheio de concreto é rígido; módulo abstrato que ninguém usa é especulação (`solid`: YAGNI).
+
+Use a métrica só como diagnóstico: **instabilidade** = dependências de saída ÷ (entrada + saída). O `Documenter` do Modulith desenha o grafo; setas apontando de módulos estáveis para instáveis são as primeiras a revisar (`monolith-decomposition` faz a mesma análise num legado).
+
+## 9. Armadilhas
 
 - **Módulos por camada** (`controller/`, `service/`) — não são módulos de negócio.
 - **`shared/` virando depósito**: tudo "compartilhado" vira acoplamento oculto. Só tipos **realmente** transversais e estáveis (`Money`, erros comuns); o que tem regra de negócio tem dono.
@@ -226,7 +244,12 @@ Um monolito modular **bem feito** torna esse passo uma **semana de trabalho**, n
 - **Event publication registry** (outbox embutido, tabela por Flyway, `republish-outstanding-events-on-restart`) → entrega at-least-once → **listeners idempotentes**; monitore publicações paradas.
 - **Cada módulo é dono das suas tabelas**: sem JOIN e sem FK entre módulos, IDs como referência, migrations por módulo.
 - Teste cada módulo com `@ApplicationModuleTest` + `Scenario` (sem `sleep`); banco real em container.
+- **Coesão por fechamento comum** (o que muda junto fica junto); **dependências na direção da estabilidade** (instável → estável), módulos muito usados expõem abstrações.
 - **Extraia para microsserviço só com motivo concreto**; a extração troca chamadas por APIs e eventos internos por eventos de integração.
 - Organize por **módulo de negócio** quando houver vários domínios; flat-by-layer (`code-organization`) para um serviço de domínio único.
 - Confirme na versão resolvida os módulos/propriedades do Spring Modulith.
 - **Sem Lombok** — deliberado.
+
+## Referências
+
+- Robert C. Martin, *Arquitetura Limpa* (Alta Books, 2019), caps. 13 e 14 (princípios de coesão e de acoplamento de componentes: REP, CCP, CRP, ADP, SDP, SAP) e 34 (pacote por componente). Os princípios foram reescritos para módulos do Spring Modulith.

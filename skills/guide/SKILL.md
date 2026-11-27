@@ -32,14 +32,14 @@ Antes de descrever a lista de skills, verifique o que realmente está presente e
 ## Como as skills se agrupam
 
 - **Projeto novo e fundação (lida por todas as outras):** `scaffold` (criar projeto do zero), `code-organization` (package layout, o questionário de preferências compartilhado), `code-style` (formatação, comentários, logging).
-- **Construa a data layer:** `maven-config` (dependencies/build file), `library-docs` (confirmar classe, starter, property e versão na versão resolvida, com a fonte), `data-modeling` (CAP, PACELC, ACID × BASE, níveis de isolamento, normalização, chaves, índices, particionamento e escolha SQL × NoSQL), `spring-data-jpa` (entities, repositories, DTOs), `flyway-migrations` (schema como SQL versionado).
-- **Deixe a API sólida:** `exception-handling` (um contrato de erro), `web-config` (CORS + JSON/XML/YAML), `bean-validation` (rejeitar input ruim com 400), `pagination` (listas paginadas com limite), `hateoas` (links HAL nas respostas), `api-versioning` (v1 → v2 sem quebrar clients; versionamento nativo do Spring 7).
+- **Construa a data layer:** `maven-config` (dependencies/build file), `library-docs` (confirmar classe, starter, property e versão na versão resolvida, com a fonte), `data-modeling` (CAP, PACELC, ACID × BASE, níveis de isolamento, normalização, chaves, índices, particionamento e escolha SQL × NoSQL), `spring-data-jpa` (entities, repositories, DTOs), `jpa-advanced-mapping` (auditoria, `@Embeddable`, converters, herança, lote, lock pessimista, `@SoftDelete`, cache de segundo nível), `flyway-migrations` (schema como SQL versionado).
+- **Deixe a API sólida:** `api-design` (papéis de endpoint, transição de estado como ação, mensagens, ETag/`If-Match`, visibilidade e garantias de ciclo de vida), `exception-handling` (um contrato de erro), `web-config` (CORS + JSON/XML/YAML), `bean-validation` (rejeitar input ruim com 400), `pagination` (listas paginadas com limite), `hateoas` (links HAL nas respostas), `api-versioning` (v1 → v2 sem quebrar clients; versionamento nativo do Spring 7).
 - **Documente:** `swagger` (springdoc/OpenAPI), `swagger-advanced` (grupos por versão, erros comuns, exemplos, OpenAPI como contrato no CI, geração de clients).
 - **Arquivos e e-mail:** `file-upload-download` (upload/download seguro), `file-import-export` (XLSX/CSV, criação em massa), `pdf-reports` (JasperReports 7, QR code), `email` (Spring Mail/SMTP, assíncrono depois do commit; na AWS, `aws-ses`).
 - **Finalize um projeto novo:** `project-claude-md` gera o `CLAUDE.md` do próprio projeto do desenvolvedor.
 - **Especificação e entendimento de código:** `design-docs` (design doc / tech spec como spec do fluxo spec-driven: critérios `CA-n`, aprovação antes do plano, rastreabilidade critério → tarefa → teste), `repository-understanding` (mapa, hotspots, riscos, aderência de um repositório desconhecido), `monolith-decomposition` (acoplamento, donos das tabelas, o que extrair primeiro), `refactoring` (passos pequenos e verdes, smells, Strangler/expand → contract).
 - **Segurança e design de código:** `application-security` (OWASP API Security Top 10: IDOR, mass assignment, limites, injeção, SSRF, headers, segredos, SBOM), `threat-modeling` (STRIDE e casos de abuso antes de construir), `solid` (princípios, coesão e quando não aplicar), `cognitive-complexity` (CDD: pontos por classe e limite combinado no `cdd.json`), `design-patterns` (padrões no Spring, auto-invocação, anti-padrões).
-- **Segurança e Java:** `authentication` (JWT + Spring Security 7), `caching` (Caffeine/Redis via `@Cacheable`), `redis` (Spring Data Redis, estruturas, Lua, locks distribuídos, rate limit, Streams/Pub-Sub, Cluster/Sentinel e Valkey/ElastiCache), `java-modern-features` (Java 17–25, virtual threads), `jvm-performance` (JVM em container, pool, queries, diagnóstico).
+- **Segurança e Java:** `authentication` (JWT + Spring Security 7), `caching` (Caffeine/Redis via `@Cacheable`), `redis` (Spring Data Redis, estruturas, Lua, locks distribuídos, rate limit, Streams/Pub-Sub, Cluster/Sentinel e Valkey/ElastiCache), `java-modern-features` (Java 17–25, virtual threads), `concurrency` (beans thread-safe, coleções concorrentes, locks × várias réplicas, `@Async`, `CompletableFuture`, parallel streams), `jvm-performance` (JVM em container, pool, queries, diagnóstico).
 - **Testes:** `testing` (unit + slice), `test-patterns`, `integration-testing` (Testcontainers + REST Assured, banco real), `test-coverage` (JaCoCo, PIT), `postman-newman` (caixa-preta e smoke pós-deploy).
 - **Docker e Kubernetes:** `docker-and-docker-compose`, `observability` (Actuator, Micrometer, probes), `kubernetes`, `helm-charts`.
 - **CI/CD e GitOps:** `github-actions` (CI genérico: build, testes, cobertura, imagem no GHCR, CodeQL, Dependabot), `github-actions-aws` (deploy na AWS com OIDC), `github-actions-cloud` (deploy no Google Cloud e no Azure com OIDC), `argocd` (GitOps: Application/AppProject/ApplicationSet, migration como PreSync hook, promoção por PR).
@@ -60,6 +60,7 @@ Antes de descrever a lista de skills, verifique o que realmente está presente e
 | Configurar dependencies, BOM, plugins Maven ou Gradle | `maven-config` |
 | Modelar tabelas/entidades, escolher SQL × NoSQL, definir consistência (CAP, PACELC, ACID, BASE), isolamento e índices | `data-modeling` |
 | CRUD para uma entity | `spring-data-jpa` |
+| Auditoria, value object embutido, enum com código, herança, importação em lote, lock pessimista, soft delete, cache de segundo nível | `jpa-advanced-mapping` |
 | Schema migrations | `flyway-migrations` |
 | Responses de erro limpas e consistentes | `exception-handling` |
 | CORS, ou XML/YAML além de JSON | `web-config` |
@@ -72,7 +73,7 @@ Antes de descrever a lista de skills, verifique o que realmente está presente e
 | Design doc, tech spec, SDD, RFC; desenvolver seguindo uma especificação | `design-docs` (decisão isolada: ADR do agent `architect`) |
 | Classe difícil de testar ou de mudar, princípios SOLID, regra no lugar errado (tell don't ask, Demeter) | `solid` |
 | Medir a legibilidade, classe grande demais, teto de complexidade por classe (CDD, `cdd.json`) | `cognitive-complexity` |
-| Qual padrão de projeto usar (Strategy, Adapter, Observer, State…), `@Transactional` que não funciona | `design-patterns` |
+| Qual padrão de projeto usar (os 23 do GoF: Strategy, Adapter, Observer, State, Command, Composite, Visitor com `sealed`…), causas de reprojeto, `@Transactional` que não funciona | `design-patterns` |
 | Listas paginadas (page, size, direction, limite, ordenação) | `pagination` |
 | Links HATEOAS (HAL) nas respostas | `hateoas` |
 | Enviar e-mail | `email` (SMTP/Spring Mail); pela AWS: `aws-ses` |
@@ -84,6 +85,7 @@ Antes de descrever a lista de skills, verifique o que realmente está presente e
 | Deploy por CI na AWS (GitHub Actions → ECR → EKS com OIDC) | `github-actions-aws` |
 | Deploy por CI no Google Cloud ou no Azure | `github-actions-cloud` |
 | Deploy no Kubernetes / empacotar com Helm | `kubernetes`, `helm-charts` |
+| Desenhar endpoints além do CRUD: papéis, transição de estado como ação, embutir × link, ETag e `If-Match`, API pública × interna | `api-design` |
 | Versionar a API (v1 → v2, versionamento nativo do Spring 7, deprecação) | `api-versioning` (deprecação também em `release-management`) |
 | Metrics / health probes | `observability` |
 | Uma suíte Postman/Newman, smoke test pós-deploy | `postman-newman` |
@@ -96,6 +98,7 @@ Antes de descrever a lista de skills, verifique o que realmente está presente e
 | Cache (Caffeine/Redis/ElastiCache) | `caching` |
 | Usar Redis/Valkey além de `@Cacheable` (estruturas, Lua, lock distribuído, rate limit, Streams/Pub-Sub, Cluster, ElastiCache) | `redis` |
 | Java 17–25: records, sealed, virtual threads | `java-modern-features` |
+| Estado em bean, `ConcurrentHashMap`, locks, `@Async`, `CompletableFuture` em paralelo, parallel streams | `concurrency` |
 | API lenta, tuning de JVM/pool, OOMKilled | `jvm-performance` |
 | Imagem no ECR, cluster EKS, ALB, IRSA | `aws-eks` |
 | RDS e senhas no Secrets Manager | `aws-rds-secrets-manager` |
@@ -104,7 +107,7 @@ Antes de descrever a lista de skills, verifique o que realmente está presente e
 | Rodar/testar a AWS localmente sem conta (LocalStack) | `localstack` |
 | Unit e slice tests (JUnit, Mockito, `@WebMvcTest`) | `testing` |
 | Confirmar um nome ou versão de biblioteca (Boot 3 → 4, Jackson 3), Context7, "não responda de memória" | `library-docs` |
-| Padrões de teste: test doubles, builders, matchers coringa, valores-limite e MC/DC, test smells, flaky, TDD/BDD, property-based | `test-patterns` |
+| Padrões de teste: casos a partir da especificação (partições, pontos on/off, laços), test doubles, builders, matchers coringa, valores-limite e MC/DC, contratos e testabilidade, test smells, flaky, TDD/BDD, property-based | `test-patterns` |
 | Testes de integração com banco real em container (Testcontainers, REST Assured) | `integration-testing` |
 | Cobertura de testes (JaCoCo), diff coverage, gate no CI, mutation testing (PIT) | `test-coverage` |
 | Deploy por GitOps, promoção dev → staging → prod, rollback por Git | `argocd` |
@@ -125,8 +128,8 @@ Antes de descrever a lista de skills, verifique o que realmente está presente e
 | LGPD: base legal, direitos do titular, retenção, eliminação, incidente | `privacy-lgpd` |
 | Status, resumo executivo, decision log, release notes, dizer não | `stakeholder-communication` |
 | Decidir entre monolito e microsserviços; como dividir | `microservices` |
-| Começar sem pagar o custo distribuído (módulos com fronteiras verificadas) | `modular-monolith` |
-| Domínio rico: aggregates, value objects, ports and adapters; quanto DDD cada subdomínio merece; modelo anêmico | `ddd-hexagonal` |
+| Começar sem pagar o custo distribuído (módulos com fronteiras verificadas; o que fica junto e quem depende de quem) | `modular-monolith` |
+| Domínio rico: aggregates, value objects, ports and adapters (regra da dependência, limites parciais); quanto DDD cada subdomínio merece; modelo anêmico | `ddd-hexagonal` |
 | Entrada única para clientes, BFF, rate limit na borda | `api-gateway` |
 | Chamar outro serviço com segurança e timeouts; gRPC; service mesh | `service-communication` |
 | Falha parcial, timeout, retry sem retry storm, circuit breaker | `resilience` |

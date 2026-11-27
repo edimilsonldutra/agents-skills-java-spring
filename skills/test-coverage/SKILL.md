@@ -261,6 +261,7 @@ Uma suíte com **90% de cobertura e 40% de mutation score** é **teatro**; **90%
 
 ## 9. Como ler e agir sobre os números
 
+- **Especificação primeiro, cobertura depois** (`test-patterns`, seção 6): escreva os casos a partir do requisito e só então abra o relatório. Para cada ramo descoberto, pergunte **por que o requisito não o previu** (caso esquecido → teste; código morto → apague; comportamento não especificado → pergunte). Teste escrito olhando o ramo vermelho espelha o código, inclusive o bug.
 - **Cobertura caiu num PR?** Pergunte **o que ficou sem teste** (abra o diff no relatório), não "quanto falta para o número".
 - **Ramo de erro descoberto** (o `else`, o `catch`, a validação que lança): é **o primeiro a escrever** — erros de borda são onde os bugs moram (`qa`: casos de borda, `test-patterns`).
 - **Classe de negócio com cobertura baixa**: **risco alto** → priorize (`prioritization`: risco e custo de atraso).

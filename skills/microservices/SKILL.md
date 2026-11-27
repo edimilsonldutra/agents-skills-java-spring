@@ -90,6 +90,8 @@ Você tem **a complexidade dos microsserviços e nenhum dos benefícios**. Sinto
 - **Serviços que não funcionam sozinhos** nem em teste (precisa subir 12 para testar 1).
 - **Um time só** dono de todos, sem autonomia real.
 - Mudanças pequenas no negócio exigem **PRs em 5 repositórios**.
+**Serviços não são, por si, uma arquitetura.** Separar em processos não desacopla nada se os dados e as regras continuarem acoplados. O teste clássico é uma feature **transversal**: se "aceitar um novo tipo de item emprestável" (e-book, além de livro físico) exige mudar `catalog`, `lending`, `billing` e `notification` ao mesmo tempo, as fronteiras foram traçadas pelo **substantivo** e não pela **mudança**. A cura é a mesma do monolito: dentro de cada serviço, componentes com fronteiras e extensão por polimorfismo ou plug-in (`modular-monolith`, `solid`: aberto/fechado), e fronteiras entre serviços pela capacidade que muda junto.
+
 **Teste de independência:** *posso implantar este serviço sozinho, agora, sem avisar ninguém e sem quebrar os outros?* Se não, ele não é independente. A cura é **corrigir as fronteiras e os contratos** (`contract-testing`), não adicionar mais ferramentas.
 
 ---
@@ -173,7 +175,7 @@ Se algum item for "não": **fique no monolito modular** e revisite.
 ## Regras principais
 
 - **Monolito modular primeiro**; divida quando houver dor real de time/escala/isolamento e o domínio estiver entendido. Microsserviço é solução organizacional, não técnica.
-- **Fronteiras por bounded context/capacidade de negócio**, nunca por camada técnica nem entity service; em dúvida, **junte**.
+- **Fronteiras por bounded context/capacidade de negócio**, nunca por camada técnica nem entity service; em dúvida, **junte**. Serviço não é arquitetura: uma feature transversal que muda todos os serviços indica fronteira errada.
 - **Banco privado por serviço**; sem banco compartilhado, sem JOIN/FK entre serviços, sem 2PC; referências por ID; duplicação de leitura com **uma fonte de verdade**.
 - **Eventos para propagar fatos, síncrono só para resposta imediata**; **sem cadeias** de chamadas; consistência **eventual** por saga + outbox + idempotência.
 - Evite o **distributed monolith**: deploy independente, contratos versionados e compatíveis, só contratos em bibliotecas compartilhadas.
@@ -183,3 +185,7 @@ Se algum item for "não": **fique no monolito modular** e revisite.
 - Poucos testes e-2-e; **contract tests** entre serviços.
 - Adote só os padrões que resolvem um problema real — um CRUD simples não precisa de saga, CQRS nem hexagonal.
 - **Sem Lombok** — deliberado.
+
+## Referências
+
+- Robert C. Martin, *Arquitetura Limpa* (Alta Books, 2019), cap. 27 (serviços grandes e pequenos: o problema da feature transversal e serviços baseados em componentes).

@@ -51,10 +51,11 @@ Os SLIs vêm do que o **usuário percebe** (disponibilidade e latência no ponto
 Quando o "cliente" é **outro time ou um parceiro** que consome sua API/serviço (`service-communication`), **trate a API como um produto**:
 | Prática | Em concreto |
 |---|---|
+| **Visibilidade decidida** | Pública, de parceiros ou interna: define o rigor de versão, documentação, segurança e SLA (`api-design`, seção 1); expor uma API interna a parceiros é decisão nova |
 | **Conheça os consumidores** | Quem usa? Para quê? Quanto? (métricas de uso **por consumidor**; contratos — `contract-testing`) |
 | **Experiência do desenvolvedor (DX)** | **Documentação** clara e atual (`swagger`/OpenAPI), exemplos, **ambiente de teste/sandbox**, mensagens de erro úteis (`exception-handling`), tempo até a **primeira chamada** com sucesso |
 | **Contrato estável** | **Mudanças aditivas**; quebra = **nova versão** com convivência; **política de deprecação publicada** (`release-management`, seção 8) |
-| **Qualidade prometida** | **SLO/SLA** documentados (latência, disponibilidade, limites de taxa — `api-gateway`) |
+| **Qualidade prometida** | **SLO/SLA** documentados (latência, disponibilidade, limites de taxa — `api-gateway`); **garantia de ciclo de vida** publicada e, se a API é vendida, **plano de uso** com cotas medidas por API key (`api-design`, seções 7 e 8) |
 | **Suporte e comunicação** | Canal para consumidores, **changelog**, avisos de manutenção/incidente |
 | **Governança leve** | Padrões comuns (erros, paginação, autenticação, idempotência — `idempotency`) para APIs **consistentes** |
 | **Métricas do produto-API** | Adoção (consumidores ativos), **tempo até a 1ª chamada**, taxa de erro por consumidor, uso por endpoint, **tickets de suporte** |

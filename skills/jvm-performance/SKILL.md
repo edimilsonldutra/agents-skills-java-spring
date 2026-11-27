@@ -65,7 +65,7 @@ Importante para autoscaling e rollouts rápidos.
 - **Virtual threads** (`java-modern-features`) elevam a concorrência em APIs I/O-bound, mas o gargalo vira o pool/database. Meça. No **Java 24+/25 (JEP 491)**, blocos `synchronized` **não causam mais pinning** (restam frames nativos/JNI — acompanhe pelo evento JFR `jdk.VirtualThreadPinned`).
 - Tomcat: `server.tomcat.threads.max` (default 200) com platform threads; com virtual threads o limite é indireto. Limite requests em voo para proteger dependências frágeis (`Semaphore`/bulkhead).
 - **Timeouts em tudo que sai da aplicação** (HTTP client, database, SQS): `RestClient` com connect/read timeout. Chamada externa sem timeout é uma *thread presa para sempre* → esgotamento do pool → cascata.
-- `@Async`/executors com fila **limitada** e política de rejeição explícita; fila ilimitada esconde a lentidão até virar `OOM`.
+- `@Async`/executors com fila **limitada** e política de rejeição explícita; fila ilimitada esconde a lentidão até virar `OOM`. Configuração, propagação de contexto, `CompletableFuture` e thread-safety de beans: `concurrency`.
 
 ## 6. Diagnóstico
 

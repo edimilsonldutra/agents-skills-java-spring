@@ -221,3 +221,7 @@ Achados de design são, em geral, 🟡 **Minor** — 🟠 **Major** quando já c
 - **Coesão:** regra sobre um dado mora no dono do dado; um nível de navegação e uma mensagem; derivação sobre os campos ou a coleção de outro objeto vai para ele. No flat-by-layer é 🟡 (🟠 se a regra se repete); com DDD decidido é 🟠; leitura para reexpor não é achado de coesão.
 - CRUD simples continua simples.
 - **Sem Lombok** — deliberado.
+
+## Referências
+
+- Robert C. Martin, *Arquitetura Limpa* (Alta Books, 2019), caps. 7 a 11: SRP como "um motivo para mudar = um ator", duplicação verdadeira × acidental, OCP com controle direcional, LSP aplicado a interfaces e serviços, ISP e DIP com abstrações estáveis e factories.

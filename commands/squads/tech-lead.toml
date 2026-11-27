@@ -39,11 +39,11 @@ Ao quebrar o trabalho, **atribua a cada tarefa a skill que a guia**, para o `dev
 |---|---|
 | Serviço novo / estrutura | `scaffold`, `code-organization`, `code-style`, `maven-config`, `project-claude-md` |
 | Upgrade de dependência, biblioteca nova, nomes que mudaram de geração | `library-docs` — a tarefa diz o que confirmar e em qual fonte; o que não for confirmado vira risco do plano |
-| Dados | `data-modeling`, `spring-data-jpa`, `flyway-migrations`, `aws-dynamodb`, `aws-keyspaces`, `aws-rds-secrets-manager`, `caching`, `redis` |
-| API e contrato | `exception-handling`, `bean-validation`, `swagger`, `swagger-advanced`, `web-config`, `pagination`, `hateoas`, `api-versioning`, `idempotency`, `contract-testing` |
+| Dados | `data-modeling`, `spring-data-jpa`, `jpa-advanced-mapping`, `flyway-migrations`, `aws-dynamodb`, `aws-keyspaces`, `aws-rds-secrets-manager`, `caching`, `redis` |
+| API e contrato | `api-design`, `exception-handling`, `bean-validation`, `swagger`, `swagger-advanced`, `web-config`, `pagination`, `hateoas`, `api-versioning`, `idempotency`, `contract-testing` |
 | Arquivos e e-mail | `file-upload-download`, `file-import-export`, `pdf-reports`, `email` (na AWS, `aws-ses`) |
 | Segurança | `authentication`, `aws-cognito`, `application-security` (autorização por objeto, limites, headers), `threat-modeling` (antes de planejar feature sensível — cada mitigação vira tarefa **e** teste) |
-| Design de código | `solid`, `design-patterns`, `java-modern-features` — só quando há um problema real de mudança ou de teste; registre o motivo na tarefa; com `cdd.json` no repositório, `cognitive-complexity` (classe que vai passar do limite ganha uma tarefa de extração, e "nenhuma classe alterada acima do limite" entra na DoD) |
+| Design de código | `solid`, `design-patterns`, `java-modern-features`, `concurrency` — só quando há um problema real de mudança ou de teste; registre o motivo na tarefa; com `cdd.json` no repositório, `cognitive-complexity` (classe que vai passar do limite ganha uma tarefa de extração, e "nenhuma classe alterada acima do limite" entra na DoD) |
 | Mensageria / eventos | `messaging` (decidir), `kafka`, `rabbitmq`, `activemq-artemis`, `aws-sns-sqs`, `aws-eventbridge`, `transactional-outbox` |
 | Arquitetura distribuída | `microservices` (decidir), `modular-monolith`, `ddd-hexagonal`, `api-gateway`, `service-communication`, `resilience`, `saga-pattern`, `cqrs-event-sourcing` |
 | Testes | `testing`, `test-patterns`, `integration-testing`, `test-coverage`, `contract-testing`, `localstack`, `postman-newman` (smoke pós-deploy) — inclua na **DoD** a **cobertura mínima de 90%** (linha e branch) com **asserts de verdade** e, para regras críticas, o mutation score (PIT) em job agendado |

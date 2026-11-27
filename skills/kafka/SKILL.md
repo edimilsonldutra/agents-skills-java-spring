@@ -120,6 +120,22 @@ public class KafkaConfig {
 - **Partições:** escolha pelo paralelismo e throughput desejados (número de consumers que quer ter no pico) — **só dá para aumentar, não diminuir**, e aumentar muda o mapeamento key→partição. Comece com um valor razoável (6–12), não 1 nem 1000.
 - **`replicas: 3` + `min.insync.replicas: 2` + `acks=all`**: tolera a queda de 1 broker sem perder dados. Exige ≥ 3 brokers (em dev local com 1 broker, use `replicas(1)`).
 
+**Tópico compactado** para eventos de entidade (estado completo por chave — `messaging`): o broker guarda **o último valor de cada chave** em vez de apagar por tempo, e o tópico vira a fonte para reconstruir o estado:
+```java
+@Bean
+NewTopic bookStateTopic(@Value("${app.kafka.topics.book-state}") String name) {
+    return TopicBuilder.name(name)
+            .partitions(6)
+            .replicas(3)
+            .compact()
+            .config(TopicConfig.MIN_IN_SYNC_REPLICAS_CONFIG, "2")
+            .build();
+}
+```
+- A **chave é obrigatória** (sem chave, a compactação não tem o que manter) e é o id da entidade.
+- **Apagar** a entidade = publicar um **tombstone** (mesma chave, valor `null`); depois de `delete.retention.ms`, a chave some do tópico. É também o caminho da eliminação LGPD num tópico compactado (`privacy-lgpd`).
+- A compactação roda em segundo plano: por um tempo, várias versões da mesma chave convivem. O consumidor **sempre** trata a versão mais nova como a válida.
+
 ---
 
 ## Producer
@@ -175,6 +191,28 @@ O listener é **fino**: delega ao service, que é `@Transactional` e **idempoten
 
 ---
 
+## Estado materializado a partir de eventos de entidade
+
+Em vez de chamar o `catalog` por HTTP a cada empréstimo, o `lending` mantém uma **cópia local** só com os campos de livro de que precisa, alimentada pelo tópico compactado:
+```java
+@KafkaListener(topics = "${app.kafka.topics.book-state}", groupId = "${app.kafka.groups.book-replica}")
+public void onBookState(@Header(KafkaHeaders.RECEIVED_KEY) String bookId,
+                        @Payload(required = false) BookStateEvent state) {
+    if (state == null) {
+        replica.delete(Long.valueOf(bookId));
+        return;
+    }
+    replica.upsert(state);
+}
+```
+- `@Payload(required = false)` recebe o **tombstone** como `null` (sem isso, o Spring rejeita o valor nulo).
+- O `upsert` grava **só se a versão recebida for mais nova** que a guardada (`WHERE version < :version`): reentrega e desordem não fazem o estado andar para trás.
+- Um grupo de consumidores **novo** começa do início (`auto-offset-reset: earliest`) e reconstrói a cópia inteira; enquanto isso, a cópia está incompleta. Exponha isso no health ou numa flag de prontidão, e não sirva leituras dela antes de alcançar o fim.
+- A cópia é **somente leitura** e **eventualmente consistente**: decisões que exigem o valor exato do momento (estoque disputado) continuam no dono, por comando ou API.
+- A tabela da cópia pertence ao consumidor (migration própria — `flyway-migrations`) e guarda só os campos usados; dado pessoal copiado entra no mapa de dados (`privacy-lgpd`).
+
+---
+
 ## Falhas: retry e Dead Letter Topic
 
 Defina um `DefaultErrorHandler` (o Spring Boot o aplica ao container padrão de listeners):
@@ -222,6 +260,27 @@ public void onDlt(BookCreatedEvent event) {
 | Um consumer lento não parar os outros | retry não bloqueante / mais partições |
 
 **Rebalance:** quando um consumer entra/sai (deploy, HPA, crash), as partições são redistribuídas e o processamento pausa. Mantenha `max.poll.interval.ms` maior que o pior tempo de processamento de um *batch* (`max.poll.records` baixo para processamento lento), ou o consumer é considerado morto e provoca rebalances em cascata. O `CooperativeStickyAssignor` reduz a interrupção. Rolling updates frequentes + muitas partições = observe `rebalance` nas métricas.
+
+---
+
+## Grupos de consumidores, reprocessamento e deploy
+
+- **Nome do grupo estável e com significado**: `<serviço>.<propósito>` (`lending.book-replica`). **Trocar o `group-id` é recomeçar**: o grupo novo lê conforme `auto-offset-reset` (todo o histórico com `earliest`, nada do passado com `latest`). Nunca derive o grupo do hostname ou da versão.
+- **Reprocessar ou reconstruir estado** (bug corrigido na projeção, cópia nova): suba a versão nova com um **grupo novo**, deixe-a alcançar o fim do tópico ao lado da versão antiga, compare os resultados e só então troque o tráfego e desligue o grupo antigo. É o blue-green dos consumidores; exige que o efeito seja idempotente ou que a versão nova escreva num destino novo.
+- **Reset de offset** de um grupo existente (`kafka-consumer-groups.sh --reset-offsets --to-datetime ... --dry-run`, depois `--execute`) só com **todos os consumidores do grupo parados**, com aprovação, e sabendo que o reprocessamento repete efeitos (e-mails, pagamentos) se o consumidor não for idempotente.
+- **Quebra de schema** não se resolve com rolling update: o produtor passa a publicar também no tópico novo (`.v2`), os consumidores migram um a um, e o tópico antigo é desligado com data (`messaging`, `release-management`). Quando produtor e consumidores precisam trocar juntos (estado interno incompatível), planeje uma **parada total** curta e explícita, não um deploy normal.
+- Rolling update provoca rebalance a cada pod (seção anterior): em deploy de consumidor com muitas réplicas, observe o lag durante e depois.
+
+---
+
+## Governança de tópicos
+
+Com muitos tópicos e times, cada tópico precisa de:
+- **Dono** (o único produtor — `messaging`), registrado junto ao tópico no IaC.
+- **Metadados**: schema e compatibilidade, retenção ou compactação, se carrega **dado pessoal**, consumidores conhecidos e canal de contato do dono.
+- **ACL de menor privilégio**: `Write` só para o principal do dono; `Read` por grupo de consumidores; ninguém com `Create`/`Delete` fora do pipeline de infraestrutura.
+- **Cotas** por `client.id` para um consumidor em reprocessamento não derrubar os outros.
+- Criação e alteração **só por IaC** com revisão (`aws-terraform`, `argocd`); a aplicação não cria tópico em produção.
 
 ---
 
@@ -304,6 +363,13 @@ class BookEventIntegrationTest {
 - `replicas 3` + `min.insync.replicas 2` em produção; tópicos por IaC; ACL de menor privilégio; TLS.
 - Exactly-once real só Kafka→Kafka; fim a fim = at-least-once + idempotência.
 - Monitore **lag**, DLT e rebalances; `max.poll.interval.ms` > tempo de processamento.
+- **Eventos de entidade em tópico compactado**, chave obrigatória, tombstone para apagar; cópia local com upsert por versão, grupo novo para reconstruir.
+- **Grupo de consumidores estável** (`<serviço>.<propósito>`); reprocessamento com grupo novo lado a lado; reset de offset só com o grupo parado e aprovação; quebra de schema por tópico novo.
+- Cada tópico com **dono único, metadados, ACL e cotas**, criado por IaC.
 - Teste com Kafka real (Testcontainers) e Awaitility, incluindo duplicata e DLT; versões de imagem fixas.
 - Confirme classes/artifacts do Spring Kafka 4 / Boot 4 na versão resolvida.
 - **Sem Lombok** — deliberado.
+
+## Referências
+
+- Adam Bellemare, *Building Event-Driven Microservices: Leveraging Organizational Data at Scale* (O'Reilly, 2020): tópicos compactados e estado materializado, grupos de consumidores, reprocessamento, deploy de consumidores e ferramentas de apoio (dono, metadados, cotas e ACL de tópicos).

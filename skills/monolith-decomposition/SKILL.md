@@ -142,6 +142,19 @@ Classifique cada domínio em **Core**, **Supporting** ou **Generic**. Isso defin
 
 Valide cada grupo: dá para descrevê-lo em uma frase de negócio? Ele é dono dos seus dados? As dependências que saem dele são de contrato?
 
+### Liberar dados do legado como eventos
+
+Quando outros domínios (ou o serviço extraído) precisam dos dados que ainda vivem no monolito, o monolito passa a **publicá-los** como eventos. Três caminhos, do mais simples ao mais robusto:
+| Caminho | Como | Prós | Contras |
+|---|---|---|---|
+| **Por consulta** | Job que lê periodicamente as linhas alteradas (por `updated_at` incremental ou por id autoincremento) e publica | Nenhuma mudança no código do monolito | Perde exclusões físicas e alterações intermediárias entre duas leituras; depende de `updated_at` confiável e indexado; carga no banco |
+| **CDC nas tabelas** | Debezium lendo o log do banco das tabelas de domínio | Captura tudo, inclusive exclusões, com baixa latência | **Expõe o modelo interno** como contrato: renomear uma coluna quebra os consumidores. Use só com uma camada que traduz para eventos de negócio |
+| **Outbox** | O monolito grava o evento de negócio na mesma transação (`transactional-outbox`) | Contrato explícito, desacoplado das tabelas | Exige mudar o código em cada ponto de escrita |
+
+- O destino é a **outbox**; a extração por consulta e o CDC nas tabelas servem como **ponte** enquanto o código do monolito não pode ser alterado, e entram no roadmap com prazo para sair.
+- Mudar o schema de uma tabela capturada é mudar um contrato: entra no roadmap com expand → contract (`flyway-migrations`) e aviso aos consumidores.
+- A carga inicial (o histórico) é um **snapshot** antes do fluxo contínuo; os consumidores precisam tolerar os dois (idempotência por chave e versão — `idempotency`).
+
 ## 6. Roadmap incremental
 
 A ordem padrão é **modularizar no mesmo deploy primeiro** e **extrair depois, só se o motivo da seção 0 persistir**:
@@ -215,5 +228,10 @@ Mapa de donos das tabelas · context map (Mermaid)
 - **Componente = capacidade de negócio** (no flat-by-layer, a mesma raiz de nome em todas as camadas), não pacote técnico.
 - **Acoplamento em três dimensões**: força × distância (atual **e futura**) × volatilidade; 🔴 é força alta + distância alta + volatilidade alta.
 - **Cada tabela tem um único dono que escreve**; tabela com dois escritores bloqueia a extração.
+- **Dados do legado viram eventos** pela outbox; extração por consulta ou CDC nas tabelas só como ponte temporária, sem expor o modelo interno como contrato.
 - **Modularize no mesmo deploy primeiro** (`modular-monolith`); extraia só com motivo, um módulo por vez, via Strangler Fig, e **todo passo com rollback**.
 - **Evidência em tudo** (✅/🔎/❓); "não dividir" é um resultado legítimo.
+
+## Referências
+
+- Adam Bellemare, *Building Event-Driven Microservices: Leveraging Organizational Data at Scale* (O'Reilly, 2020), cap. 4: padrões de liberação de dados (por consulta, CDC, outbox) e os cuidados com o modelo interno e a mudança de schema.

@@ -2,6 +2,60 @@
 
 Mudanças notáveis do plugin `squads`. A versão é a de `.claude-plugin/plugin.json`; quem já instalou só recebe uma mudança quando ela sobe.
 
+## 2.19.0 — 2026-11-26
+
+### Microsserviços orientados a eventos (Bellemare)
+- `messaging`: princípio do escritor único, as três formas de evento (sem chave, com chave, de entidade) e regras de desenho (um tipo por stream, propósito único sem campo `action`, tipos estreitos, evento não é semáforo, envolver os consumidores).
+- `kafka`: tópico compactado para eventos de entidade com tombstone; estado materializado no consumidor (`@Payload(required = false)`, upsert por versão, reconstrução com grupo novo); grupos de consumidores, reprocessamento lado a lado, reset de offset e quebra de schema no deploy; governança de tópicos (dono, metadados, ACL, cotas).
+- `monolith-decomposition`: liberar dados do legado como eventos (por consulta, CDC nas tabelas, outbox) e seus riscos; `transactional-outbox`: CDC na outbox, não nas tabelas de domínio.
+- `code-reviewer`: achados de escritor único, tópico misturado, campo `action`, evento-semáforo, evento de entidade sem chave ou sem compactação, cópia local sem versão e CDC como contrato.
+- Eval `eventos-de-entidade` (gatilho de `kafka`/`messaging`, sem disparar `cqrs-event-sourcing`). Ainda não executado.
+- Processamento de streams com estado (janelas, tempo do evento, *state stores*) ficou fora desta versão.
+
+## 2.18.0 — 2026-11-26
+
+### Padrões de projeto: o catálogo GoF completo
+- `design-patterns` ampliada com base em Gamma, Helm, Johnson e Vlissides, *Padrões de Projeto* (GoF): princípios do catálogo (programe para a interface, composição antes de herança, encapsule o que varia), tabela de causas de reprojeto com os padrões que as evitam e como escolher; mapa dos 23 padrões no Java 25 + Spring (usado, o Spring faz, o Java faz, raro); Factory Method × Abstract Factory; seções novas de Prototype (cópia explícita, nunca `clone()`), Composite (regras `AllOf`/`AnyOf`), Bridge e Flyweight, Command (record + handler), Mediator, Visitor como `switch` exaustivo sobre `sealed`, e Iterator, Memento e Interpreter (SpEL só com `SimpleEvaluationContext`); anti-padrões e testes correspondentes; referências.
+- `refactoring` ganha a linha "causa de reprojeto" no catálogo de smells; `code-reviewer` ganha achados de `clone()`, cadeia de `instanceof`, Visitor manual e barramento de comandos sem motivo. `guide` e `docs/guide.md` atualizados.
+- Eval `padroes-gof` (gatilho de `design-patterns`, sem disparar `refactoring`). Ainda não executado.
+
+## 2.17.0 — 2026-11-26
+
+### Novas skills: Concorrência e Mapeamento JPA avançado
+- Nova skill `concurrency`: bean singleton thread-safe (campo mutável, `SimpleDateFormat`/`HashMap` compartilhados), `ConcurrentHashMap` com `computeIfAbsent`/`merge`, `AtomicLong` × `LongAdder`, locks (`synchronized`, `ReentrantLock` com `tryLock`, `ReadWriteLock`, ordem de aquisição, `InterruptedException`) e por que lock em memória não vale com várias réplicas; `@Async` com `spring.task.execution.*` (fila e concorrência limitadas, rejeição, shutdown, propagação de contexto, executor por tipo de trabalho, exceptions de `@Async void`); `CompletableFuture` e scatter-gather com executor explícito, `orTimeout`/`completeOnTimeout` e `CompletionException`; `Semaphore` com virtual threads; parallel streams; produtor-consumidor em memória × broker; `@Scheduled`; testes de corrida; checklist.
+- Nova skill `jpa-advanced-mapping`: auditoria do Spring Data (`AuditorAware`, `DateTimeProvider` com `Clock`) e callbacks; `@Embeddable` record e `AttributeConverter`; herança (`@MappedSuperclass`, `SINGLE_TABLE`, `JOINED`, `TABLE_PER_CLASS`) × composição; `@ElementCollection`, `@OrderBy`/`@OrderColumn`; bidirecional sincronizado, cascade e `orphanRemoval`; `persist` × `merge`, `getReferenceById`; escrita em lote (`IDENTITY` × `SEQUENCE` com `allocationSize`, `flush`/`clear`); lock pessimista com timeout; `@SoftDelete`; cache de segundo nível.
+- Fontes: documentação do JDK 25, Spring Framework 7, Spring Boot 4, Hibernate 7 e Jakarta Persistence 3.2; properties e anotações conferidas nos jars do Maven Central (Spring Boot 4.2.0, Spring Framework 7.1.0, Spring Data JPA 4.2.0, Hibernate 7.4.17). Os livros de Jay Wang (*Java Concurrency and Parallelism*) e Nisha Kurur (*Mastering JPA*) foram avaliados e não usados; *Java Coding Problems* (Anghel Leonard) entrou só como apoio em virtual threads.
+- Encadeadas em `java-modern-features`, `jvm-performance`, `spring-data-jpa`, `data-modeling`, `test-patterns`, `guide`, `README.md`, `docs/guide.md`, `orchestrator`, `tech-lead`, `developer`, `qa` e `code-reviewer`.
+- Evals `estado-em-bean` (gatilho de `concurrency`, sem disparar `jvm-performance`) e `auditoria-e-lote` (gatilho de `jpa-advanced-mapping`, sem disparar `data-modeling`). Ainda não executados.
+- 98 skills.
+
+## 2.16.0 — 2026-11-26
+
+### Nova skill: Desenho de API
+- Nova skill `api-design` (fundamentada em Zimmermann, Stocker, Lübke, Zdun e Pautasso, *Patterns for API Design*): visibilidade (pública, de parceiros, interna) e tipo de integração (frontend × backend) como decisão; papéis de endpoint (recurso de processamento, dado operacional, mestre e de referência, link lookup, transferência de dados); responsabilidades de operação (criação, consulta, transição de estado como ação com nome de negócio, função de cálculo); estrutura de mensagens e papéis dos elementos (dado, metadado, id, link, contexto em header); entidade embutida × link, visões nomeadas × `?fields=`, request bundle; requisição condicional com `ShallowEtagHeaderFilter` (304) e `@Version` + `If-Match` (412/428); garantias de ciclo de vida (prévia experimental, duas em produção, vida útil limitada, obsolescência agressiva, vida útil eterna) e versionamento semântico do contrato; checklist de revisão e anti-patterns.
+- Encadeada em `api-versioning`, `technical-product-management`, `code-organization`, `guide`, `README.md`, `docs/guide.md`, `orchestrator`, `architect`, `tech-lead`, `developer`, `qa` e `code-reviewer`.
+- Eval `desenho-de-api` (gatilho de `api-design`, sem disparar `hateoas`). Ainda não executado.
+- 96 skills.
+
+## 2.15.0 — 2026-11-26
+
+### Arquitetura Limpa (Robert C. Martin)
+- `code-organization`: trade-off do flat-by-layer frente a empacotar por recurso, por portas e adaptadores ou por componente (arquitetura que "grita" o domínio, tudo `public`, regra das camadas só por revisão ou ArchUnit), sinais para migrar para módulos e `Startup`/`config/` como componente Main.
+- `modular-monolith`: nova seção 8, coesão e acoplamento entre módulos (fechamento comum, reúso comum, reúso e versão, sem ciclos, dependências na direção da estabilidade, módulo estável expõe abstração, instabilidade como diagnóstico).
+- `ddd-hexagonal`: limites parciais (pular o último passo, limite unidimensional, fachada), mapeamento dos círculos da Arquitetura Limpa para `domain`/`application`/adapters, banco, web e framework como detalhes, dados simples cruzando a fronteira e dois anti-patterns novos.
+- `test-patterns`: Humble Object e API de teste. `microservices`: serviços não são arquitetura (a feature transversal). `prioritization`: os dois valores do software e a matriz de Eisenhower. `solid`: referências.
+- `architect` e `code-reviewer`: estabilidade das dependências entre módulos, limite parcial, detalhe cruzando a fronteira do use case e regra de negócio em `@Configuration`. `guide` e `docs/guide.md` atualizados.
+- Ideias reescritas com os exemplos e o vocabulário do pacote; nenhum trecho do livro copiado.
+
+## 2.14.0 — 2026-11-26
+
+### Desenho de casos de teste (Aniche, *Effective Software Testing*)
+- `test-patterns`, seção 6: roteiro de 7 passos do teste a partir da especificação (entender → explorar → partições → limites → casos → automatizar → ampliar), pontos on/off/in/out, critério de fronteira de laço (0, 1 e N iterações), heurísticas para quando as combinações explodem e "especificação primeiro, cobertura depois". Seção 14: contratos (pré e pós-condições, invariantes, Liskov) e testabilidade como design (domínio × infraestrutura, controlabilidade, observabilidade de métodos `void`, métodos privados, estáticos). Checklist da seção 15, regras principais e nova seção de referências.
+- `spring-data-jpa`: "Que casos escrever para uma query" (MC/DC no `WHERE`/`JOIN`/`HAVING`, `NULL` como terceiro valor, nenhuma linha, duplicata por `JOIN 1:N`, grupos, empate na ordenação, isolamento entre donos, dados mínimos e asserts sobre as linhas exatas).
+- `test-coverage`: cobertura lida depois dos casos por especificação; ramo descoberto é pergunta, não alvo.
+- `qa`: roteiro de geração de casos e técnicas de laço, contrato e query. `code-reviewer`: achados de laço sem zero iterações, query sem caso de `NULL`/duplicata e código pouco testável. `guide` e `docs/guide.md` atualizados.
+- Técnicas reescritas com os exemplos do pacote; nenhum trecho do livro copiado.
+
 ## 2.13.0 — 2026-11-26
 
 ### Nova skill: Engenharia de Requisitos

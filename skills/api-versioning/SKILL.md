@@ -126,6 +126,8 @@ Os demais conectores de `service-communication` (timeouts, tradução de erros) 
 
 ## 5. Ciclo de vida de uma versão
 
+A **promessa** feita ao consumidor (prévia experimental, vida útil limitada, obsolescência agressiva) e o versionamento semântico do contrato estão em `api-design`, seção 7; aqui, a mecânica.
+
 1. **Lançar a v2** convivendo com a v1 (mesmo banco compatível).
 2. **Anunciar a deprecação da v1** com data (`Deprecation`), guia de migração e prazo de desligamento (`Sunset`). Janela típica: 6–12 meses para API pública, menos para interna (`release-management`).
 3. **Medir quem ainda usa a v1** (métrica por versão e por client — `observability`; contratos — `contract-testing`). Avise diretamente quem ainda chama.
