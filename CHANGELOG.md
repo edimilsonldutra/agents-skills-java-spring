@@ -2,6 +2,14 @@
 
 Mudanças notáveis do plugin `squads`. A versão é a de `.claude-plugin/plugin.json`; quem já instalou só recebe uma mudança quando ela sobe.
 
+## 2.24.0 — 2026-11-26
+
+### Engenharia de software moderna (Farley)
+- `agile-delivery`: "Estabilidade e vazão (DORA)" com as quatro métricas, definição operacional, fonte do dado no pipeline e nos incidentes, a relação entre vazão e estabilidade, uso como tendência (nunca meta nem por pessoa) e o que olhar quando pioram.
+- `github-actions`: "Pipeline como máquina de feedback" (estágio de commit em menos de ~10 minutos, aceitação sobre a mesma imagem, artefato único promovido, `main` sempre liberável, branches curtas, build vermelho para a linha, medir o próprio pipeline).
+- `release-management`: deploys pequenos ligados à taxa de falha e ao tempo de restauração. `tech-lead` e `product-manager` passam a citar DORA.
+- Eval `estabilidade-e-vazao` (gatilho de `agile-delivery`/`github-actions`, sem disparar `product-metrics`). Ainda não executado.
+
 ## 2.23.1 — 2026-11-26
 
 ### Docker: endurecimento e build

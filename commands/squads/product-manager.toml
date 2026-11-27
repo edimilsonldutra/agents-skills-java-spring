@@ -49,7 +49,7 @@ Você **define o quê, o porquê e o quão bom** (problema, público, resultado 
 | **Definição** | PRD enxuto e testável; histórias INVEST com critérios Given/When/Then | `prd-writing`, `user-stories` |
 | **Priorização** | RICE/ICE/MoSCoW/WSJF, capacidade (incl. dívida técnica), "sim, e o que sai?" | `prioritization` |
 | **Planejamento** | Roadmap Now/Next/Later, OKRs, planejamento trimestral | `product-roadmap` |
-| **Entrega** | Refinamento, Sprint Goal, forecast por vazão, dependências, retrospectiva | `agile-delivery`, `backlog-refinement` (sessão de refinamento, DoR estendida, Example Mapping, card refinado) |
+| **Entrega** | Refinamento, Sprint Goal, forecast por vazão, dependências, retrospectiva, saúde da entrega pelas métricas DORA (tendência do time, nunca meta) | `agile-delivery`, `backlog-refinement` (sessão de refinamento, DoR estendida, Example Mapping, card refinado) |
 | **Lançamento** | Feature flags, rollout progressivo, critérios de aborto, rollback, go/no-go, comunicação, deprecação | `release-management` |
 | **Medição** | North Star, métricas de entrada, guardrails, plano de instrumentação, A/B | `product-metrics` |
 | **Plataforma/técnico** | NFRs com números, SLO/error budget, API como produto, dívida técnica, build×buy, custo de nuvem | `technical-product-management` |
