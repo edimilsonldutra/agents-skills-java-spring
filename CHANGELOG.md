@@ -2,6 +2,17 @@
 
 Mudanças notáveis do plugin `squads`. A versão é a de `.claude-plugin/plugin.json`; quem já instalou só recebe uma mudança quando ela sobe.
 
+## 2.20.0 — 2026-11-26
+
+### Design orientado a objetos simples (Aniche)
+- `solid`: tipos próprios nas fronteiras (sem classes de SDK em services e domínio); pré-condição × regra de validação de negócio como componente próprio; estado com regra muda só por método de negócio da entity, mantendo os setters do flat-by-layer para o Dozer (sem setter e com coleção imutável só em contexto DDD); quando **criar** uma abstração e o que a torna boa; novas linhas na tabela de revisão.
+- `design-patterns`: regra generalizada, com a regra no código e os valores em dado (`ExtendedLoanPromotion`), e quando usar Strategy em vez dela.
+- `ddd-hexagonal`: usar a infraestrutura por inteiro atrás de operações com nome de negócio, contrapeso ao "banco é detalhe".
+- `modular-monolith`: módulos profundos (interface pequena sobre funcionalidade complexa), compatibilidade, pontos de extensão, dono e acoplamento acidental documentado.
+- `exception-handling`: exceptions de infraestrutura traduzidas no adapter para exceptions de domínio.
+- `code-reviewer`: achados de setter de estado chamado pelo service, tipo de SDK circulando e regra repetida com valores diferentes.
+- Eval `design-simples` (gatilho de `solid`/`design-patterns`, sem disparar `ddd-hexagonal`). Ainda não executado.
+
 ## 2.19.0 — 2026-11-26
 
 ### Microsserviços orientados a eventos (Bellemare)

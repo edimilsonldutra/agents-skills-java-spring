@@ -284,6 +284,8 @@ catch (IOException e) {
     throw new FileStorageException("Error processing the file!", e);
 }
 ```
+O mesmo vale para **erros de infraestrutura**: `S3Exception`, `SdkClientException`, `DataAccessException` específica ou a exception do client do parceiro não sobem até o service nem o controller. O adapter que fala com a infraestrutura as traduz para uma exception de domínio com significado (`FileStorageException`, `PartnerUnavailableException`), preservando a cause, e o handler decide o status (503 para dependência indisponível, nunca a stack trace no corpo).
+
 Mapeie input ruim do **client** para um 400 (`BadRequestException`), não para um 500: um wrapper que transforma toda falha em `FileStorageException` também transforma um tipo de arquivo não suportado em um erro de servidor.
 
 ---

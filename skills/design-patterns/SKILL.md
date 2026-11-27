@@ -200,6 +200,31 @@ public interface LateFeePolicy {
 ```
 Uma implementação por regra (`StandardLateFeePolicy`, `StudentLateFeePolicy`), todas `@Component`, escolhidas por `appliesTo`. Nova regra = nova classe (`solid`, seção O). **Não use** para duas variações que nunca vão crescer: um `if` é mais claro.
 
+### Regra generalizada: a regra no código, os valores no dado
+Quando a **mesma regra** se repete com **valores diferentes**, nem 50 `if`s nem 50 estratégias: **uma** regra genérica e os valores concretos como **dado** (tabela gerida pelo negócio ou configuração).
+```java
+public record ExtendedLoanPromotion(Set<Long> requiredAuthorIds, int extraDays) {
+
+    public boolean appliesTo(Set<Long> authorIdsInLoan) {
+        return authorIdsInLoan.containsAll(requiredAuthorIds);
+    }
+}
+```
+```java
+public int extraDays(Loan loan, List<ExtendedLoanPromotion> activePromotions) {
+    var authorIds = loan.authorIds();
+    return activePromotions.stream()
+        .filter(promotion -> promotion.appliesTo(authorIds))
+        .mapToInt(ExtendedLoanPromotion::extraDays)
+        .max()
+        .orElse(0);
+}
+```
+- **Separe a busca do dado da regra**: o service carrega as promoções ativas (repository) e passa à regra, que fica pura e testável com `@ParameterizedTest`.
+- Variações que diferem nos **valores** → regra generalizada. Variações que diferem na **lógica** → Strategy (acima).
+- Dado que vira regra precisa de **validação, auditoria e dono** (quem pode cadastrar, com qual limite); mudar a tabela é mudar comportamento em produção.
+- Não evolua isso para um motor de regras ou uma linguagem própria (Interpreter, abaixo) sem necessidade comprovada.
+
 ### Template Method
 Um esqueleto fixo com passos que variam. No Spring, aparece "invertido" como **callback**: `JdbcTemplate`, `TransactionTemplate` e `RestClient` controlam abrir/fechar/tratar erro e você passa só o passo variável (um lambda). Nos testes, `AbstractIntegrationTest` (`integration-testing`) é um template: a base sobe o container e configura o client; cada teste escreve só o cenário. Prefira **callbacks/composição** a hierarquias de herança profundas.
 
@@ -370,3 +395,4 @@ public final class BookSpecifications {
 ## Referências
 
 - Erich Gamma, Richard Helm, Ralph Johnson e John Vlissides, *Padrões de Projeto: soluções reutilizáveis de software orientado a objetos* (Bookman; original *Design Patterns*, Addison-Wesley, 1994): princípios do cap. 1, causas de reprojeto e o catálogo dos 23 padrões. Reescritos para Java 25 e Spring, com os exemplos do pacote.
+- Mauricio Aniche, *Simple Object-Oriented Design: Create clean, maintainable applications* (Manning, 2024), cap. 5: generalizar regras de negócio separando o dado concreto da regra, e quando criar abstrações e pontos de extensão.

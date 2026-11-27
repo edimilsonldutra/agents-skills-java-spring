@@ -220,6 +220,13 @@ Os três puxam em direções opostas: priorizar o fechamento comum gera módulos
 - **Dependa na direção da estabilidade**: um módulo que muitos usam e que depende de pouco (`catalog`) é **estável** e difícil de mudar; um que depende de muitos e de quem ninguém depende (um módulo de relatórios) é **instável** e fácil de mudar. O instável depende do estável, nunca o contrário: se `catalog` passar a depender de `reports`, toda mudança em relatórios ameaça o núcleo.
 - **Módulo estável expõe abstração**: quanto mais usado, mais a API pública deve ser interfaces, records e eventos, e menos classes concretas cheias de detalhe. Módulo muito usado e cheio de concreto é rígido; módulo abstrato que ninguém usa é especulação (`solid`: YAGNI).
 
+**Módulos profundos.** Um módulo bom oferece uma interface **pequena e simples** sobre uma funcionalidade **complexa** (o `billing` expõe `chargeLateFee(loanId)` e esconde tarifas, impostos, gateway e retentativas). Um módulo **raso** tem a API quase do tamanho do que faz (dezenas de métodos públicos que espelham as tabelas), e quem o usa precisa entender tudo por dentro. Ao desenhar a API pública:
+- Exponha **operações de negócio**, não CRUD das tabelas internas.
+- **Compatibilidade retroativa**: a API pública muda de forma aditiva; quebrar exige versão ou migração dos chamadores no mesmo PR (`api-versioning` vale em espírito dentro do monolito).
+- **Pontos de extensão explícitos** quando outros módulos precisam variar o comportamento (eventos, interfaces publicadas), em vez de acesso aos internos.
+- **Dono e regras de uso** de cada módulo registrados (quem aprova mudança na API pública, como pedir uma operação nova).
+- Acoplamento acidental que não dá para remover agora é **documentado** (onde, por quê, como sair), não escondido.
+
 Use a métrica só como diagnóstico: **instabilidade** = dependências de saída ÷ (entrada + saída). O `Documenter` do Modulith desenha o grafo; setas apontando de módulos estáveis para instáveis são as primeiras a revisar (`monolith-decomposition` faz a mesma análise num legado).
 
 ## 9. Armadilhas
@@ -253,3 +260,4 @@ Use a métrica só como diagnóstico: **instabilidade** = dependências de saíd
 ## Referências
 
 - Robert C. Martin, *Arquitetura Limpa* (Alta Books, 2019), caps. 13 e 14 (princípios de coesão e de acoplamento de componentes: REP, CCP, CRP, ADP, SDP, SAP) e 34 (pacote por componente). Os princípios foram reescritos para módulos do Spring Modulith.
+- Mauricio Aniche, *Simple Object-Oriented Design: Create clean, maintainable applications* (Manning, 2024), cap. 7: módulos profundos (conceito de John Ousterhout, *A Philosophy of Software Design*), interfaces claras, compatibilidade e regras de dono entre módulos.

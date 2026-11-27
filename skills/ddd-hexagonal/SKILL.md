@@ -197,6 +197,8 @@ Só carrega/salva **aggregates inteiros pelo root**. Consultas de leitura sofist
 
 **Banco, web e framework são detalhes.** O que o sistema **é** (as regras de empréstimo) não deveria mudar porque o banco virou DynamoDB, a entrada virou um listener SQS ou o Spring subiu de versão. Por isso o domínio não importa `jakarta.persistence`, `org.springframework` nem Jackson na variante pura: o casamento com um framework é **assimétrico** (você se compromete com ele, ele não se compromete com você), e o custo aparece na próxima versão major. Na prática do pacote, o Spring é aceito em `application` e nos adapters; o domínio fica limpo, ou aceita só JPA na variante pragmática (abaixo).
 
+**Mas use a infraestrutura por inteiro.** "Detalhe" não quer dizer "ignore o que ele oferece". Carregar 100 mil linhas para somar em Java, para não "sujar o domínio" com um `SUM` ou um `UPDATE` em massa, é pagar caro por uma troca de banco que quase nunca acontece. Use o recurso do banco ou do framework **atrás de uma operação com nome de negócio** (`LoanReport.finesByMemberInMonth(...)`, implementada com SQL de agregação no adapter): o domínio continua sem saber como, e o sistema usa o que a infraestrutura faz bem. Não brigue com o framework (proxy, transação, mapeamento): trabalhe com ele e isole só o que muda de fato. Se um `UPDATE` direto pularia uma invariante do aggregate, reveja o desenho (o objeto precisa mesmo estar no aggregate? a invariante é real?) antes de contorná-la.
+
 **Os dados que cruzam a fronteira** são estruturas simples (records de comando e de resultado, eventos), nunca a entity JPA nem o DTO HTTP: o use case recebe um `StartLoanCommand` e devolve um `LoanStarted`, e o adapter web os traduz de e para o JSON.
 
 | Porta | Direção | Exemplo |
@@ -455,3 +457,4 @@ Pedido de **revisão** ("está bom?") → só diagnostique e pergunte antes de r
 ## Referências
 
 - Robert C. Martin, *Arquitetura Limpa* (Alta Books, 2019), caps. 17 a 24 e 30 a 32: fronteiras, regra da dependência, modelos de requisição e resposta, limites parciais e banco, web e frameworks como detalhes. As ideias foram mapeadas para o vocabulário hexagonal do pacote.
+- Mauricio Aniche, *Simple Object-Oriented Design: Create clean, maintainable applications* (Manning, 2024), caps. 3 e 6: consistência e agregados, separar infraestrutura do domínio sem deixar de usá-la por inteiro, e não brigar com o framework.
