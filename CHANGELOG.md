@@ -2,6 +2,13 @@
 
 Mudanças notáveis do plugin `squads`. A versão é a de `.claude-plugin/plugin.json`; quem já instalou só recebe uma mudança quando ela sobe.
 
+## 2.18.0 — 2026-11-26
+
+### Padrões de projeto: o catálogo GoF completo
+- `design-patterns` ampliada com base em Gamma, Helm, Johnson e Vlissides, *Padrões de Projeto* (GoF): princípios do catálogo (programe para a interface, composição antes de herança, encapsule o que varia), tabela de causas de reprojeto com os padrões que as evitam e como escolher; mapa dos 23 padrões no Java 25 + Spring (usado, o Spring faz, o Java faz, raro); Factory Method × Abstract Factory; seções novas de Prototype (cópia explícita, nunca `clone()`), Composite (regras `AllOf`/`AnyOf`), Bridge e Flyweight, Command (record + handler), Mediator, Visitor como `switch` exaustivo sobre `sealed`, e Iterator, Memento e Interpreter (SpEL só com `SimpleEvaluationContext`); anti-padrões e testes correspondentes; referências.
+- `refactoring` ganha a linha "causa de reprojeto" no catálogo de smells; `code-reviewer` ganha achados de `clone()`, cadeia de `instanceof`, Visitor manual e barramento de comandos sem motivo. `guide` e `docs/guide.md` atualizados.
+- Eval `padroes-gof` (gatilho de `design-patterns`, sem disparar `refactoring`). Ainda não executado.
+
 ## 2.17.0 — 2026-11-26
 
 ### Novas skills: Concorrência e Mapeamento JPA avançado

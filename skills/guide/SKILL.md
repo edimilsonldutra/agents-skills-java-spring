@@ -73,7 +73,7 @@ Antes de descrever a lista de skills, verifique o que realmente está presente e
 | Design doc, tech spec, SDD, RFC; desenvolver seguindo uma especificação | `design-docs` (decisão isolada: ADR do agent `architect`) |
 | Classe difícil de testar ou de mudar, princípios SOLID, regra no lugar errado (tell don't ask, Demeter) | `solid` |
 | Medir a legibilidade, classe grande demais, teto de complexidade por classe (CDD, `cdd.json`) | `cognitive-complexity` |
-| Qual padrão de projeto usar (Strategy, Adapter, Observer, State…), `@Transactional` que não funciona | `design-patterns` |
+| Qual padrão de projeto usar (os 23 do GoF: Strategy, Adapter, Observer, State, Command, Composite, Visitor com `sealed`…), causas de reprojeto, `@Transactional` que não funciona | `design-patterns` |
 | Listas paginadas (page, size, direction, limite, ordenação) | `pagination` |
 | Links HATEOAS (HAL) nas respostas | `hateoas` |
 | Enviar e-mail | `email` (SMTP/Spring Mail); pela AWS: `aws-ses` |

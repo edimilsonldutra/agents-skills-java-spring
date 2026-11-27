@@ -64,6 +64,7 @@ verde → (1 passo pequeno) → rodar testes → verde → commit → próximo p
 | **Duplicated Code** | Mesma lógica em vários lugares | **Extract Method/Class**, **Pull Up**; regra dos três |
 | **Shotgun Surgery** | Uma mudança de negócio exige editar 8 arquivos | **Move/Inline** para agrupar o que muda junto |
 | **Divergent Change** | Uma classe muda por razões não relacionadas | **Extract Class** (uma razão para mudar) |
+| **Causa de reprojeto** (mudança pequena custa caro) | `new` de classe concreta, regra embutida no chamador, subclasse por variação, classes que só funcionam juntas | O padrão que remove a causa: tabela de causas em `design-patterns` |
 | **Switch / if-else em cascata por tipo** | `if (type == X) … else if (type == Y)` repetido | **Replace Conditional with Polymorphism**, ou `sealed interface` + `switch` com pattern matching exaustivo (`java-modern-features`) |
 | **Nested Conditionals** | `if` dentro de `if` dentro de `if` | **Guard clauses** (`if (x == null) throw …` em uma linha — `code-style`), **Extract Method** |
 | **Magic Numbers/Strings** | `if (days > 14)` | **Extract Constant** / configuração (`@ConfigurationProperties`) / VO de política |
