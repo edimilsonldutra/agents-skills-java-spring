@@ -2,6 +2,16 @@
 
 Mudanças notáveis do plugin `squads`. A versão é a de `.claude-plugin/plugin.json`; quem já instalou só recebe uma mudança quando ela sobe.
 
+## 2.22.0 — 2026-11-26
+
+### Nova skill: DDD estratégico
+- Nova skill `strategic-ddd` (fundamentada em Vlad Khononov, *Learning Domain-Driven Design*): identificação de subdomínios (Core, Supporting, Generic) por vantagem competitiva, complexidade e volatilidade; linguagem ubíqua; bounded contexts × subdomínios; context map com as 7 relações (Partnership, Shared Kernel, Customer–Supplier, Conformist, ACL, Open-Host Service, Separate Ways) e diagrama Mermaid; EventStorming em 10 passos; árvore de decisão tática (Transaction Script, Active Record, Domain Model, event sourcing → camadas, ports & adapters, CQRS → pirâmide invertida, diamante, pirâmide); evolução das decisões (mudança de tipo de subdomínio, migração entre padrões com evento de migração, mudanças de organização).
+- `ddd-hexagonal`: a seção estratégica passa para `strategic-ddd`; fica um resumo do que chega ao código.
+- `saga-pattern`: saga × process manager. `service-communication`: tradução com estado na ACL. `test-patterns`: forma da suíte pela lógica de negócio. `requirements-engineering`: EventStorming entre as técnicas de elicitação.
+- Encadeada em `microservices`, `monolith-decomposition`, `guide`, `README.md`, `docs/guide.md`, `architect`, `orchestrator`, `tech-lead` e `code-reviewer`.
+- Eval `subdominios-e-context-map` (gatilho de `strategic-ddd`, sem disparar `microservices`). Ainda não executado.
+- 99 skills.
+
 ## 2.21.0 — 2026-11-26
 
 ### Padrões de implementação (Kent Beck)

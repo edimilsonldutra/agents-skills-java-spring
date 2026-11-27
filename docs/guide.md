@@ -10,7 +10,7 @@ Guia de referência do plugin `squads` para o Claude Code: instalação, configu
 
 O plugin leva para o Claude Code um padrão único de construção de APIs REST com **Java 25 e Spring Boot 4** — package layout, code style, segurança, testes, documentação e entrega — em duas camadas:
 
-- **Skills (98)** — o *como*. Cada skill documenta uma maneira específica de fazer algo: uma entity, uma migration, um teste de integração, um design doc, um pipeline. São a **fonte de verdade do padrão**: agents e o próprio Claude Code as carregam sob demanda, em vez de responder de memória.
+- **Skills (99)** — o *como*. Cada skill documenta uma maneira específica de fazer algo: uma entity, uma migration, um teste de integração, um design doc, um pipeline. São a **fonte de verdade do padrão**: agents e o próprio Claude Code as carregam sob demanda, em vez de responder de memória.
 - **Agents (7)** — o *quem*. Especialistas com papel, permissões e formato de entrega próprios: `product-manager`, `architect`, `tech-lead`, `developer`, `qa` e `code-reviewer`, coordenados pelo `orchestrator`. Cada agent carrega as skills da sua tarefa antes de agir.
 
 ```
@@ -69,7 +69,7 @@ Os passos acima instalam o **plugin completo** no Claude Code. Para as outras fe
 
 | Ferramenta | Como instalar | O que chega |
 |---|---|---|
-| Gemini CLI | `gemini extensions install https://github.com/edimilsonldutra/agents-skills-java-spring` | 98 skills descobertas automaticamente e os 7 agents como `/squads:<agent>` |
+| Gemini CLI | `gemini extensions install https://github.com/edimilsonldutra/agents-skills-java-spring` | 99 skills descobertas automaticamente e os 7 agents como `/squads:<agent>` |
 | Codex | `python scripts/portable.py install --tool codex --project <projeto>` (repositório clonado) | `.agents/skills/`, `.codex/agents/*.toml` e a seção do squads no `AGENTS.md` |
 | GitHub Copilot | `python scripts/portable.py install --tool copilot --project <projeto>` | `.agents/skills/`, `.github/agents/*.agent.md` e a seção no `.github/copilot-instructions.md` |
 | Qualquer LLM | `python scripts/portable.py install --tool generic --project <projeto>` | `.agents/skills/`, `agents/*.md` como system prompts e `AGENTS.md` |
@@ -86,7 +86,7 @@ Na pasta do projeto onde as skills vão ficar, rode:
 npx skills add edimilsonldutra/agents-skills-java-spring --skill '*'
 ```
 
-O `'*'` instala **as 98 skills de uma vez** — e é o recomendado, porque as skills se referenciam umas às outras (a `design-docs` aponta para `prd-writing` e `threat-modeling`, por exemplo) e esses links só funcionam quando todas estão instaladas lado a lado. O CLI pergunta para quais ferramentas instalar.
+O `'*'` instala **as 99 skills de uma vez** — e é o recomendado, porque as skills se referenciam umas às outras (a `design-docs` aponta para `prd-writing` e `threat-modeling`, por exemplo) e esses links só funcionam quando todas estão instaladas lado a lado. O CLI pergunta para quais ferramentas instalar.
 
 | Quero… | Comando |
 |---|---|
@@ -357,7 +357,7 @@ Complementam as skills `aws-eks`, `aws-rds-secrets-manager`, `aws-s3-sqs`, `aws-
 
 **Ordem sugerida:** `github-actions` (CI) → o deploy: `github-actions-aws` (AWS), `github-actions-cloud` (GCP/Azure) ou `argocd` (GitOps em qualquer Kubernetes, que usa os manifests de `kubernetes`/`helm-charts` e troca o job de "`kubectl apply`" por um que só commita a nova tag) → smoke pós-deploy com `postman-newman`.
 
-**Arquitetura de microsserviços (10 skills)**
+**Arquitetura de microsserviços (11 skills)**
 
 *Usadas por:* `architect` **decide** (começando por `microservices`) e registra o ADR; `tech-lead` planeja a partir da decisão; `developer` só aplica um padrão estrutural **com ADR**; `qa` testa falha parcial, contratos e compensações; `code-reviewer` cobra o ADR de todo padrão novo.
 
@@ -365,7 +365,8 @@ Complementam as skills `aws-eks`, `aws-rds-secrets-manager`, `aws-s3-sqs`, `aws-
 |---|---|---|---|
 | `microservices` | `/squads:microservices` | **Comece por aqui.** Quando dividir em serviços (e quando não), decomposição por bounded context, dados privados por serviço, o "distributed monolith", pré-requisitos de plataforma, migração com Strangler Fig e um checklist de decisão. | "Devemos migrar este monolito para microsserviços? Como dividir?" |
 | `modular-monolith` | `/squads:modular-monolith` | Monolito modular com **Spring Modulith**: módulos com fronteiras verificadas no build, **coesão e acoplamento entre módulos** (o que muda junto fica junto, dependências na direção da estabilidade), eventos entre módulos, e o caminho para extrair um serviço depois. | "Organize esta aplicação em módulos por domínio, sem microsserviços." |
-| `ddd-hexagonal` | `/squads:ddd-hexagonal` | DDD tático e arquitetura hexagonal: **quanto DDD cada subdomínio merece** (Core/Supporting/Generic), aggregates, value objects (records), ports e adapters com a **regra da dependência** e **limites parciais**, ArchUnit, diagnóstico de **modelo anêmico** — e quando **não** usar (CRUD). | "Modele o domínio de empréstimos com aggregates e hexagonal." |
+| `strategic-ddd` | `/squads:strategic-ddd` | DDD estratégico (Khononov): subdomínios Core/Supporting/Generic, linguagem ubíqua, bounded contexts, **context map com as 7 relações**, **EventStorming** passo a passo, **árvore de decisão tática** (Transaction Script, Active Record, Domain Model, event sourcing → arquitetura → forma da suíte de testes) e como **evoluir as decisões** quando o negócio muda. | "Classifique os subdomínios da biblioteca, desenhe o context map e diga quanto DDD cada contexto merece." |
+| `ddd-hexagonal` | `/squads:ddd-hexagonal` | DDD tático e arquitetura hexagonal, implementando o Domain Model decidido em `strategic-ddd`: aggregates, value objects (records), ports e adapters com a **regra da dependência** e **limites parciais**, ArchUnit, diagnóstico de **modelo anêmico** — e quando **não** usar (CRUD). | "Modele o domínio de empréstimos com aggregates e hexagonal." |
 | `api-gateway` | `/squads:api-gateway` | Gateway e BFF com Spring Cloud Gateway: o que fazer e o que **não** fazer na borda, auth, rate limit, headers de identidade seguros, composição. | "Crie um gateway com rotas, JWT e circuit breaker para os serviços." |
 | `service-communication` | `/squads:service-communication` | Chamadas entre serviços: `RestClient`/`@HttpExchange`, timeouts, ACL de erros, descoberta sem Eureka, **auth serviço-a-serviço (zero trust)**, gRPC e service mesh. | "Faça o serviço de empréstimos chamar o catálogo com segurança." |
 | `resilience` | `/squads:resilience` | Timeout, retry (sem retry storm), circuit breaker, bulkhead e fallback honesto com Resilience4j e os recursos nativos do Spring 7, e como testar falhas. | "Proteja a chamada ao catálogo contra lentidão e falhas." |
@@ -374,7 +375,7 @@ Complementam as skills `aws-eks`, `aws-rds-secrets-manager`, `aws-s3-sqs`, `aws-
 | `contract-testing` | `/squads:contract-testing` | Contratos entre serviços com **Pact** (broker, `can-i-deploy`) ou Spring Cloud Contract, contratos de eventos e detecção de breaking change do OpenAPI. | "Garanta que mudar o catálogo não quebre o serviço de empréstimos." |
 | `idempotency` | `/squads:idempotency` | `Idempotency-Key` em `POST` (replay, 409/422), consumers idempotentes, concorrência resolvida pelo banco e testes. | "Faça o endpoint de pagamento seguro contra retry e clique duplo." |
 
-**Ordem sugerida:** `microservices` (decidir) → `modular-monolith` ou os serviços → `ddd-hexagonal` (se o domínio for rico) → `api-gateway` e `service-communication` → `resilience` + `idempotency` → `messaging` + `transactional-outbox` → `saga-pattern` / `cqrs-event-sourcing` (só se necessário) → `contract-testing` → `argocd`/`kubernetes`. Para decisões de arquitetura, peça ao agent `architect`.
+**Ordem sugerida:** `microservices` (decidir) → `strategic-ddd` (subdomínios e fronteiras) → `modular-monolith` ou os serviços → `ddd-hexagonal` (se o domínio for rico) → `api-gateway` e `service-communication` → `resilience` + `idempotency` → `messaging` + `transactional-outbox` → `saga-pattern` / `cqrs-event-sourcing` (só se necessário) → `contract-testing` → `argocd`/`kubernetes`. Para decisões de arquitetura, peça ao agent `architect`.
 
 **Produto: skills do perfil de PM (13 skills)**
 
@@ -422,7 +423,7 @@ Complementam a skill `testing` (unit e slice). *Usadas por:* `qa` (o dono do tem
 | `refactoring` | `/squads:refactoring` | Refatoração segura: rede de segurança (characterization tests), passos pequenos e verdes, catálogo de smells → refatoração, Parallel Change/Strangler/expand → contract e como revisar o PR. | "Refatore o `LoanService` sem mudar o comportamento." |
 | `backlog-refinement` | `/squads:backlog-refinement` | Sessão de refinamento de backlog: preparação, roteiro de 60 min, DoR estendida (privacidade, NFRs, contrato, migration, rollout, métricas), Example Mapping, fatiamento, estimativa e card refinado. Também usada pelo agent `product-manager`. | "Refine estes 5 itens do topo do backlog." |
 
-**Total: 98 skills, todas neste plugin.** Na dúvida sobre qual usar, pergunte à skill `guide` — ela lê o que está realmente instalado e indica a skill certa para cada necessidade.
+**Total: 99 skills, todas neste plugin.** Na dúvida sobre qual usar, pergunte à skill `guide` — ela lê o que está realmente instalado e indica a skill certa para cada necessidade.
 
 ---
 

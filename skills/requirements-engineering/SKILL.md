@@ -105,7 +105,7 @@ Use a **ISO/IEC 25010** como checklist para não esquecer dimensões inteiras (t
 3. **Documentação (Documento de Entendimento):** compile os resultados **por assunto** (não transcrição bruta), separando: tópicos discutidos, decisões tomadas, requisitos/regras descobertos, termos novos para o **Glossário** e dúvidas para o **Controle de Questões**.
 4. **Confirmação:** envie o Documento de Entendimento aos participantes para validação rápida. **Informação não confirmada ainda é risco de mal-entendido.**
 
-### As 5 técnicas de elicitação (quando combinar cada uma)
+### Técnicas de elicitação (quando combinar cada uma)
 
 | Técnica | Quando usar | Cuidado principal |
 |---|---|---|
@@ -113,6 +113,7 @@ Use a **ISO/IEC 25010** como checklist para não esquecer dimensões inteiras (t
 | **Glossário** *(produto e processo)* | **Desde o dia 1**, em todo projeto — alinha siglas, termos de negócio e sistemas externos | Termos comuns não entram; cada termo tem **uma definição única** sem ambiguidade (vira a linguagem ubíqua do código) |
 | **Observação (etnografia)** | Quando o usuário não consegue explicar o que faz ou há muitos requisitos implícitos/contornos em planilhas | Pode causar efeito observador; combine com perguntas curtas depois (observação ativa) |
 | **Entrevista** *(estruturada, semiestruturada ou aberta)* | Aprofundar regras, fluxos e exceções com stakeholders-chave | Prepare roteiro; evite perguntas fechadas ou tendenciosas; registre fatos ≠ opiniões |
+| **EventStorming** *(oficina)* | Descobrir fluxos, eventos, regras e fronteiras com especialistas e desenvolvedores juntos, em projeto novo ou legado | Sem os especialistas vira adivinhação; o resultado precisa virar glossário e requisitos (`strategic-ddd`, seção 5) |
 | **Pesquisa / Questionário** | Muitos usuários dispersos (ex.: várias filiais) para quantificar frequência ou priorizar dores | Perguntas curtas e objetivas; teste-piloto antes de disparar (não serve para descobrir regras complexas) |
 
 **Template de Glossário (`docs/product/glossario.md`):**

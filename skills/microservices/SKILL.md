@@ -46,7 +46,7 @@ Antes de dividir, tenha **automatizado**: build/teste/deploy por serviço (`gith
 4. **Tamanho:** "pequeno o bastante para um time **entender por inteiro** e reescrever em semanas", não "N linhas". Serviço pequeno demais (nano-serviço) = sobrecarga sem ganho.
 5. **Em dúvida, junte.** Dividir um serviço depois é mais fácil que fundir dois.
 
-Veja `ddd-hexagonal` para bounded contexts, agregados e *context map* (como os contextos se relacionam).
+Veja `strategic-ddd` para subdomínios, bounded contexts, *context map* (como os contextos se relacionam) e o passo a passo do EventStorming, e `ddd-hexagonal` para agregados.
 
 ---
 
