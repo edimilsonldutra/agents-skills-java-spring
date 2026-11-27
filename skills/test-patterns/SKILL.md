@@ -340,7 +340,7 @@ Um teste **flaky** passa e falha **sem mudança de código**. Corrói a confian�
 | **Estado compartilhado / ordem** | Independência; dados únicos por teste; limpeza |
 | **Dependência externa** (rede, serviço real) | WireMock/Testcontainers/LocalStack; **nunca** a internet |
 | **Recursos** (porta fixa, arquivo, diretório temporário) | Portas aleatórias; `@TempDir` |
-| **Ordem de coleções/`HashMap`/resultados sem `ORDER BY`** | Ordene explicitamente; asserts independentes de ordem (`containsExactlyInAnyOrder`) |
+| **Ordem de coleções/`HashMap`/`Set.of`/`Map.of`/resultados sem `ORDER BY`** | `Set.of` e `Map.of` embaralham a ordem a cada JVM: ordene explicitamente ou use asserts independentes de ordem (`containsExactlyInAnyOrder`) |
 | **Seed aleatória do banco** (`flyway-migrations`) | Nunca assert sobre ela |
 | **Locale/timezone/encoding da máquina** | Fixe o locale/timezone nos testes; UTF-8 explícito |
 | **CI lento/recursos limitados** | Timeouts realistas; Awaitility em vez de tempo fixo |

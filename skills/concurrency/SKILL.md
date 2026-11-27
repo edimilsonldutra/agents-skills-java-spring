@@ -55,11 +55,13 @@ counters.get(memberId).increment();
 ```java
 counters.computeIfAbsent(memberId, id -> new LongAdder()).increment();
 ```
-- Use `computeIfAbsent`, `compute`, `merge` (`totals.merge(memberId, fine, BigDecimal::add)`) para ler e escrever numa operação só.
+- Use `computeIfAbsent`, `compute`, `merge` (`totals.merge(memberId, fine, BigDecimal::add)`) para ler e escrever numa operação só; para um `Set` concorrente, use `ConcurrentHashMap.newKeySet()`.
+- **`ConcurrentHashMap` rejeita `null`**: chave ou valor `null` lança `NullPointerException` (diferente do `HashMap`). Já dentro da função de remapeamento de `compute`, `computeIfPresent` e `merge`, **retornar `null` remove a entrada** do mapa (`computeIfAbsent` que retorna `null` apenas não insere).
 - A função passada a `computeIfAbsent`/`compute` roda **com a entrada bloqueada**: nada de I/O, chamada remota ou escrita no **mesmo** mapa dentro dela (pode bloquear outras threads ou lançar `IllegalStateException` por atualização recursiva).
 - **Contadores:** `AtomicLong` quando o valor exato é lido com frequência; `LongAdder` quando há muita escrita concorrente e leitura rara. Para métrica, use um `Counter` do Micrometer (`observability`), não um campo do bean.
 - **`CopyOnWriteArrayList`**: muita leitura e escrita rara (lista de listeners). Cada escrita copia o array inteiro.
-- **`Collections.synchronizedList`**: iterar exige `synchronized` manual na lista; prefira as opções acima.
+- **`ConcurrentLinkedQueue`**: fila não-bloqueante para passagem leve entre threads, mas **`size()` é `O(N)`** (percorre os nós) — use sempre `isEmpty()`, nunca `size() == 0` em laço ou health check.
+- **`Collections.synchronizedList`**: iterar exige `synchronized` manual na lista e operações compostas continuam em corrida; prefira as opções acima.
 - **Configuração carregada no startup**: `List.copyOf`/`Map.copyOf` ou `record`, publicada uma vez e nunca alterada.
 - **Mapa em memória que só cresce** é vazamento de memória com atraso: sem limite e expiração, use Caffeine (`caching`).
 
@@ -234,7 +236,7 @@ Serve para trabalho **descartável e local** (agrupar métricas, buffer de log),
 ## 10. Checklist de revisão
 
 - Bean com **campo mutável** escrito durante o request? `SimpleDateFormat`, `HashMap`, `ArrayList` ou `StringBuilder` compartilhados?
-- `containsKey` + `put` (ou `get` + `put`) em mapa concorrente, em vez de `computeIfAbsent`/`merge`?
+- `containsKey` + `put` (ou `get` + `put`) em mapa concorrente, em vez de `computeIfAbsent`/`merge`? Valor possivelmente `null` passado ao `ConcurrentHashMap` ou `ConcurrentLinkedQueue.size()` chamado em caminho quente?
 - **Lock em memória** protegendo regra de negócio num serviço com mais de uma réplica?
 - I/O dentro de `synchronized`/lock ou dentro de `computeIfAbsent`?
 - `InterruptedException` engolida (catch vazio ou só log)?
@@ -263,4 +265,5 @@ Serve para trabalho **descartável e local** (agrupar métricas, buffer de log),
 
 - Documentação do Java SE 25 (`java.util.concurrent`) e do Spring Framework 7 e Spring Boot 4 (*Task Execution and Scheduling*); properties `spring.task.*` conferidas no `spring-configuration-metadata.json` do Spring Boot 4.2.0.
 - Brian Goetz et al., *Java Concurrency in Practice* (Addison-Wesley, 2006): base conceitual de thread-safety, publicação segura e confinamento.
+- Maurice Naftalin e Philip Wadler, com Stuart Marks, *Java Generics and Collections*, 2ª ed. (O'Reilly, 2025), caps. 9, 13, 15 e 17: semântica de `null` e remapeamento em `ConcurrentHashMap`, `ConcurrentLinkedQueue.size()` `O(N)` e substituição de `Collections.synchronized*`.
 - Anghel Leonard, *Java Coding Problems*, 2ª ed. (Packt, 2024), caps. 10 e 11, como apoio para virtual threads, `Semaphore` e produtor-consumidor. A API de concorrência estruturada do livro (`ShutdownOnFailure`) foi substituída no JDK 25.

@@ -26,7 +26,7 @@ Imutáveis, com `equals`/`hashCode`/`toString` automáticos. **Use para:** event
 ```java
 public record BookSummary(Long id, String title) {}
 ```
-Validação no **compact constructor**:
+Validação e **cópia defensiva de coleções** no **compact constructor** (um `record` é raso: se tiver componente `List`/`Set`/`Map` sem cópia, quem passou a coleção original continua conseguindo mutar o estado interno):
 ```java
 public record Money(BigDecimal amount, String currency) {
 
@@ -35,7 +35,19 @@ public record Money(BigDecimal amount, String currency) {
         if (amount.signum() < 0) throw new IllegalArgumentException("amount must not be negative");
     }
 }
+
+public record BookBundle(String name, List<Long> bookIds) {
+
+    public BookBundle {
+        Objects.requireNonNull(name);
+        bookIds = List.copyOf(bookIds);
+    }
+}
 ```
+Dois usos de `record` que limpam coleções (`code-style`):
+- **Chave composta em `Map`/`Set`**: `record TitleAuthor(String title, String author) {}` para `Map<TitleAuthor, Book>` — evita entortar `Book.equals`/`hashCode` ou instanciar "livros falsos" só para consulta.
+- **Substituir listas paralelas**: em vez de `List<Member> members` + `List<Integer> scores` sincronizadas pelo índice `i`, use `List<MemberScore>` com `record MemberScore(Member member, int score) {}`.
+
 **Não use para:** entities JPA (o Hibernate precisa de no-arg constructor, campos mutáveis e proxies) e DTOs de entidade que estendem `RepresentationModel` (HATEOAS exige classe — `code-organization`; em legado com Dozer setters também são exigidos, enquanto o MapStruct mapeia records nativamente para requests/responses sem HATEOAS). Como **`@Embeddable`** (value object embutido na entity), o Jakarta Persistence 3.2 aceita record (`jpa-advanced-mapping`). Para uma **projection** de leitura, porém, um record é ótimo: `SELECT new com.x.BookSummary(b.id, b.title) FROM Book b`.
 
 ## Sealed interfaces + pattern matching em switch
@@ -78,9 +90,14 @@ var json = """
 
 Regras de `var` e `instanceof` com pattern já estão em `code-style`. `Optional` **só como tipo de retorno** (`findById`); nunca como campo de entity/DTO, nem como parâmetro. Evite `optional.get()`: use `orElseThrow(() -> new ResourceNotFoundException(...))` como o pack faz.
 
-## SequencedCollection (Java 21)
+## SequencedCollection, SequencedSet e SequencedMap (Java 21)
 
-`List`, `Deque`, `LinkedHashSet`/`LinkedHashMap` ganharam `getFirst()`, `getLast()`, `reversed()`, `addFirst()`: troque `list.get(list.size() - 1)` por `list.getLast()`.
+`List`, `Deque`, `LinkedHashSet`/`TreeSet` (`SequencedSet`) e `LinkedHashMap`/`TreeMap` (`SequencedMap`) têm operações uniformes nas pontas: troque `list.get(list.size() - 1)` por `list.getLast()`, use `removeFirst()`/`removeLast()`, `firstEntry()`/`pollLastEntry()` e `reversed()`.
+
+Cuidados de contrato:
+- **`getFirst()`/`getLast()` e `removeFirst()`/`removeLast()` lançam `NoSuchElementException` em coleção vazia** (diferente de `Deque.peekFirst()`/`pollFirst()`, que devolvem `null`): cheque `isEmpty()` antes quando o vazio for válido.
+- **`addFirst()`/`addLast()` e `putFirst()`/`putLast()` lançam `UnsupportedOperationException` em coleções de ordem interna** (`TreeSet`, `TreeMap`), porque a posição é decidida pelo `Comparator`. Em `LinkedHashSet`/`LinkedHashMap`, se o elemento/chave já existir, `addFirst`/`putFirst` o **reposiciona** para o início.
+- **`reversed()` devolve uma *view* viva**, não uma cópia: mutar a original reflete na view; para materializar uma cópia independente, envolva com `List.copyOf(list.reversed())`.
 
 ---
 
@@ -136,10 +153,15 @@ Em uma API Spring tradicional, o equivalente por request é `RequestContextHolde
 
 ## Regras principais
 
-- Records para dados imutáveis (eventos, respostas, projections, `ExceptionResponse`); **não** para entities nem para os DTOs de entidade deste pack.
+- Records para dados imutáveis (eventos, respostas, projections, chaves compostas, `ExceptionResponse`), normalizando coleções com `List.copyOf`/`Set.copyOf`/`Map.copyOf` no compact constructor; **não** para entities nem para os DTOs de entidade deste pack.
+- `SequencedCollection`/`SequencedSet`/`SequencedMap` para pontas e `reversed()`, checando `isEmpty()` antes de `getFirst()`/`getLast()` e sem chamar `addFirst()` em `TreeSet`/`TreeMap`.
 - Sealed interface + `switch` exaustivo para resultados fechados, em vez de `null`/códigos mágicos.
 - `Optional` só como retorno; `orElseThrow(domain exception)`, nunca `get()`.
 - Virtual threads: ligue com `spring.threads.virtual.enabled`, **meça**, e continue dimensionando o pool de conexões; nunca faça pool delas; atenção a pinning em JDK < 24.
 - Preview (`StructuredTaskScope`) fora da produção; Scoped Values (final em 25) para contexto imutável novo.
 - Produção em versão **LTS**.
 - Nenhuma feature nova justifica trocar o estilo explícito, sem Lombok, do pack.
+
+## Referências
+
+- Maurice Naftalin e Philip Wadler, com Stuart Marks, *Java Generics and Collections*, 2ª ed. (O'Reilly, 2025), caps. 11 e 17: contratos de `SequencedCollection`/`SequencedSet`/`SequencedMap` e uso de records com coleções, chaves compostas e listas paralelas.
